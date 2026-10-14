@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شركة جار الخليج للصناعة - نظام إدارة البيانات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- SheetJS Library for Excel Import/Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #0f172a;
+            --accent-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #0f172a;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .brand-title h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-title span {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .shortcuts-bar {
+            background-color: #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            color: #334155;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .kbd {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            color: #475569;
+            margin-bottom: 15px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .status-online { background: #22c55e; }
+        .status-offline { background: #eab308; }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+
+        .btn-secondary { background-color: #64748b; color: white; }
+        .btn-secondary:hover { background-color: #475569; }
+
+        .btn-success { background-color: #16a34a; color: white; }
+        .btn-success:hover { background-color: #15803d; }
+
+        .btn-warning { background-color: #d97706; color: white; }
+        .btn-warning:hover { background-color: #b45309; }
+
+        .btn-excel { background-color: #107c41; color: white; }
+        .btn-excel:hover { background-color: #0b592e; }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th, td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        tr:hover { background-color: #f8fafc; }
+
+        .action-cell { display: flex; gap: 8px; }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .btn-edit { color: #2563eb; }
+        .btn-edit:hover { background-color: #e0e7ff; }
+
+        .btn-delete { color: #ef4444; }
+        .btn-delete:hover { background-color: #fee2e2; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 28px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            color: var(--primary-color);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        .form-group { margin-bottom: 16px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .form-group textarea { resize: vertical; height: 80px; }
+
+        .empty-msg {
+            text-align: center;
+            color: #94a3b8;
+            padding: 20px;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .controls, .tabs, .shortcuts-bar, .action-btn, header .btn, .header-actions, .status-badge, .no-print {
+                display: none !important;
+            }
+            .table-container { box-shadow: none; border: 1px solid #000; }
+            th { background-color: #eee !important; color: #000; }
+            td, th { border: 1px solid #000; }
+        }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="devices-records"></script>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="brand-title">
+            <h1><i class="fa-solid fa-industry"></i> شركة جار الخليج للصناعة</h1>
+            <span>نظام الإدارة - الجوالات والإقامات</span>
+        </div>
+        <div class="header-actions no-print">
+            <button class="btn btn-excel" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> تصدير إكسل</button>
+            <button class="btn btn-warning" onclick="triggerImportExcel()"><i class="fa-solid fa-file-import"></i> استيراد إكسل</button>
+            <input type="file" id="importExcelInput" accept=".xlsx, .xls" style="display: none;" onchange="importFromExcel(event)">
+            
+            <button class="btn btn-success" onclick="exportBackup()"><i class="fa-solid fa-file-export"></i> تصدير JSON</button>
+            <button class="btn btn-secondary" onclick="triggerImport()"><i class="fa-solid fa-file-import"></i> استيراد JSON</button>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importBackup(event)">
+            
+            <button class="btn btn-primary" onclick="openModal()"><i class="fa-solid fa-plus"></i> إضافة جديد <span style="font-size: 0.75rem;">(Alt+N)</span></button>
+        </div>
+    </header>
+
+    <div class="status-badge no-print">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">جاري الاتصال بـ Firebase...</span>
+    </div>
+
+    <div class="shortcuts-bar no-print">
+        <strong><i class="fa-solid fa-keyboard"></i> اختصارات السرعة:</strong>
+        <span>جديد: <span class="kbd">Alt + N</span></span> |
+        <span>حفظ: <span class="kbd">Ctrl + S</span></span> |
+        <span>إغلاق النافذة: <span class="kbd">Esc</span></span> |
+        <span>البحث: <span class="kbd">Alt + F</span></span> |
+        <span>تبويب الجوالات: <span class="kbd">Alt + 1</span></span> |
+        <span>تبويب الإقامات: <span class="kbd">Alt + 2</span></span> |
+        <span>الطباعة: <span class="kbd">Alt + P</span></span>
+    </div>
+
+    <div class="tabs no-print">
+        <button class="tab-btn active" id="tabPhones" onclick="switchTab('phones')"><i class="fa-solid fa-mobile-screen-button"></i> حسابات الجوالات</button>
+        <button class="tab-btn" id="tabResidences" onclick="switchTab('residences')"><i class="fa-solid fa-id-card"></i> إقامات الموظفين</button>
+    </div>
+
+    <div class="controls no-print">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" oninput="filterData()" placeholder="بحث بالاسم، رقم الجوال، المهنة، رقم الإقامة أو مكان الإصدار... (Alt+F)">
+        </div>
+        <button class="btn btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> طباعة الجدول</button>
+    </div>
+
+    <div class="table-container">
+        <table id="phonesTable">
+            <thead>
+                <tr>
+                    <th>اسم صاحب الجوال</th>
+                    <th>رقم الجوال</th>
+                    <th>رقم حساب الجوال</th>
+                    <th>القسم</th>
+                    <th>ملاحظات</th>
+                    <th class="no-print">البيانات / الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="phonesTbody"></tbody>
+        </table>
+
+        <table id="residencesTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>المهنة</th>
+                    <th>الرقم</th>
+                    <th>تاريخ الانتهاء</th>
+                    <th>مكان الإصدار</th>
+                    <th>ملاحظات</th>
+                    <th class="no-print">البيانات / الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="residencesTbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal" id="dataModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">إضافة سجل جديد</h2>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="recordForm" onsubmit="saveData(event)">
+            <input type="hidden" id="editId">
+
+            <div id="phoneFields">
+                <div class="form-group">
+                    <label>اسم صاحب الجوال *</label>
+                    <input type="text" id="phoneOwner">
+                </div>
+                <div class="form-group">
+                    <label>رقم الجوال *</label>
+                    <input type="text" id="phoneNumber">
+                </div>
+                <div class="form-group">
+                    <label>رقم حساب الجوال *</label>
+                    <input type="text" id="accountNumber">
+                </div>
+                <div class="form-group">
+                    <label>اسم القسم *</label>
+                    <input type="text" id="deptName">
+                </div>
+            </div>
+
+            <div id="residenceFields" style="display: none;">
+                <div class="form-group">
+                    <label>الاسم *</label>
+                    <input type="text" id="empName">
+                </div>
+                <div class="form-group">
+                    <label>المهنة</label>
+                    <input type="text" id="jobTitle">
+                </div>
+                <div class="form-group">
+                    <label>الرقم (رقم الإقامة) *</label>
+                    <input type="text" id="residenceNumber">
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الانتهاء</label>
+                    <input type="text" id="expiryDate" placeholder="YYYY/MM/DD أو هجري">
+                </div>
+                <div class="form-group">
+                    <label>مكان الإصدار</label>
+                    <input type="text" id="issuePlace">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ملاحظات</label>
+                <textarea id="notes"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;"><i class="fa-solid fa-floppy-disk"></i> حفظ البيانات <span style="font-size: 0.75rem;">(Ctrl+S)</span></button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // -------------------------------------------------------------
+    // Firebase Configuration
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+        apiKey: "AIzaSyAv8bNmeHdVXxhkGN-8hdidBjQSJ8G0oZ0",
+        authDomain: "phonesandeqama.firebaseapp.com",
+        projectId: "phonesandeqama",
+        storageBucket: "phonesandeqama.firebasestorage.app",
+        messagingSenderId: "708552084938",
+        appId: "1:708552084938:web:a21ce026c766d056d9d333",
+        measurementId: "G-ESFHS2XECD"
+    };
+
+    let dbFirestore = null;
+    let isFirebaseReady = false;
+    let dbIndexed = null;
+    let currentTab = 'phones';
+
+    // Initialize Firebase
+    try {
+        firebase.initializeApp(firebaseConfig);
+        dbFirestore = firebase.firestore();
+        isFirebaseReady = true;
+        updateStatus(true, "متصل بـ Firebase السحابي (phonesandeqama)");
+    } catch (e) {
+        console.warn("Firebase Init failed. Using IndexedDB fallback.", e);
+        updateStatus(false, "وضع المحلي (IndexedDB)");
+    }
+
+    function updateStatus(isOnline, message) {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        dot.className = 'status-dot ' + (isOnline ? 'status-online' : 'status-offline');
+        text.textContent = message;
+    }
+
+    // Keybindings Logic
+    document.addEventListener('keydown', function(e) {
+        if (e.altKey && (e.key === 'n' || e.key === 'N' || e.key === 'ى')) {
+            e.preventDefault();
+            openModal();
+        }
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.key === 'س')) {
+            e.preventDefault();
+            const modal = document.getElementById('dataModal');
+            if (modal.style.display === 'flex') {
+                document.getElementById('recordForm').requestSubmit();
+            }
+        }
+        if (e.key === 'Escape') closeModal();
+        if (e.altKey && (e.key === 'f' || e.key === 'F' || e.key === 'ب')) {
+            e.preventDefault();
+            document.getElementById('searchInput').focus();
+        }
+        if (e.altKey && e.key === '1') { e.preventDefault(); switchTab('phones'); }
+        if (e.altKey && e.key === '2') { e.preventDefault(); switchTab('residences'); }
+        if (e.altKey && (e.key === 'p' || e.key === 'P' || e.key === 'ح')) { e.preventDefault(); window.print(); }
+    });
+
+    // Initialize IndexedDB (Local Fallback)
+    function initLocalDB() {
+        return new Promise((resolve) => {
+            const request = indexedDB.open('JarAlKhaleejDB', 1);
+            request.onupgradeneeded = function(e) {
+                dbIndexed = e.target.result;
+                if (!dbIndexed.objectStoreNames.contains('phones')) dbIndexed.createObjectStore('phones', { keyPath: 'id' });
+                if (!dbIndexed.objectStoreNames.contains('residences')) dbIndexed.createObjectStore('residences', { keyPath: 'id' });
+            };
+            request.onsuccess = function(e) {
+                dbIndexed = e.target.result;
+                resolve();
+            };
+            request.onerror = function() {
+                resolve();
+            };
+        });
+    }
+
+    async function initApp() {
+        await initLocalDB();
+        
+        if (isFirebaseReady) {
+            dbFirestore.collection('phones').onSnapshot(() => {
+                if (currentTab === 'phones') loadData();
+            });
+            dbFirestore.collection('residences').onSnapshot(() => {
+                if (currentTab === 'residences') loadData();
+            });
+        }
+        
+        loadData();
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('tabPhones').classList.toggle('active', tab === 'phones');
+        document.getElementById('tabResidences').classList.toggle('active', tab === 'residences');
+        
+        document.getElementById('phonesTable').style.display = (tab === 'phones') ? 'table' : 'none';
+        document.getElementById('residencesTable').style.display = (tab === 'residences') ? 'table' : 'none';
+
+        document.getElementById('searchInput').value = '';
+        loadData();
+    }
+
+    function openModal() {
+        document.getElementById('recordForm').reset();
+        document.getElementById('editId').value = '';
+        
+        if (currentTab === 'phones') {
+            document.getElementById('modalTitle').textContent = 'إضافة حساب جوال جديد';
+            document.getElementById('phoneFields').style.display = 'block';
+            document.getElementById('residenceFields').style.display = 'none';
+            document.getElementById('phoneOwner').required = true;
+            document.getElementById('phoneNumber').required = true;
+            document.getElementById('accountNumber').required = true;
+            document.getElementById('deptName').required = true;
+            
+            document.getElementById('empName').required = false;
+            document.getElementById('residenceNumber').required = false;
+            
+            document.getElementById('dataModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('phoneOwner').focus(), 50);
+        } else {
+            document.getElementById('modalTitle').textContent = 'إضافة سجل إقامة موظف';
+            document.getElementById('phoneFields').style.display = 'none';
+            document.getElementById('residenceFields').style.display = 'block';
+            document.getElementById('phoneOwner').required = false;
+            document.getElementById('phoneNumber').required = false;
+            document.getElementById('accountNumber').required = false;
+            document.getElementById('deptName').required = false;
+
+            document.getElementById('empName').required = true;
+            document.getElementById('residenceNumber').required = true;
+            
+            document.getElementById('dataModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('empName').focus(), 50);
+        }
+    }
+
+    async function editItem(id) {
+        let item = null;
+        if (isFirebaseReady) {
+            const doc = await dbFirestore.collection(currentTab).doc(String(id)).get();
+            if (doc.exists) item = doc.data();
+        } else if (dbIndexed) {
+            item = await new Promise(resolve => {
+                const tx = dbIndexed.transaction([currentTab], 'readonly');
+                const req = tx.objectStore(currentTab).get(id);
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        if (item) fillModalForEdit(item);
+    }
+
+    function fillModalForEdit(item) {
+        openModal();
+        document.getElementById('editId').value = item.id;
+        document.getElementById('notes').value = item.notes || '';
+
+        if (currentTab === 'phones') {
+            document.getElementById('modalTitle').textContent = 'تعديل حساب جوال';
+            document.getElementById('phoneOwner').value = item.owner || '';
+            document.getElementById('phoneNumber').value = item.phone || '';
+            document.getElementById('accountNumber').value = item.account || '';
+            document.getElementById('deptName').value = item.dept || '';
+            setTimeout(() => document.getElementById('phoneOwner').focus(), 50);
+        } else {
+            document.getElementById('modalTitle').textContent = 'تعديل سجل إقامة';
+            document.getElementById('empName').value = item.empName || '';
+            document.getElementById('jobTitle').value = item.jobTitle || '';
+            document.getElementById('residenceNumber').value = item.residence || '';
+            document.getElementById('expiryDate').value = item.expiryDate || '';
+            document.getElementById('issuePlace').value = item.issuePlace || '';
+            setTimeout(() => document.getElementById('empName').focus(), 50);
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('dataModal').style.display = 'none';
+    }
+
+    // Save Data
+    async function saveData(e) {
+        e.preventDefault();
+        
+        let editId = document.getElementById('editId').value;
+        let id = editId ? Number(editId) : Date.now();
+
+        let item = {
+            id: id,
+            notes: document.getElementById('notes').value,
+            updatedAt: new Date().toISOString()
+        };
+
+        if (currentTab === 'phones') {
+            item.owner = document.getElementById('phoneOwner').value;
+            item.phone = document.getElementById('phoneNumber').value;
+            item.account = document.getElementById('accountNumber').value;
+            item.dept = document.getElementById('deptName').value;
+        } else {
+            item.empName = document.getElementById('empName').value;
+            item.jobTitle = document.getElementById('jobTitle').value;
+            item.residence = document.getElementById('residenceNumber').value;
+            item.expiryDate = document.getElementById('expiryDate').value;
+            item.issuePlace = document.getElementById('issuePlace').value;
+        }
+
+        if (isFirebaseReady) {
+            await dbFirestore.collection(currentTab).doc(String(id)).set(item);
+        }
+
+        if (dbIndexed) {
+            const tx = dbIndexed.transaction([currentTab], 'readwrite');
+            tx.objectStore(currentTab).put(item);
+        }
+
+        closeModal();
+        loadData();
+    }
+
+    // Load Data
+    async function loadData() {
+        let list = [];
+        if (isFirebaseReady) {
+            const snapshot = await dbFirestore.collection(currentTab).get();
+            snapshot.forEach(doc => list.push(doc.data()));
+        } else if (dbIndexed) {
+            list = await new Promise(resolve => {
+                const tx = dbIndexed.transaction([currentTab], 'readonly');
+                const req = tx.objectStore(currentTab).getAll();
+                req.onsuccess = () => resolve(req.result || []);
+            });
+        }
+
+        renderTable(list);
+    }
+
+    // Render Table
+    function renderTable(data) {
+        const tbody = document.getElementById(currentTab + 'Tbody');
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">لا توجد سجلات مسجلة حتى الآن</td></tr>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const tr = document.createElement('tr');
+            if (currentTab === 'phones') {
+                tr.innerHTML = `
+                    <td>${item.owner || ''}</td>
+                    <td>${item.phone || ''}</td>
+                    <td>${item.account || ''}</td>
+                    <td>${item.dept || ''}</td>
+                    <td>${item.notes || '-'}</td>
+                    <td class="no-print">
+                        <div class="action-cell">
+                            <button class="action-btn btn-edit" title="تعديل" onclick="editItem(${item.id})"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="action-btn btn-delete" title="حذف" onclick="deleteItem(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td>${item.empName || ''}</td>
+                    <td>${item.jobTitle || '-'}</td>
+                    <td>${item.residence || ''}</td>
+                    <td>${item.expiryDate || '-'}</td>
+                    <td>${item.issuePlace || '-'}</td>
+                    <td>${item.notes || '-'}</td>
+                    <td class="no-print">
+                        <div class="action-cell">
+                            <button class="action-btn btn-edit" title="تعديل" onclick="editItem(${item.id})"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="action-btn btn-delete" title="حذف" onclick="deleteItem(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+            }
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Delete Record
+    async function deleteItem(id) {
+        if (confirm('هل أنت تأكد من رغبتك في حذف هذا السجل؟')) {
+            if (isFirebaseReady) {
+                await dbFirestore.collection(currentTab).doc(String(id)).delete();
+            }
+            if (dbIndexed) {
+                const tx = dbIndexed.transaction([currentTab], 'readwrite');
+                tx.objectStore(currentTab).delete(id);
+            }
+            loadData();
+        }
+    }
+
+    // Search Filter
+    async function filterData() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        let list = [];
+
+        if (isFirebaseReady) {
+            const snapshot = await dbFirestore.collection(currentTab).get();
+            snapshot.forEach(doc => list.push(doc.data()));
+        } else if (dbIndexed) {
+            list = await new Promise(resolve => {
+                const tx = dbIndexed.transaction([currentTab], 'readonly');
+                const req = tx.objectStore(currentTab).getAll();
+                req.onsuccess = () => resolve(req.result || []);
+            });
+        }
+
+        const filtered = list.filter(item => checkMatch(item, query));
+        renderTable(filtered);
+    }
+
+    function checkMatch(item, query) {
+        if (currentTab === 'phones') {
+            return (
+                (item.owner && item.owner.toLowerCase().includes(query)) ||
+                (item.phone && item.phone.toLowerCase().includes(query)) ||
+                (item.account && item.account.toLowerCase().includes(query)) ||
+                (item.dept && item.dept.toLowerCase().includes(query))
+            );
+        } else {
+            return (
+                (item.empName && item.empName.toLowerCase().includes(query)) ||
+                (item.jobTitle && item.jobTitle.toLowerCase().includes(query)) ||
+                (item.residence && item.residence.toLowerCase().includes(query)) ||
+                (item.expiryDate && item.expiryDate.toLowerCase().includes(query)) ||
+                (item.issuePlace && item.issuePlace.toLowerCase().includes(query)) ||
+                (item.notes && item.notes.toLowerCase().includes(query))
+            );
+        }
+    }
+
+    // -------------------------------------------------------------
+    // EXCEL IMPORT & EXPORT FUNCTIONS (SheetJS Integration)
+    // -------------------------------------------------------------
+    
+    function triggerImportExcel() {
+        document.getElementById('importExcelInput').click();
+    }
+
+    async function importFromExcel(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+                if (jsonData.length === 0) {
+                    alert('ملف الإكسل فارغ!');
+                    return;
+                }
+
+                let count = 0;
+                for (let row of jsonData) {
+                    let id = Date.now() + Math.floor(Math.random() * 1000);
+                    let item = { id: id, updatedAt: new Date().toISOString() };
+
+                    if (currentTab === 'phones') {
+                        item.owner = row['اسم صاحب الجوال'] || row['صاحب الجوال'] || row['الاسم'] || row['Owner'] || '';
+                        item.phone = row['رقم الجوال'] || row['الجوال'] || row['Phone'] || '';
+                        item.account = row['رقم حساب الجوال'] || row['رقم الحساب'] || row['Account'] || '';
+                        item.dept = row['القسم'] || row['Department'] || '';
+                        item.notes = row['ملاحظات'] || row['Notes'] || '';
+
+                        if (item.owner || item.phone) {
+                            await saveImportedRecord('phones', item);
+                            count++;
+                        }
+                    } else {
+                        item.empName = row['الاسم'] || row['اسم الموظف'] || row['Name'] || '';
+                        item.jobTitle = row['المهنة'] || row['الوظيفة'] || row['Job'] || '';
+                        item.residence = row['الرقم'] || row['رقم الإقامة'] || row['الإقامة'] || row['Residence'] || '';
+                        item.expiryDate = row['تاريخ الانتهاء'] || row['تاريخ انتهاء الإقامة'] || row['Expiry'] || '';
+                        item.issuePlace = row['مكان الإصدار'] || row['مكان الاصدار'] || row['Place'] || '';
+                        item.notes = row['ملاحظات'] || row['Notes'] || '';
+
+                        if (item.empName || item.residence) {
+                            await saveImportedRecord('residences', item);
+                            count++;
+                        }
+                    }
+                }
+
+                alert(`تم استيراد ${count} سجل بنجاح إلى تبويب ${currentTab === 'phones' ? 'الجوالات' : 'الإقامات'}!`);
+                loadData();
+                e.target.value = ''; // Reset input
+            } catch (err) {
+                alert('حدث خطأ أثناء قراءة ملف الإكسل: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function saveImportedRecord(tab, item) {
+        if (isFirebaseReady) {
+            await dbFirestore.collection(tab).doc(String(item.id)).set(item);
+        }
+        if (dbIndexed) {
+            const tx = dbIndexed.transaction([tab], 'readwrite');
+            tx.objectStore(tab).put(item);
+        }
+    }
+
+    async function exportToExcel() {
+        let data = [];
+        if (isFirebaseReady) {
+            const snapshot = await dbFirestore.collection(currentTab).get();
+            snapshot.forEach(doc => data.push(doc.data()));
+        } else if (dbIndexed) {
+            data = await new Promise(resolve => {
+                const tx = dbIndexed.transaction([currentTab], 'readonly');
+                const req = tx.objectStore(currentTab).getAll();
+                req.onsuccess = () => resolve(req.result || []);
+            });
+        }
+
+        if (data.length === 0) {
+            alert('لا توجد بيانات لتصديرها!');
+            return;
+        }
+
+        let formattedData = [];
+        if (currentTab === 'phones') {
+            formattedData = data.map(item => ({
+                'اسم صاحب الجوال': item.owner || '',
+                'رقم الجوال': item.phone || '',
+                'رقم حساب الجوال': item.account || '',
+                'القسم': item.dept || '',
+                'ملاحظات': item.notes || ''
+            }));
+        } else {
+            formattedData = data.map(item => ({
+                'الاسم': item.empName || '',
+                'المهنة': item.jobTitle || '',
+                'الرقم': item.residence || '',
+                'تاريخ الانتهاء': item.expiryDate || '',
+                'مكان الإصدار': item.issuePlace || '',
+                'ملاحظات': item.notes || ''
+            }));
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        const sheetName = currentTab === 'phones' ? 'حسابات الجوالات' : 'إقامات الموظفين';
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+        XLSX.writeFile(workbook, `${sheetName}_جار_الخليج_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    // -------------------------------------------------------------
+    // JSON Backup / Import Functions
+    // -------------------------------------------------------------
+    async function exportBackup() {
+        let phonesData = [];
+        let residencesData = [];
+
+        if (isFirebaseReady) {
+            const pSnap = await dbFirestore.collection('phones').get();
+            pSnap.forEach(doc => phonesData.push(doc.data()));
+
+            const rSnap = await dbFirestore.collection('residences').get();
+            rSnap.forEach(doc => residencesData.push(doc.data()));
+        } else if (dbIndexed) {
+            phonesData = await new Promise(resolve => {
+                const tx = dbIndexed.transaction(['phones'], 'readonly');
+                const req = tx.objectStore('phones').getAll();
+                req.onsuccess = () => resolve(req.result || []);
+            });
+            residencesData = await new Promise(resolve => {
+                const tx = dbIndexed.transaction(['residences'], 'readonly');
+                const req = tx.objectStore('residences').getAll();
+                req.onsuccess = () => resolve(req.result || []);
+            });
+        }
+
+        const backupData = {
+            company: "شركة جار الخليج للصناعة",
+            exportDate: new Date().toISOString(),
+            phones: phonesData,
+            residences: residencesData
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `نسخة_احتياطية_جار_الخليج_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function triggerImport() {
+        document.getElementById('importFileInput').click();
+    }
+
+    function importBackup(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            try {
+                const backup = JSON.parse(event.target.result);
+                if (!backup.phones && !backup.residences) {
+                    alert('ملف النسخة الاحتياطية غير صالح!');
+                    return;
+                }
+
+                if (confirm('هل أنت تأكد من استيراد هذه البيانات؟ سيتم دمجها مع البيانات الحالية.')) {
+                    if (backup.phones && Array.isArray(backup.phones)) {
+                        for (let p of backup.phones) {
+                            if (isFirebaseReady) await dbFirestore.collection('phones').doc(String(p.id)).set(p);
+                            if (dbIndexed) {
+                                const tx = dbIndexed.transaction(['phones'], 'readwrite');
+                                tx.objectStore('phones').put(p);
+                            }
+                        }
+                    }
+
+                    if (backup.residences && Array.isArray(backup.residences)) {
+                        for (let r of backup.residences) {
+                            if (isFirebaseReady) await dbFirestore.collection('residences').doc(String(r.id)).set(r);
+                            if (dbIndexed) {
+                                const tx = dbIndexed.transaction(['residences'], 'readwrite');
+                                tx.objectStore('residences').put(r);
+                            }
+                        }
+                    }
+
+                    alert('تم استيراد البيانات بنجاح!');
+                    loadData();
+                }
+            } catch (err) {
+                alert('حدث خطأ أثناء قراءة الملف: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    window.onload = initApp;
+</script>
+</body>
+</html>

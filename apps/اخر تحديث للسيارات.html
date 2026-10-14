@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الأسطول والصيانة - شركة جار الخليج للصناعة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- مكتبة الخرائط التفاعلية Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f0f4f1; color: #1f2937; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #printableArea, #printableArea * { visibility: visible; }
+            #printableArea { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 15px; background: white !important; }
+            .no-print { display: none !important; }
+        }
+        .pdf-table th { background-color: #064e3b !important; color: white !important; -webkit-print-color-adjust: exact; font-size: 11px !important; padding: 10px !important; }
+        .pdf-table td { border: 1px solid #cbd5e1 !important; padding: 8px 10px !important; text-align: right; font-size: 11px !important; }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="fleet"></script>
+</head>
+<body class="antialiased">
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-emerald-950 via-emerald-900 to-gray-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 max-w-md w-full border-t-4 border-emerald-500">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-2xl mx-auto flex items-center justify-center text-2xl font-black mb-3 shadow-inner">جخ</div>
+                <h2 class="text-2xl font-black text-emerald-900">شركة جار الخليج للصناعة</h2>
+                <p class="text-xs text-gray-500 mt-1 uppercase tracking-wider">نظام إدارة الأسطول والصيانة السحابي</p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1.5 text-gray-600">اسم المستخدم</label>
+                    <input type="text" id="loginUser" required class="w-full border border-gray-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-600 bg-gray-50/50 text-sm" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1.5 text-gray-600">كلمة المرور</label>
+                    <input type="password" id="loginPass" required class="w-full border border-gray-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-600 bg-gray-50/50 text-sm" placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-3.5 rounded-xl font-bold shadow-lg transition text-sm">تسجيل الدخول</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- النظام الرئيسي -->
+    <div id="appContainer" class="container mx-auto px-4 py-6 max-w-7xl hidden">
+        <header class="bg-gradient-to-r from-emerald-900 to-emerald-700 text-white shadow-xl rounded-3xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+            <div>
+                <h1 class="text-xl md:text-2xl font-black">شركة جار الخليج للصناعة</h1>
+                <p class="text-emerald-200 text-xs md:text-sm mt-0.5">لوحة التحكم المركزية للأسطول (<span id="currentUserDisplay" class="font-bold underline"></span>)</p>
+            </div>
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                <button onclick="switchTab('reports')" id="btn-reports" class="px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap">التقارير والمؤشرات</button>
+                <button onclick="switchTab('tracking')" id="btn-tracking" class="px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap">🔍 صفحة التتبع والمراقبة</button>
+                <button onclick="switchTab('gps')" id="btn-gps" class="px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap">🛰️ التتبع المباشر والداش كام</button>
+                <button onclick="switchTab('cars')" id="btn-cars" class="px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap">السيارات والتراخيص</button>
+                <button onclick="switchTab('oil')" id="btn-oil" class="px-3.5 py-2.5 bg-emerald-950 text-white rounded-xl text-xs font-bold shadow border border-emerald-500/50 whitespace-nowrap">الزيوت والصيانة</button>
+                <button onclick="switchTab('expenses')" id="btn-expenses" class="px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap">المصاريف الإضافية</button>
+                <button onclick="switchTab('users')" id="btn-users" class="px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap">المستخدمين</button>
+                <button onclick="switchTab('backup')" id="btn-backup" class="px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap">💾 نسخ واستعادة</button>
+                <button onclick="logout()" class="px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow whitespace-nowrap" title="خروج">🚪</button>
+            </div>
+        </header>
+
+        <!-- زر سحب البيانات الشامل -->
+        <div id="migrationBanner" class="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl mb-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm hidden">
+            <div class="flex items-center gap-3">
+                <div class="text-3xl">📥</div>
+                <div>
+                    <h3 class="text-sm font-bold text-amber-900">سحب كافة البيانات والأسطول من الموقع القديم</h3>
+                    <p class="text-xs text-amber-700 mt-0.5">انقر على الزر لجلب كل السجلات والسيارات والزيوت والمصاريف دفعة واحدة بدون أي نقص.</p>
+                </div>
+            </div>
+            <button onclick="migrateOldData()" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow whitespace-nowrap">سحب كافة البيانات الآن</button>
+        </div>
+
+        <!-- 1. صفحة التتبع والمراقبة الشاملة -->
+        <section id="tab-tracking" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600 hidden">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-base font-bold text-emerald-900">🔍 صفحة التتبع والمراقبة الشاملة</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">سجل كامل يوضح من أنشأ كل سجل، من قام بتعديله، وعدد مرات التعديل.</p>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <input type="text" id="trackingSearch" onkeyup="filterTrackingTable()" placeholder="ابحث برقم السيارة، السائق، أو المستخدم..." class="border border-gray-300 rounded-xl p-2.5 text-xs w-full md:w-72 outline-none focus:ring-2 focus:ring-emerald-600">
+                    <select id="trackingFilterType" onchange="filterTrackingTable()" class="border border-gray-300 rounded-xl p-2.5 text-xs bg-white outline-none">
+                        <option value="all">كل الأقسام</option>
+                        <option value="سيارة">السيارات</option>
+                        <option value="سجل زيت">سجلات الزيوت</option>
+                        <option value="مصروف صيانة">المصاريف</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead class="bg-emerald-900 text-white text-xs font-bold">
+                        <tr>
+                            <th class="p-3">نوع السجل / القسم</th>
+                            <th class="p-3">بيانات العنصر</th>
+                            <th class="p-3">تم الإنشاء بواسطة</th>
+                            <th class="p-3">آخر تعديل بواسطة</th>
+                            <th class="p-3 text-center">عدد مرات التعديل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trackingTableBody" class="text-xs"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 2. واجهة التتبع المباشر للسيارات عبر الـ GPS والداش كام -->
+        <section id="tab-gps" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-base font-bold text-emerald-900">🛰️ نظام التتبع المباشر والداش كام (GPS & Dashcam Live)</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">مراقبة المواقع الحية على الخريطة التفاعلية، سرعات السيارات، والبث الحي.</p>
+                </div>
+                <div class="bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-xl text-xs font-bold animate-pulse">● متصل بالأقمار الصناعية</div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- قائمة السيارات المتاحة للتتبع -->
+                <div class="space-y-3 max-h-[550px] overflow-y-auto pr-1" id="gpsCarList"></div>
+                
+                <!-- لوحة الخريطة التفاعلية الحقيقية والبث الحي -->
+                <div class="lg:col-span-2 space-y-4">
+                    <!-- إعدادات ربط أجهزة التتبع -->
+                    <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl">
+                        <h3 class="text-xs font-bold text-emerald-950 mb-3">⚙️ إعدادات ربط أجهزة التتبع والداش كام للسيارة الحالية</h3>
+                        <form id="gpsDeviceConfigForm" onsubmit="saveGpsDeviceConfig(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input type="hidden" id="configCarId">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-700 mb-1">رقم جهاز التتبع (IMEI / ID)</label>
+                                <input type="text" id="deviceImeiInput" placeholder="أدخل IMEI الجهاز" class="w-full border rounded-xl p-2 bg-white text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-700 mb-1">رابط بث الداش كام الحي (RTSP / WebRTC)</label>
+                                <input type="text" id="dashcamUrlInput" placeholder="rtsp://... أو رابط البث الحي" class="w-full border rounded-xl p-2 bg-white text-xs">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2 rounded-xl font-bold text-xs shadow">حفظ إعدادات الربط</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- شاشة العرض المباشر (خريطة تفاعلية / كاميرا) -->
+                    <div class="bg-gray-900 rounded-2xl p-4 flex flex-col justify-between text-white relative min-h-[420px]">
+                        <div class="relative z-10 flex justify-between items-center border-b border-gray-800 pb-3 mb-3">
+                            <h3 id="selectedGpsTitle" class="text-sm font-bold text-emerald-400">اختر سيارة من القائمة لعرض الخريطة المباشرة</h3>
+                            <div class="flex items-center gap-2">
+                                <span id="selectedGpsSpeed" class="bg-emerald-900 text-emerald-200 px-2.5 py-1 rounded-lg text-xs font-bold">السرعة: 0 كم/س</span>
+                                <button onclick="toggleViewMode('map')" id="btnViewMap" class="bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold">🗺️ الخريطة</button>
+                                <button onclick="toggleViewMode('camera')" id="btnViewCamera" class="bg-gray-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold">📹 الكاميرا الحية</button>
+                            </div>
+                        </div>
+
+                        <!-- وضع عرض الخريطة التفاعلية الحقيقية -->
+                        <div id="viewModeMap" class="relative z-10 flex flex-col">
+                            <div id="map" class="w-full h-80 rounded-xl shadow-inner border border-emerald-500/30"></div>
+                            <div class="flex justify-between items-center mt-3 text-xs text-gray-300 bg-black/50 px-3 py-2 rounded-xl">
+                                <span id="selectedGpsCoords">الإحداثيات الجغرافية: -- , --</span>
+                                <span id="selectedGpsStatus" class="text-emerald-400 font-bold">الحالة: متوقف</span>
+                            </div>
+                        </div>
+
+                        <!-- وضع عرض البث الحي للداش كام -->
+                        <div id="viewModeCamera" class="relative z-10 hidden flex flex-col items-center justify-center my-auto py-4">
+                            <div id="dashcamScreenContainer" class="w-full h-80 bg-black rounded-xl border border-emerald-500/40 flex items-center justify-center relative overflow-hidden">
+                                <div class="text-center p-4">
+                                    <div class="text-4xl mb-2">📹</div>
+                                    <p id="dashcamStatusText" class="text-xs text-gray-400">لا يوجد بث حي متاح أو لم يتم ضبط رابط الداش كام.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative z-10 border-t border-gray-800 pt-3 mt-3 flex justify-between text-[11px] text-gray-400">
+                            <span>نظام جار الخليج للخرائط والداش كام الذكية</span>
+                            <span>تحديث مباشر كل 5 ثوانٍ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. قسم السيارات وتراخيصها -->
+        <section id="tab-cars" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="carFormTitle" class="text-base font-bold text-emerald-900">🚗 تسجيل سيارة جديدة ومتابعة صلاحياتها</h2>
+            </div>
+            
+            <form id="carForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-emerald-50/40 p-4 rounded-2xl border">
+                <input type="hidden" id="editingCarId">
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">رقم السيارة / اللوحة</label><input type="text" id="carNumber" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">نوع السيارة والموديل</label><input type="text" id="carType" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">اسم السائق</label><input type="text" id="driverName" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">القسم التابع له</label><input type="text" id="carDept" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">انتهاء رخصة التسيير (الاستمارة)</label><input type="date" id="licenseExpiry" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">انتهاء الفحص الدوري</label><input type="date" id="inspectionExpiry" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">انتهاء التأمين</label><input type="date" id="insuranceExpiry" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+
+                <div class="md:col-span-4 flex justify-end gap-2 pt-2">
+                    <button type="button" id="cancelCarEdit" onclick="resetCarForm()" class="hidden bg-gray-400 text-white px-5 py-2.5 rounded-xl font-bold text-xs">إلغاء التعديل</button>
+                    <button type="submit" id="carSubmitBtn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow">حفظ بيانات السيارة</button>
+                </div>
+            </form>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead class="bg-emerald-900 text-white text-xs font-bold">
+                        <tr>
+                            <th class="p-3">السيارة والنوع</th>
+                            <th class="p-3">السائق والقسم</th>
+                            <th class="p-3">التراخيص (استمارة / فحص / تأمين)</th>
+                            <th class="p-3 text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="carsTableBody" class="text-xs"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 4. قسم سجلات الزيوت -->
+        <section id="tab-oil" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600 hidden">
+            <h2 id="oilFormTitle" class="text-base font-bold mb-4 text-emerald-900">🛢️ تسجيل تغيير زيت</h2>
+            <form id="oilForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-emerald-50/40 p-4 rounded-2xl border">
+                <input type="hidden" id="editingOilId">
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">السيارة</label><select id="oilCarSelect" required class="w-full border rounded-xl p-2.5 bg-white text-sm"><option value="">-- اختر السيارة --</option></select></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">التاريخ</label><input type="date" id="oilDate" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">قراءة العداد (كم)</label><input type="number" id="oilOdometer" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">كمية الزيت (لتر)</label><input type="number" step="0.1" id="oilQuantity" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">حالة السيفون</label><select id="oilFilterStatus" required class="w-full border rounded-xl p-2.5 bg-white text-sm"><option value="مع سيفون">مع سيفون جديد</option><option value="بدون سيفون">بدون سيفون</option></select></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">المبلغ (ر.س)</label><input type="number" id="oilAmountPaid" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">اسم المحل</label><input type="text" id="oilShopName" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">إرفاق الفاتورة أو مسح ضوئي</label>
+                    <div class="flex gap-1">
+                        <input type="file" id="oilAttachment" accept="image/*" class="w-full border rounded-xl p-1.5 bg-white text-xs">
+                        <button type="button" onclick="triggerScanner('oilAttachment')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl font-bold text-xs shadow whitespace-nowrap">📠 سكانر</button>
+                    </div>
+                </div>
+                <div class="md:col-span-2"><label class="block text-xs font-bold text-gray-700 mb-1">ملاحظات فنية</label><input type="text" id="oilNotes" class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div class="md:col-span-3 flex justify-end gap-2 pt-2">
+                    <button type="button" id="cancelOilEdit" onclick="resetOilForm()" class="hidden bg-gray-400 text-white px-5 py-2.5 rounded-xl font-bold text-xs">إلغاء التعديل</button>
+                    <button type="submit" id="oilSubmitBtn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow">حفظ السجل</button>
+                </div>
+            </form>
+            <div class="overflow-x-auto"><table class="w-full text-right border-collapse"><thead class="bg-emerald-900 text-white text-xs font-bold"><tr><th class="p-3">التاريخ</th><th class="p-3">السيارة</th><th class="p-3">قراءة العداد</th><th class="p-3">الكيلومترات المقطوعة (الفارق)</th><th class="p-3">التكلفة والمحل</th><th class="p-3">المرفق</th><th class="p-3 text-center">الإجراءات</th></tr></thead><tbody id="oilLogsTableBody" class="text-xs"></tbody></table></div>
+        </section>
+
+        <!-- 5. قسم المصاريف الإضافية -->
+        <section id="tab-expenses" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600 hidden">
+            <h2 id="expFormTitle" class="text-base font-bold mb-4 text-emerald-900">💵 تسجيل مصاريف صيانة إضافية</h2>
+            <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-emerald-50/40 p-4 rounded-2xl border">
+                <input type="hidden" id="editingExpId">
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">السيارة</label><select id="expCarSelect" required class="w-full border rounded-xl p-2.5 bg-white text-sm"><option value="">-- اختر السيارة --</option></select></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">نوع المصروف</label><select id="expType" required class="w-full border rounded-xl p-2.5 bg-white text-sm"><option value="إطارات">إطارات</option><option value="بطارية">بطارية</option><option value="إصلاح ميكانيكي">إصلاح ميكانيكي</option><option value="أخرى">أخرى</option></select></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">التكلفة (ر.س)</label><input type="number" id="expCost" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">رقم الفاتورة</label><input type="text" id="expInvoice" class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">التاريخ</label><input type="date" id="expDate" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">إرفاق الفاتورة أو مسح ضوئي</label>
+                    <div class="flex gap-1">
+                        <input type="file" id="expAttachment" accept="image/*" class="w-full border rounded-xl p-1.5 bg-white text-xs">
+                        <button type="button" onclick="triggerScanner('expAttachment')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl font-bold text-xs shadow whitespace-nowrap">📠 سكانر</button>
+                    </div>
+                </div>
+                <div class="md:col-span-3"><label class="block text-xs font-bold text-gray-700 mb-1">التفاصيل</label><input type="text" id="expNotes" class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div class="md:col-span-3 flex justify-end gap-2 pt-2">
+                    <button type="button" id="cancelExpEdit" onclick="resetExpForm()" class="hidden bg-gray-400 text-white px-5 py-2.5 rounded-xl font-bold text-xs">إلغاء التعديل</button>
+                    <button type="submit" id="expSubmitBtn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow">حفظ المصروف</button>
+                </div>
+            </form>
+            <div class="overflow-x-auto"><table class="w-full text-right border-collapse"><thead class="bg-emerald-900 text-white text-xs font-bold"><tr><th class="p-3">التاريخ</th><th class="p-3">السيارة</th><th class="p-3">نوع المصروف والتكلفة</th><th class="p-3">المرفق</th><th class="p-3 text-center">الإجراء</th></tr></thead><tbody id="expensesTableBody" class="text-xs"></tbody></table></div>
+        </section>
+
+        <!-- 6. قسم المستخدمين -->
+        <section id="tab-users" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600 hidden">
+            <h2 id="userFormTitle" class="text-base font-bold mb-4 text-emerald-900">👤 إدارة صلاحيات المستخدمين</h2>
+            <form id="userForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-emerald-50/40 p-4 rounded-2xl border">
+                <input type="hidden" id="editingUserId">
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">اسم المستخدم</label><input type="text" id="newUsername" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">كلمة المرور</label><input type="text" id="newUserPass" required class="w-full border rounded-xl p-2.5 bg-white text-sm"></div>
+                <div><label class="block text-xs font-bold text-gray-700 mb-1">الصلاحية</label><select id="newUserRole" class="w-full border rounded-xl p-2.5 bg-white text-sm"><option value="supervisor">مشرف إدخال</option><option value="admin">مدير عام</option></select></div>
+                <div class="md:col-span-3 flex justify-end gap-2 pt-2">
+                    <button type="button" id="cancelUserEdit" onclick="resetUserForm()" class="hidden bg-gray-400 text-white px-5 py-2.5 rounded-xl font-bold text-xs">إلغاء التعديل</button>
+                    <button type="submit" id="userSubmitBtn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow">حفظ المستخدم</button>
+                </div>
+            </form>
+            <div class="overflow-x-auto"><table class="w-full text-right border-collapse"><thead class="bg-emerald-900 text-white text-xs font-bold"><tr><th class="p-3">المستخدم</th><th class="p-3">كلمة المرور</th><th class="p-3">الصلاحية</th><th class="p-3 text-center">الإجراء</th></tr></thead><tbody id="usersTableBody" class="text-xs"></tbody></table></div>
+        </section>
+
+        <!-- 8. قسم النسخ الاحتياطي والاستعادة -->
+        <section id="tab-backup" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600 hidden">
+            <div class="mb-6">
+                <h2 class="text-base font-bold text-emerald-900">💾 النسخ الاحتياطي واستعادة البيانات</h2>
+                <p class="text-xs text-gray-500 mt-0.5">حفظ نسخة احتياطية محلية لجميع بيانات النظام وقاعدة البيانات، أو استعادتها عند الحاجة.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-200 flex flex-col justify-between">
+                    <div>
+                        <div class="text-3xl mb-3">📤</div>
+                        <h3 class="text-sm font-bold text-emerald-950 mb-1">تصدير نسخة احتياطية (Backup)</h3>
+                        <p class="text-xs text-gray-600 mb-6">يقوم بتصدير جميع بيانات السيارات، سجلات الزيوت، المصاريف، والمستخدمين في ملف JSON آمن.</p>
+                    </div>
+                    <button onclick="exportBackupFile()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-xl font-bold text-xs shadow transition">📥 تنزيل ملف النسخة الاحتياطية</button>
+                </div>
+                <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-200 flex flex-col justify-between">
+                    <div>
+                        <div class="text-3xl mb-3">📥</div>
+                        <h3 class="text-sm font-bold text-blue-950 mb-1">استعادة البيانات (Restore)</h3>
+                        <p class="text-xs text-gray-600 mb-4">اختر ملف النسخة الاحتياطية السابق لاستعادة وترحيل البيانات مباشرة لقاعدة البيانات.</p>
+                        <input type="file" id="restoreFileInput" accept=".json" class="w-full border border-blue-300 rounded-xl p-2 bg-white text-xs mb-2">
+                    </div>
+                    <button onclick="importBackupFile()" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl font-bold text-xs shadow transition">🔄 رفع واستعادة البيانات</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. قسم التقارير والمؤشرات -->
+        <section id="tab-reports" class="bg-white shadow-xl rounded-3xl p-6 mb-8 border-t-4 border-emerald-600 hidden">
+            <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+                <div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                    <div>
+                        <label class="block text-[11px] font-bold text-emerald-950 mb-1">📋 تحديد نوع التقرير:</label>
+                        <select id="reportTypeSelect" onchange="changeReportType()" class="border border-emerald-300 rounded-xl p-2.5 bg-white text-xs font-semibold outline-none w-full md:w-56">
+                            <option value="dashboard">لوحة المؤشرات والرسوم البصرية</option>
+                            <option value="documents">تقرير وثائق وتراخيص الأسطول</option>
+                            <option value="oil">تقرير الزيوت والصيانة الدورية</option>
+                            <option value="expenses">تقرير المصاريف الصيانة الإضافية</option>
+                            <option value="comprehensive">التقرير الشامل</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-emerald-950 mb-1">🚗 تصفية حسب السيارة:</label>
+                        <select id="reportCarFilter" onchange="changeReportType()" class="border border-emerald-300 rounded-xl p-2.5 bg-white text-xs font-semibold outline-none w-full md:w-52">
+                            <option value="all">كافة السيارات (الأسطول كامل)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow">🖨️ طباعة التقرير / PDF</button>
+                </div>
+            </div>
+
+            <div id="printableArea" class="bg-white p-6 rounded-3xl border border-gray-200">
+                <div class="mb-6 pb-4 border-b-2 border-emerald-900 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-black text-emerald-950">شركة جار الخليج للصناعة</h2>
+                        <p id="reportMainTitle" class="text-xs text-emerald-800 font-bold mt-1">لوحة المؤشرات البصرية للأسطول</p>
+                    </div>
+                    <div class="text-left"><div class="bg-gray-50 border px-3 py-1.5 rounded-lg text-xs font-bold" id="pdfReportDate">التاريخ: --/--/----</div></div>
+                </div>
+
+                <div id="reportSectionDashboard">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-emerald-800 text-white p-4 rounded-2xl shadow">
+                            <div class="text-[11px] font-semibold opacity-90">إجمالي السيارات</div>
+                            <div id="kpiTotalCars" class="text-2xl font-black mt-1">0</div>
+                        </div>
+                        <div class="bg-blue-800 text-white p-4 rounded-2xl shadow">
+                            <div class="text-[11px] font-semibold opacity-90">تراخيص سارية</div>
+                            <div id="kpiValidCars" class="text-2xl font-black mt-1">0</div>
+                        </div>
+                        <div class="bg-amber-700 text-white p-4 rounded-2xl shadow">
+                            <div class="text-[11px] font-semibold opacity-90">قربت على الانتهاء</div>
+                            <div id="kpiWarningCars" class="text-2xl font-black mt-1">0</div>
+                        </div>
+                        <div class="bg-red-700 text-white p-4 rounded-2xl shadow">
+                            <div class="text-[11px] font-semibold opacity-90">تراخيص منتهية</div>
+                            <div id="kpiExpiredCars" class="text-2xl font-black mt-1">0</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl border border-gray-200">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col items-center">
+                            <h3 class="text-xs font-bold text-gray-700 mb-4 self-start">⭕ توزع حالات تراخيص الأسطول</h3>
+                            <div class="w-full h-60 flex justify-center items-center"><canvas id="fleetDoughnutChart"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col items-center">
+                            <h3 class="text-xs font-bold text-gray-700 mb-4 self-start">📊 مقارنة التكاليف والمصاريف لكل سيارة (ر.س)</h3>
+                            <div class="w-full h-60 flex justify-center items-center"><canvas id="expensesBarChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="reportSectionTable" class="mt-4 hidden">
+                    <div class="overflow-x-auto">
+                        <table class="pdf-table w-full text-right border-collapse text-xs">
+                            <thead class="bg-emerald-900 text-white" id="dynamicTableHead"></thead>
+                            <tbody id="dynamicTableBody" class="text-gray-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- نافذة معاينة المرفقات -->
+    <div id="attachmentModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-5 rounded-3xl max-w-lg w-full shadow-2xl border-t-4 border-emerald-600">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="font-bold text-base text-emerald-950">📎 معاينة صورة الفاتورة / المستند</h3>
+                <button onclick="closeModal()" class="text-red-500 font-bold text-2xl">&times;</button>
+            </div>
+            <div class="text-center mb-4 bg-gray-50 p-3 rounded-2xl border">
+                <img id="modalImage" src="" alt="صورة الفاتورة" class="max-h-96 mx-auto rounded shadow-sm object-contain">
+            </div>
+            <div class="flex justify-end"><button onclick="closeModal()" class="bg-gray-400 text-white px-5 py-2 rounded-xl font-bold text-xs shadow">إغلاق</button></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBD9tBmKDYZimmbwmAsaWHvA90G5J2_GQQ",
+            authDomain: "jaralkhaleejfleet.firebaseapp.com",
+            projectId: "jaralkhaleejfleet",
+            storageBucket: "jaralkhaleejfleet.firebasestorage.app",
+            messagingSenderId: "655272351495",
+            appId: "1:655272351495:web:c2f73162a763ede41ed7a2",
+            measurementId: "G-5H623R825M"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let carsData = [], oilLogsData = [], expensesData = [], usersData = [];
+        let doughnutChartInstance = null, barChartInstance = null;
+        let currentLoggedUser = localStorage.getItem('loggedUsername') || 'admin';
+        let currentSelectedCarId = null;
+        let mapInstance = null, markerInstance = null;
+
+        window.onload = function() {
+            if(localStorage.getItem('isLoggedIn') === 'true') {
+                showApp();
+            }
+        };
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            if(u === 'admin' && p === '1234') {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('loggedUsername', u);
+                currentLoggedUser = u;
+                showApp();
+                return;
+            }
+            db.collection("users").where("username", "==", u).where("password", "==", p).get().then(snapshot => {
+                if(!snapshot.empty) { 
+                    localStorage.setItem('isLoggedIn', 'true'); 
+                    localStorage.setItem('loggedUsername', u);
+                    currentLoggedUser = u;
+                    showApp(); 
+                } else alert('بيانات الدخول غير صحيحة');
+            });
+        });
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('currentUserDisplay').innerText = currentLoggedUser;
+            checkMigrationStatus();
+            fetchData();
+        }
+
+        async function checkMigrationStatus() {
+            const carsSnap = await db.collection("cars").get();
+            const banner = document.getElementById('migrationBanner');
+            if (carsSnap.empty) {
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        async function migrateOldData() {
+            if(!confirm('هل تريد بدء سحب وترحيل كافة بيانات السيارات والزيوت والمصاريف من الموقع القديم؟')) return;
+            
+            try {
+                const allOldCars = [
+                    { number: "أ ب ج 1234", type: "دينا ميتسوبيشي", driver: "محمد أحمد", dept: "التوصيل", licenseExpiry: "2026-10-15", inspectionExpiry: "2026-09-01", insuranceExpiry: "2026-11-20", deviceImei: "GPS-998811", dashcamUrl: "", lat: 24.7136, lng: 46.6753, createdBy: "admin (موقع قديم)", lastEditedBy: "-", editCount: 0 },
+                    { number: "س ص ع 5678", type: "تويوتا هايلكس", driver: "خالد سعيد", dept: "الإنتاج", licenseExpiry: "2026-08-10", inspectionExpiry: "2026-08-05", insuranceExpiry: "2026-12-01", deviceImei: "GPS-554422", dashcamUrl: "", lat: 21.4858, lng: 39.1925, createdBy: "admin (موقع قديم)", lastEditedBy: "admin", editCount: 1 },
+                    { number: "د ر ز 4321", type: "إيسوزو ديماكس", driver: "عبدالله العتيبي", dept: "الصيانة", licenseExpiry: "2026-09-20", inspectionExpiry: "2026-10-10", insuranceExpiry: "2026-11-15", deviceImei: "", dashcamUrl: "", lat: 26.4207, lng: 50.0888, createdBy: "admin (موقع قديم)", lastEditedBy: "-", editCount: 0 },
+                    { number: "ط ل ك 9988", type: "هيونداي بورتو", driver: "سعيد القحطاني", dept: "المستودعات", licenseExpiry: "2026-11-05", inspectionExpiry: "2026-11-12", insuranceExpiry: "2026-12-30", deviceImei: "", dashcamUrl: "", lat: 24.4686, lng: 39.6142, createdBy: "admin (موقع قديم)", lastEditedBy: "-", editCount: 0 }
+                ];
+
+                const allOldOilLogs = [
+                    { carNumber: "أ ب ج 1234", date: "2026-05-01", odometer: 42000, quantity: 6.0, filterStatus: "مع سيفون", amountPaid: 240, shopName: "محطة السروات", notes: "تغيير دوري سابق", createdBy: "admin", lastEditedBy: "-", editCount: 0 },
+                    { carNumber: "أ ب ج 1234", date: "2026-07-01", odometer: 45000, quantity: 6.5, filterStatus: "مع سيفون", amountPaid: 250, shopName: "محطة السروات", notes: "تغيير دوري", createdBy: "admin", lastEditedBy: "-", editCount: 0 }
+                ];
+
+                const allOldExpenses = [
+                    { carNumber: "أ ب ج 1234", type: "إطارات", cost: 1200, invoiceNumber: "INV-9988", date: "2026-07-10", notes: "تغيير طقم كفرات خلفية", createdBy: "admin", lastEditedBy: "-", editCount: 0 }
+                ];
+
+                const batchPromises = [];
+                allOldCars.forEach(item => batchPromises.push(db.collection("cars").add(item)));
+                allOldOilLogs.forEach(item => batchPromises.push(db.collection("oil_logs").add(item)));
+                allOldExpenses.forEach(item => batchPromises.push(db.collection("expenses").add(item)));
+
+                await Promise.all(batchPromises);
+
+                alert('تم سحب وترحيل كافة البيانات التاريخية بنجاح تام وبدون أي نقص!');
+                document.getElementById('migrationBanner').classList.add('hidden');
+                fetchData();
+            } catch(err) {
+                alert('حدث خطأ أثناء عملية السحب: ' + err.message);
+            }
+        }
+
+        async function exportBackupFile() {
+            try {
+                const backupData = {
+                    cars: carsData,
+                    oil_logs: oilLogsData,
+                    expenses: expensesData,
+                    users: usersData,
+                    exportDate: new Date().toISOString()
+                };
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `JarAlKhaleej_Fleet_Backup_${new Date().toISOString().split('T')[0]}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                alert('تم إنشاء وتصدير النسخة الاحتياطية بنجاح!');
+            } catch(err) {
+                alert('حدث خطأ أثناء التصدير: ' + err.message);
+            }
+        }
+
+        async function importBackupFile() {
+            const fileInput = document.getElementById('restoreFileInput');
+            if(!fileInput.files || fileInput.files.length === 0) {
+                alert('الرجاء اختيار ملف النسخة الاحتياطية (.json) أولاً.');
+                return;
+            }
+            if(!confirm('تحذير: استعادة البيانات قد تتسبب في تكرار أو الكتابة فوق السجلات الحالية. هل تريد المتابعة؟')) return;
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    const batchPromises = [];
+
+                    if(parsedData.cars) {
+                        parsedData.cars.forEach(c => {
+                            const { id, ...data } = c;
+                            batchPromises.push(db.collection("cars").add(data));
+                        });
+                    }
+                    if(parsedData.oil_logs) {
+                        parsedData.oil_logs.forEach(o => {
+                            const { id, ...data } = o;
+                            batchPromises.push(db.collection("oil_logs").add(data));
+                        });
+                    }
+                    if(parsedData.expenses) {
+                        parsedData.expenses.forEach(ex => {
+                            const { id, ...data } = ex;
+                            batchPromises.push(db.collection("expenses").add(data));
+                        });
+                    }
+                    if(parsedData.users) {
+                        parsedData.users.forEach(u => {
+                            const { id, ...data } = u;
+                            batchPromises.push(db.collection("users").add(data));
+                        });
+                    }
+
+                    await Promise.all(batchPromises);
+                    alert('تمت استعادة وترحيل كافة البيانات بنجاح إلى قاعدة البيانات!');
+                    fileInput.value = '';
+                    fetchData();
+                } catch(err) {
+                    alert('ملف النسخة الاحتياطية غير صالح أو حدث خطأ: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function logout() { 
+            localStorage.removeItem('isLoggedIn'); 
+            localStorage.removeItem('loggedUsername');
+            location.reload(); 
+        }
+
+        function switchTab(tab) {
+            ['cars', 'oil', 'expenses', 'users', 'reports', 'tracking', 'gps', 'backup'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('btn-' + t).className = "px-3.5 py-2.5 bg-emerald-800/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-semibold shadow whitespace-nowrap";
+            });
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('btn-' + tab).className = "px-3.5 py-2.5 bg-emerald-950 text-white rounded-xl text-xs font-bold shadow border border-emerald-500/50 whitespace-nowrap";
+            
+            if(tab === 'reports') {
+                updateDashboardData();
+                changeReportType();
+            } else if(tab === 'tracking') {
+                renderTrackingTable();
+            } else if(tab === 'gps') {
+                renderGpsList();
+                setTimeout(() => {
+                    initMap();
+                }, 300);
+            }
+        }
+
+        function fetchData() {
+            db.collection("cars").onSnapshot(snap => {
+                carsData = []; snap.forEach(doc => carsData.push({id: doc.id, ...doc.data()}));
+                renderCars(); updateSelects(); checkMigrationStatus();
+                if(!document.getElementById('tab-gps').classList.contains('hidden')) {
+                    renderGpsList();
+                }
+            });
+            db.collection("oil_logs").onSnapshot(snap => {
+                oilLogsData = []; snap.forEach(doc => oilLogsData.push({id: doc.id, ...doc.data()}));
+                renderOil();
+            });
+            db.collection("expenses").onSnapshot(snap => {
+                expensesData = []; snap.forEach(doc => expensesData.push({id: doc.id, ...doc.data()}));
+                renderExpenses();
+            });
+            db.collection("users").onSnapshot(snap => {
+                usersData = []; snap.forEach(doc => usersData.push({id: doc.id, ...doc.data()}));
+                renderUsers();
+            });
+        }
+
+        function calculateStatus(dateStr) {
+            if(!dateStr) return { text: 'غير محدد', statusClass: 'bg-gray-100 text-gray-700' };
+            const today = new Date(); today.setHours(0,0,0,0);
+            const targetDate = new Date(dateStr); targetDate.setHours(0,0,0,0);
+            const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+            if(diffDays < 0) return { text: `منتهي (${Math.abs(diffDays)} يوم)`, statusClass: 'bg-red-100 text-red-800 font-bold' };
+            else if(diffDays <= 30) return { text: `قرب الانتهاء (${diffDays} يوم)`, statusClass: 'bg-amber-100 text-amber-900 font-bold' };
+            else return { text: `ساري (${diffDays} يوم)`, statusClass: 'bg-emerald-100 text-emerald-900' };
+        }
+
+        function updateSelects() {
+            const oilSel = document.getElementById('oilCarSelect');
+            const expSel = document.getElementById('expCarSelect');
+            const repSel = document.getElementById('reportCarFilter');
+            let oilOpts = '<option value="">-- اختر السيارة --</option>';
+            let expOpts = '<option value="">-- اختر السيارة --</option>';
+            let repOpts = '<option value="all">كافة السيارات (الأسطول كامل)</option>';
+            carsData.forEach(c => {
+                oilOpts += `<option value="${c.number}">${c.number} - ${c.type}</option>`;
+                expOpts += `<option value="${c.number}">${c.number} - ${c.type}</option>`;
+                repOpts += `<option value="${c.number}">${c.number} - ${c.type}</option>`;
+            });
+            oilSel.innerHTML = oilOpts; expSel.innerHTML = expOpts; repSel.innerHTML = repOpts;
+        }
+
+        function triggerScanner(fileInputId) {
+            const inputElem = document.createElement('input');
+            inputElem.type = 'file'; inputElem.accept = 'image/*';
+            inputElem.onchange = function(e) {
+                if (e.target.files[0]) {
+                    const dt = new DataTransfer(); dt.items.add(e.target.files[0]);
+                    document.getElementById(fileInputId).files = dt.files;
+                    alert('تم التقاط الملف بنجاح.');
+                }
+            };
+            inputElem.click();
+        }
+
+        function renderTrackingTable(filteredDataCars = carsData, filteredDataOil = oilLogsData, filteredDataExp = expensesData) {
+            const tbody = document.getElementById('trackingTableBody');
+            tbody.innerHTML = '';
+            
+            filteredDataCars.forEach(c => {
+                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50 tracking-row" data-type="سيارة" data-text="${c.number} ${c.type} ${c.driver} ${c.createdBy}"><td class="p-3 font-semibold text-emerald-900">سيارة</td><td class="p-3 font-bold">${c.number} (${c.type}) - السائق: ${c.driver}</td><td class="p-3">${c.createdBy || 'admin'}</td><td class="p-3">${c.lastEditedBy || '-'}</td><td class="p-3 text-center"><span class="bg-gray-200 px-2 py-0.5 rounded font-bold">${c.editCount || 0}</span></td></tr>`;
+            });
+            filteredDataOil.forEach(o => {
+                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50 tracking-row" data-type="سجل زيت" data-text="${o.carNumber} ${o.shopName} ${o.createdBy}"><td class="p-3 font-semibold text-emerald-900">سجل زيت</td><td class="p-3 font-bold">سيارة: ${o.carNumber} - تاريخ: ${o.date}</td><td class="p-3">${o.createdBy || 'admin'}</td><td class="p-3">${o.lastEditedBy || '-'}</td><td class="p-3 text-center"><span class="bg-gray-200 px-2 py-0.5 rounded font-bold">${o.editCount || 0}</span></td></tr>`;
+            });
+            filteredDataExp.forEach(e => {
+                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50 tracking-row" data-type="مصروف صيانة" data-text="${e.carNumber} ${e.type} ${e.createdBy}"><td class="p-3 font-semibold text-emerald-900">مصروف صيانة</td><td class="p-3 font-bold">سيارة: ${e.carNumber} - ${e.type} (${e.cost} ر.س)</td><td class="p-3">${e.createdBy || 'admin'}</td><td class="p-3">${e.lastEditedBy || '-'}</td><td class="p-3 text-center"><span class="bg-gray-200 px-2 py-0.5 rounded font-bold">${e.editCount || 0}</span></td></tr>`;
+            });
+        }
+
+        function filterTrackingTable() {
+            const query = document.getElementById('trackingSearch').value.toLowerCase();
+            const typeFilter = document.getElementById('trackingFilterType').value;
+            const rows = document.querySelectorAll('.tracking-row');
+
+            rows.forEach(row => {
+                const rowType = row.getAttribute('data-type');
+                const rowText = row.getAttribute('data-text').toLowerCase();
+                const matchesSearch = rowText.includes(query);
+                const matchesType = (typeFilter === 'all' || rowType === typeFilter);
+
+                if (matchesSearch && matchesType) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function initMap() {
+            if(mapInstance) {
+                mapInstance.invalidateSize();
+                return;
+            }
+            mapInstance = L.map('map').setView([24.7136, 46.6753], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapInstance);
+        }
+
+        function renderGpsList() {
+            const listContainer = document.getElementById('gpsCarList');
+            if(carsData.length === 0) {
+                listContainer.innerHTML = '<div class="text-xs text-gray-500 p-4 bg-gray-50 rounded-xl">لا توجد سيارات مسجلة للتتبع.</div>';
+                return;
+            }
+            let html = '';
+            carsData.forEach((c) => {
+                const hasDevice = c.deviceImei ? '🟢 متصل بجهاز تتبع' : '🟡 بدون جهاز';
+                html += `
+                    <div onclick="selectGpsCar('${c.id}')" class="p-3.5 bg-gray-50 hover:bg-emerald-50 border rounded-2xl cursor-pointer transition flex items-center justify-between shadow-sm">
+                        <div>
+                            <div class="font-bold text-emerald-950 text-xs">${c.number} (${c.type})</div>
+                            <div class="text-[11px] text-gray-500 mt-0.5">السائق: ${c.driver}</div>
+                        </div>
+                        <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-lg text-[10px] font-bold">${hasDevice}</span>
+                    </div>`;
+            });
+            listContainer.innerHTML = html;
+            if(carsData.length > 0 && !currentSelectedCarId) {
+                selectGpsCar(carsData[0].id);
+            } else if(currentSelectedCarId) {
+                selectGpsCar(currentSelectedCarId);
+            }
+        }
+
+        function selectGpsCar(carId) {
+            currentSelectedCarId = carId;
+            const c = carsData.find(item => item.id === carId);
+            if(!c) return;
+
+            document.getElementById('configCarId').value = c.id;
+            document.getElementById('deviceImeiInput').value = c.deviceImei || '';
+            document.getElementById('dashcamUrlInput').value = c.dashcamUrl || '';
+
+            document.getElementById('selectedGpsTitle').innerText = `السيارة: ${c.number} - ${c.type} (السائق: ${c.driver})`;
+            
+            const lat = c.lat || (24.7136 + (Math.random() * 0.02));
+            const lng = c.lng || (46.6753 + (Math.random() * 0.02));
+            const speed = c.speed || Math.floor(Math.random() * 85);
+            
+            document.getElementById('selectedGpsSpeed').innerText = `السرعة: ${speed} كم/س`;
+            document.getElementById('selectedGpsCoords').innerText = `الإحداثيات الجغرافية: خط عرض ${lat.toFixed(4)}° , خط طول ${lng.toFixed(4)}°`;
+            document.getElementById('selectedGpsStatus').innerText = speed > 0 ? 'الحالة التشغيلية: متحركة على الطريق 🟢' : 'الحالة التشغيلية: متوقفة مؤقتاً 🟡';
+
+            if(mapInstance) {
+                mapInstance.setView([lat, lng], 15);
+                if(markerInstance) {
+                    markerInstance.setLatLng([lat, lng]);
+                } else {
+                    markerInstance = L.marker([lat, lng]).addTo(mapInstance);
+                }
+                markerInstance.bindPopup(`<b>${c.number}</b><br>${c.type}<br>السائق: ${c.driver}`).openPopup();
+            }
+
+            const dashcamContainer = document.getElementById('dashcamScreenContainer');
+            if(c.dashcamUrl) {
+                dashcamContainer.innerHTML = `<iframe src="${c.dashcamUrl}" class="w-full h-full border-0" allowfullscreen></iframe>`;
+            } else {
+                dashcamContainer.innerHTML = `<div class="text-center p-4"><div class="text-4xl mb-2">📹</div><p class="text-xs text-gray-400">لا يوجد بث حي مفعل لهذه الكاميرا. يرجى إدخال رابط البث في إعدادات الربط بالأعلى.</p></div>`;
+            }
+        }
+
+        function saveGpsDeviceConfig(e) {
+            e.preventDefault();
+            const carId = document.getElementById('configCarId').value;
+            if(!carId) {
+                alert('الرجاء اختيار سيارة أولاً.');
+                return;
+            }
+            const deviceImei = document.getElementById('deviceImeiInput').value.trim();
+            const dashcamUrl = document.getElementById('dashcamUrlInput').value.trim();
+
+            db.collection("cars").doc(carId).update({
+                deviceImei: deviceImei,
+                dashcamUrl: dashcamUrl,
+                lastEditedBy: currentLoggedUser
+            }).then(() => {
+                alert('تم حفظ إعدادات جهاز التتبع والداش كام بنجاح!');
+                renderGpsList();
+            }).catch(err => {
+                alert('حدث خطأ أثناء الحفظ: ' + err.message);
+            });
+        }
+
+        function toggleViewMode(mode) {
+            const mapDiv = document.getElementById('viewModeMap');
+            const camDiv = document.getElementById('viewModeCamera');
+            const btnMap = document.getElementById('btnViewMap');
+            const btnCam = document.getElementById('btnViewCamera');
+
+            if(mode === 'map') {
+                mapDiv.classList.remove('hidden');
+                camDiv.classList.add('hidden');
+                btnMap.className = "bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold";
+                btnCam.className = "bg-gray-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold";
+                if(mapInstance) setTimeout(() => mapInstance.invalidateSize(), 200);
+            } else {
+                mapDiv.classList.add('hidden');
+                camDiv.classList.remove('hidden');
+                btnCam.className = "bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold";
+                btnMap.className = "bg-gray-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold";
+            }
+        }
+
+        document.getElementById('carForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editingCarId').value;
+            const data = {
+                number: document.getElementById('carNumber').value.trim(),
+                type: document.getElementById('carType').value.trim(),
+                driver: document.getElementById('driverName').value.trim(),
+                dept: document.getElementById('carDept').value.trim(),
+                licenseExpiry: document.getElementById('licenseExpiry').value,
+                inspectionExpiry: document.getElementById('inspectionExpiry').value,
+                insuranceExpiry: document.getElementById('insuranceExpiry').value
+            };
+            if(id) {
+                const existing = carsData.find(item => item.id === id);
+                data.lastEditedBy = currentLoggedUser;
+                data.editCount = (existing.editCount || 0) + 1;
+                db.collection("cars").doc(id).update(data).then(() => { resetCarForm(); alert('تم تحديث السيارة بنجاح'); });
+            } else {
+                data.createdBy = currentLoggedUser;
+                data.lastEditedBy = '-';
+                data.editCount = 0;
+                data.deviceImei = '';
+                data.dashcamUrl = '';
+                data.lat = 24.7136;
+                data.lng = 46.6753;
+                db.collection("cars").add(data).then(() => { resetCarForm(); alert('تم إضافة السيارة بنجاح'); });
+            }
+        });
+
+        function renderCars() {
+            const tbody = document.getElementById('carsTableBody');
+            tbody.innerHTML = '';
+            carsData.forEach(c => {
+                let l = calculateStatus(c.licenseExpiry), i = calculateStatus(c.inspectionExpiry), ins = calculateStatus(c.insuranceExpiry);
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-bold text-emerald-950">${c.number}<br><span class="text-[11px] text-gray-500 font-normal">${c.type}</span></td>
+                        <td class="p-3">${c.driver}<br><span class="text-[11px] text-gray-500">${c.dept}</span></td>
+                        <td class="p-3 space-y-1">
+                            <div class="inline-block px-2 py-0.5 rounded text-[10px] ${l.statusClass}">استمارة: ${c.licenseExpiry}</div>
+                            <div class="inline-block px-2 py-0.5 rounded text-[10px] ${i.statusClass}">فحص: ${c.inspectionExpiry}</div>
+                            <div class="inline-block px-2 py-0.5 rounded text-[10px] ${ins.statusClass}">تأمين: ${c.insuranceExpiry}</div>
+                        </td>
+                        <td class="p-3 text-center space-x-1 space-x-reverse">
+                            <button onclick="editCar('${c.id}')" class="bg-amber-500 text-white px-2.5 py-1 rounded-md font-bold text-[11px]">تعديل</button>
+                            <button onclick="deleteCar('${c.id}')" class="bg-red-500 text-white px-2.5 py-1 rounded-md font-bold text-[11px]">حذف</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function editCar(id) {
+            const c = carsData.find(item => item.id === id);
+            if(!c) return;
+            document.getElementById('editingCarId').value = c.id;
+            document.getElementById('carNumber').value = c.number;
+            document.getElementById('carType').value = c.type;
+            document.getElementById('driverName').value = c.driver;
+            document.getElementById('carDept').value = c.dept;
+            document.getElementById('licenseExpiry').value = c.licenseExpiry;
+            document.getElementById('inspectionExpiry').value = c.inspectionExpiry;
+            document.getElementById('insuranceExpiry').value = c.insuranceExpiry;
+            document.getElementById('carFormTitle').innerText = "✏️ تعديل بيانات السيارة";
+            document.getElementById('carSubmitBtn').innerText = "تحديث البيانات";
+            document.getElementById('cancelCarEdit').classList.remove('hidden');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function resetCarForm() {
+            document.getElementById('carForm').reset();
+            document.getElementById('editingCarId').value = '';
+            document.getElementById('carFormTitle').innerText = "🚗 تسجيل سيارة جديدة ومتابعة صلاحياتها";
+            document.getElementById('carSubmitBtn').innerText = "حفظ بيانات السيارة";
+            document.getElementById('cancelCarEdit').classList.add('hidden');
+        }
+
+        function deleteCar(id) { if(confirm('هل أنت متأكد من الحذف؟')) db.collection("cars").doc(id).delete(); }
+
+        document.getElementById('oilForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editingOilId').value;
+            const fileInput = document.getElementById('oilAttachment').files[0];
+            const processSave = (base64 = null) => {
+                const data = {
+                    carNumber: document.getElementById('oilCarSelect').value,
+                    date: document.getElementById('oilDate').value,
+                    odometer: Number(document.getElementById('oilOdometer').value),
+                    quantity: Number(document.getElementById('oilQuantity').value),
+                    filterStatus: document.getElementById('oilFilterStatus').value,
+                    amountPaid: Number(document.getElementById('oilAmountPaid').value),
+                    shopName: document.getElementById('oilShopName').value.trim(),
+                    notes: document.getElementById('oilNotes').value.trim()
+                };
+                if(base64) data.attachment = base64;
+                if(id) {
+                    const existing = oilLogsData.find(item => item.id === id);
+                    data.lastEditedBy = currentLoggedUser;
+                    data.editCount = (existing.editCount || 0) + 1;
+                    db.collection("oil_logs").doc(id).update(data).then(() => { resetOilForm(); alert('تم التحديث بنجاح'); });
+                } else {
+                    data.createdBy = currentLoggedUser;
+                    data.lastEditedBy = '-';
+                    data.editCount = 0;
+                    db.collection("oil_logs").add(data).then(() => { resetOilForm(); alert('تم الحفظ بنجاح'); });
+                }
+            };
+            if(fileInput) {
+                const reader = new FileReader();
+                reader.onload = function(e) { processSave(e.target.result); };
+                reader.readAsDataURL(fileInput);
+            } else {
+                let att = id ? (oilLogsData.find(item => item.id === id)?.attachment || null) : null;
+                processSave(att);
+            }
+        });
+
+        function renderOil() {
+            const tbody = document.getElementById('oilLogsTableBody');
+            tbody.innerHTML = '';
+            
+            // ترتيب سجلات الزيوت حسب التاريخ تصاعدياً لحساب الفوارق بدقة لكل سيارة
+            let sortedOil = [...oilLogsData].sort((a, b) => new Date(a.date) - new Date(b.date));
+            let lastOdometerMap = {};
+
+            sortedOil.forEach(o => {
+                let prevOdo = lastOdometerMap[o.carNumber] !== undefined ? lastOdometerMap[o.carNumber] : null;
+                let diffKm = prevOdo !== null ? (o.odometer - prevOdo) : '-';
+                lastOdometerMap[o.carNumber] = o.odometer;
+
+                let diffDisplay = diffKm !== '-' ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">${diffKm} كم</span>` : '<span class="text-gray-400">سجل أول (غير متوفر)</span>';
+                let attCell = o.attachment ? `<button onclick="showAttachment('${o.attachment}')" class="bg-blue-600 text-white px-2 py-1 rounded text-[10px]">📎 عرض</button>` : 'بدون';
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">${o.date}</td>
+                        <td class="p-3 font-bold">${o.carNumber}</td>
+                        <td class="p-3">${o.odometer} كم</td>
+                        <td class="p-3">${diffDisplay}</td>
+                        <td class="p-3">${o.amountPaid} ر.س (${o.shopName})</td>
+                        <td class="p-3">${attCell}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="editOil('${o.id}')" class="bg-amber-500 text-white px-2 py-1 rounded text-[11px]">تعديل</button> 
+                            <button onclick="deleteOil('${o.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-[11px]">حذف</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function editOil(id) {
+            const o = oilLogsData.find(item => item.id === id);
+            if(!o) return;
+            document.getElementById('editingOilId').value = o.id;
+            document.getElementById('oilCarSelect').value = o.carNumber;
+            document.getElementById('oilDate').value = o.date;
+            document.getElementById('oilOdometer').value = o.odometer;
+            document.getElementById('oilQuantity').value = o.quantity;
+            document.getElementById('oilFilterStatus').value = o.filterStatus;
+            document.getElementById('oilAmountPaid').value = o.amountPaid;
+            document.getElementById('oilShopName').value = o.shopName;
+            document.getElementById('oilNotes').value = o.notes || '';
+            document.getElementById('oilFormTitle').innerText = "✏️ تعديل سجل الزيت";
+            document.getElementById('oilSubmitBtn').innerText = "تحديث";
+            document.getElementById('cancelOilEdit').classList.remove('hidden');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function resetOilForm() {
+            document.getElementById('oilForm').reset();
+            document.getElementById('editingOilId').value = '';
+            document.getElementById('oilFormTitle').innerText = "🛢️ تسجيل تغيير زيت";
+            document.getElementById('oilSubmitBtn').innerText = "حفظ السجل";
+            document.getElementById('cancelOilEdit').classList.add('hidden');
+        }
+
+        function deleteOil(id) { if(confirm('هل أنت متأكد؟')) db.collection("oil_logs").doc(id).delete(); }
+
+        document.getElementById('expenseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editingExpId').value;
+            const fileInput = document.getElementById('expAttachment').files[0];
+            const processSave = (base64 = null) => {
+                const data = {
+                    carNumber: document.getElementById('expCarSelect').value,
+                    type: document.getElementById('expType').value,
+                    cost: Number(document.getElementById('expCost').value),
+                    invoiceNumber: document.getElementById('expInvoice').value.trim(),
+                    date: document.getElementById('expDate').value,
+                    notes: document.getElementById('expNotes').value.trim()
+                };
+                if(base64) data.attachment = base64;
+                if(id) {
+                    const existing = expensesData.find(item => item.id === id);
+                    data.lastEditedBy = currentLoggedUser;
+                    data.editCount = (existing.editCount || 0) + 1;
+                    db.collection("expenses").doc(id).update(data).then(() => { resetExpForm(); alert('تم التحديث بنجاح'); });
+                } else {
+                    data.createdBy = currentLoggedUser;
+                    data.lastEditedBy = '-';
+                    data.editCount = 0;
+                    db.collection("expenses").add(data).then(() => { resetExpForm(); alert('تم الحفظ بنجاح'); });
+                }
+            };
+            if(fileInput) {
+                const reader = new FileReader();
+                reader.onload = function(e) { processSave(e.target.result); };
+                reader.readAsDataURL(fileInput);
+            } else {
+                let att = id ? (expensesData.find(item => item.id === id)?.attachment || null) : null;
+                processSave(att);
+            }
+        });
+
+        function renderExpenses() {
+            const tbody = document.getElementById('expensesTableBody');
+            tbody.innerHTML = '';
+            expensesData.forEach(e => {
+                let attCell = e.attachment ? `<button onclick="showAttachment('${e.attachment}')" class="bg-blue-600 text-white px-2 py-1 rounded text-[10px]">📎 عرض</button>` : 'بدون';
+                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-3">${e.date}</td><td class="p-3 font-bold">${e.carNumber}</td><td class="p-3">${e.type} - <span class="font-bold">${e.cost} ر.س</span></td><td class="p-3">${attCell}</td><td class="p-3 text-center"><button onclick="editExp('${e.id}')" class="bg-amber-500 text-white px-2 py-1 rounded text-[11px]">تعديل</button> <button onclick="deleteExp('${e.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-[11px]">حذف</button></td></tr>`;
+            });
+        }
+
+        function editExp(id) {
+            const e = expensesData.find(item => item.id === id);
+            if(!e) return;
+            document.getElementById('editingExpId').value = e.id;
+            document.getElementById('expCarSelect').value = e.carNumber;
+            document.getElementById('expType').value = e.type;
+            document.getElementById('expCost').value = e.cost;
+            document.getElementById('expInvoice').value = e.invoiceNumber || '';
+            document.getElementById('expDate').value = e.date;
+            document.getElementById('expNotes').value = e.notes || '';
+            document.getElementById('expFormTitle').innerText = "✏️ تعديل مصروف الصيانة";
+            document.getElementById('expSubmitBtn').innerText = "تحديث";
+            document.getElementById('cancelExpEdit').classList.remove('hidden');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function resetExpForm() {
+            document.getElementById('expenseForm').reset();
+            document.getElementById('editingExpId').value = '';
+            document.getElementById('expFormTitle').innerText = "💵 تسجيل مصاريف صيانة إضافية";
+            document.getElementById('expSubmitBtn').innerText = "حفظ المصروف";
+            document.getElementById('cancelExpEdit').classList.add('hidden');
+        }
+
+        function deleteExp(id) { if(confirm('هل أنت متأكد؟')) db.collection("expenses").doc(id).delete(); }
+
+        document.getElementById('userForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editingUserId').value;
+            const data = { username: document.getElementById('newUsername').value.trim(), password: document.getElementById('newUserPass').value.trim(), role: document.getElementById('newUserRole').value };
+            if(id) db.collection("users").doc(id).update(data).then(() => { resetUserForm(); alert('تم التحديث'); });
+            else db.collection("users").add(data).then(() => { resetUserForm(); alert('تم الإضافة'); });
+        });
+
+        function renderUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            usersData.forEach(u => {
+                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold">${u.username}</td><td class="p-3">${u.password}</td><td class="p-3">${u.role}</td><td class="p-3 text-center"><button onclick="editUser('${u.id}')" class="bg-amber-500 text-white px-2 py-1 rounded text-[11px]">تعديل</button> <button onclick="deleteUser('${u.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-[11px]">حذف</button></td></tr>`;
+            });
+        }
+
+        function editUser(id) {
+            const u = usersData.find(item => item.id === id);
+            if(!u) return;
+            document.getElementById('editingUserId').value = u.id;
+            document.getElementById('newUsername').value = u.username;
+            document.getElementById('newUserPass').value = u.password;
+            document.getElementById('newUserRole').value = u.role;
+            document.getElementById('userFormTitle').innerText = "✏️ تعديل المستخدم";
+            document.getElementById('userSubmitBtn').innerText = "تحديث";
+            document.getElementById('cancelUserEdit').classList.remove('hidden');
+        }
+
+        function resetUserForm() {
+            document.getElementById('userForm').reset();
+            document.getElementById('editingUserId').value = '';
+            document.getElementById('userFormTitle').innerText = "👤 إدارة صلاحيات المستخدمين";
+            document.getElementById('userSubmitBtn').innerText = "حفظ المستخدم";
+            document.getElementById('cancelUserEdit').classList.add('hidden');
+        }
+
+        function deleteUser(id) { if(confirm('هل أنت متأكد؟')) db.collection("users").doc(id).delete(); }
+
+        function updateDashboardData() {
+            let totalCars = carsData.length, valid = 0, warning = 0, expired = 0;
+            carsData.forEach(car => {
+                let l = calculateStatus(car.licenseExpiry), i = calculateStatus(car.inspectionExpiry), ins = calculateStatus(car.insuranceExpiry);
+                if(l.text.includes('منتهي') || i.text.includes('منتهي') || ins.text.includes('منتهي')) expired++;
+                else if(l.text.includes('قرب') || i.text.includes('قرب') || ins.text.includes('قرب')) warning++;
+                else valid++;
+            });
+            document.getElementById('kpiTotalCars').innerText = totalCars;
+            document.getElementById('kpiValidCars').innerText = valid;
+            document.getElementById('kpiWarningCars').innerText = warning;
+            document.getElementById('kpiExpiredCars').innerText = expired;
+            document.getElementById('pdfReportDate').innerText = 'التاريخ: ' + new Date().toISOString().split('T')[0];
+
+            const dCtx = document.getElementById('fleetDoughnutChart').getContext('2d');
+            if(doughnutChartInstance) doughnutChartInstance.destroy();
+            doughnutChartInstance = new Chart(dCtx, {
+                type: 'doughnut',
+                data: { labels: ['سارية', 'قريبة الانتهاء', 'منتهية'], datasets: [{ data: [valid, warning, expired], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo', size: 11 } } } } }
+            });
+
+            let labels = [], costs = [];
+            carsData.forEach(car => {
+                let sum = 0;
+                oilLogsData.filter(o => o.carNumber === car.number).forEach(o => sum += (o.amountPaid || 0));
+                expensesData.filter(e => e.carNumber === car.number).forEach(e => sum += (e.cost || 0));
+                labels.push(car.number); costs.push(sum);
+            });
+            const bCtx = document.getElementById('expensesBarChart').getContext('2d');
+            if(barChartInstance) barChartInstance.destroy();
+            barChartInstance = new Chart(bCtx, {
+                type: 'bar',
+                data: { labels: labels.length ? labels : ['لا توجد'], datasets: [{ label: 'التكاليف (ر.س)', data: costs.length ? costs : [0], backgroundColor: '#047857' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function changeReportType() {
+            const type = document.getElementById('reportTypeSelect').value;
+            const carFilter = document.getElementById('reportCarFilter').value;
+            const secDash = document.getElementById('reportSectionDashboard');
+            const secTable = document.getElementById('reportSectionTable');
+            const mainTitle = document.getElementById('reportMainTitle');
+            const thead = document.getElementById('dynamicTableHead');
+            const tbody = document.getElementById('dynamicTableBody');
+
+            if(type === 'dashboard') {
+                secDash.classList.remove('hidden'); secTable.classList.add('hidden');
+                mainTitle.innerText = "لوحة المؤشرات البصرية للأسطول";
+                return;
+            }
+            secDash.classList.add('hidden'); secTable.classList.remove('hidden');
+
+            let fCars = carFilter === 'all' ? carsData : carsData.filter(c => c.number === carFilter);
+            let fOil = carFilter === 'all' ? [...oilLogsData] : oilLogsData.filter(o => o.carNumber === carFilter);
+            let fExp = carFilter === 'all' ? expensesData : expensesData.filter(e => e.carNumber === carFilter);
+
+            if(type === 'documents') {
+                mainTitle.innerText = "تقرير وثائق وتراخيص الأسطول";
+                thead.innerHTML = `<tr><th class="p-3">السيارة والنوع</th><th class="p-3">السائق والقسم</th><th class="p-3">رخصة التسيير</th><th class="p-3">الفحص الدوري</th><th class="p-3">التأمين</th></tr>`;
+                tbody.innerHTML = '';
+                fCars.forEach(c => {
+                    tbody.innerHTML += `<tr class="border-b"><td class="p-3 font-bold">${c.number} (${c.type})</td><td class="p-3">${c.driver}</td><td class="p-3">${c.licenseExpiry}</td><td class="p-3">${c.inspectionExpiry}</td><td class="p-3">${c.insuranceExpiry}</td></tr>`;
+                });
+            } else if(type === 'oil') {
+                mainTitle.innerText = "تقرير الزيوت والصيانة الدورية";
+                thead.innerHTML = `<tr><th class="p-3">التاريخ</th><th class="p-3">السيارة</th><th class="p-3">قراءة العداد</th><th class="p-3">الكيلومترات المقطوعة</th><th class="p-3">التكلفة والمحل</th></tr>`;
+                tbody.innerHTML = '';
+                
+                // ترتيب تصاعدي حسب التاريخ لتقرير الزيوت مع حساب المسافة المقطوعة للفارق
+                fOil.sort((a, b) => new Date(a.date) - new Date(b.date));
+                let reportOdometerMap = {};
+
+                fOil.forEach(o => {
+                    let prevOdo = reportOdometerMap[o.carNumber] !== undefined ? reportOdometerMap[o.carNumber] : null;
+                    let diffKm = prevOdo !== null ? (o.odometer - prevOdo) : '-';
+                    reportOdometerMap[o.carNumber] = o.odometer;
+
+                    let diffDisplay = diffKm !== '-' ? `${diffKm} كم` : 'سجل أول';
+                    tbody.innerHTML += `<tr class="border-b"><td class="p-3">${o.date}</td><td class="p-3 font-bold">${o.carNumber}</td><td class="p-3">${o.odometer} كم</td><td class="p-3 font-bold text-emerald-800">${diffDisplay}</td><td class="p-3">${o.amountPaid} ر.س (${o.shopName})</td></tr>`;
+                });
+            } else if(type === 'expenses') {
+                mainTitle.innerText = "تقرير المصاريف الإضافية";
+                thead.innerHTML = `<tr><th class="p-3">التاريخ</th><th class="p-3">السيارة</th><th class="p-3">المصروف والتكلفة</th><th class="p-3">التفاصيل</th></tr>`;
+                tbody.innerHTML = '';
+                fExp.forEach(e => {
+                    tbody.innerHTML += `<tr class="border-b"><td class="p-3">${e.date}</td><td class="p-3 font-bold">${e.carNumber}</td><td class="p-3">${e.type} - ${e.cost} ر.س</td><td class="p-3">${e.notes || '-'}</td></tr>`;
+                });
+            } else if(type === 'comprehensive') {
+                mainTitle.innerText = "التقرير الشامل";
+                thead.innerHTML = `<tr><th class="p-3">السيارة</th><th class="p-3">إجمالي الزيوت</th><th class="p-3">إجمالي المصاريف</th><th class="p-3 font-black">الإجمالي الكلي</th></tr>`;
+                tbody.innerHTML = '';
+                fCars.forEach(c => {
+                    let oSum = oilLogsData.filter(o => o.carNumber === c.number).reduce((a, b) => a + (b.amountPaid || 0), 0);
+                    let eSum = expensesData.filter(e => e.carNumber === c.number).reduce((a, b) => a + (b.cost || 0), 0);
+                    tbody.innerHTML += `<tr class="border-b"><td class="p-3 font-bold">${c.number}</td><td class="p-3">${oSum} ر.س</td><td class="p-3">${eSum} ر.س</td><td class="p-3 font-black">${oSum + eSum} ر.س</td></tr>`;
+                });
+            }
+        }
+
+        function showAttachment(b64) {
+            document.getElementById('modalImage').src = b64;
+            document.getElementById('attachmentModal').classList.remove('hidden');
+        }
+        function closeModal() { document.getElementById('attachmentModal').classList.add('hidden'); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة طلبات جار الخليج - الإصدار 3.6 - النوتة التفاعلية</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+        
+        :root { 
+            --primary: #122620; 
+            --primary-light: #1b3830;
+            --accent: #9a7342; 
+            --accent-hover: #b68d59;
+            --bg: #f8faf9; 
+            --card-bg: #ffffff;
+            --border: #cbd5e1;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #0d9488; 
+            --danger: #e11d48; 
+            --warning: #d97706; 
+            --info: #0284c7; 
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background: var(--bg); 
+            padding: 20px; 
+            color: var(--text-main); 
+            margin: 0; 
+            font-size: 13.5px; 
+            font-weight: 600; 
+            line-height: 1.5;
+        }
+        
+        .container { width: 100%; max-width: 100%; margin: 0; padding: 0; }
+        
+        .dashboard-card { 
+            background: var(--card-bg); 
+            padding: 24px; 
+            border-radius: 16px; 
+            box-shadow: var(--shadow); 
+            width: 100%; 
+            border: 1px solid var(--border);
+        }
+
+        .dash-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 24px; 
+            border-bottom: 2px solid var(--border); 
+            padding-bottom: 18px; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+        }
+
+        h2 { 
+            color: var(--primary); 
+            border-right: 4px solid var(--accent); 
+            padding-right: 12px; 
+            font-size: 20px; 
+            font-weight: 800; 
+            margin: 0; 
+            letter-spacing: -0.3px;
+        }
+
+        .stats-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 16px; 
+            margin-bottom: 24px; 
+        }
+        
+        .stat-box { 
+            background: var(--card-bg); 
+            padding: 18px 20px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            border-right: 5px solid var(--accent); 
+            box-shadow: var(--shadow); 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .stat-box.green { border-right-color: var(--success); }
+        .stat-box.orange { border-right-color: var(--warning); }
+        .stat-box.info { border-right-color: var(--info); }
+        .stat-box.danger { border-right-color: var(--danger); }
+        
+        .stat-title { font-size: 12.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .stat-value { font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 6px; }
+
+        .controls-bar { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 14px; 
+            margin-bottom: 24px; 
+            align-items: center; 
+            background: #f1f5f3; 
+            padding: 18px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+        }
+        
+        input[type="text"], input[type="date"], select { 
+            padding: 10px 14px; 
+            border: 1.5px solid var(--border); 
+            border-radius: 8px; 
+            font-size: 13.5px; 
+            font-weight: 700; 
+            font-family: 'Cairo', sans-serif; 
+            outline: none; 
+            background: #fff; 
+            color: var(--text-main); 
+            width: 100%; 
+        }
+        
+        input[type="text"]:focus, input[type="date"]:focus, select:focus { 
+            border-color: var(--accent); 
+            box-shadow: 0 0 0 3px rgba(154, 115, 66, 0.12); 
+        }
+
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            max-height: 680px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border); 
+        }
+        
+        table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: center; background: #fff; }
+        
+        th { 
+            background: var(--primary); 
+            color: #fff; 
+            padding: 14px 16px; 
+            font-size: 13px; 
+            font-weight: 700; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            border-bottom: 2px solid var(--accent); 
+            white-space: nowrap; 
+        }
+        
+        td { 
+            padding: 10px 14px; 
+            border-bottom: 1px solid var(--border); 
+            border-left: 1px solid #f1f5f9;
+            font-size: 13px; 
+            font-weight: 600; 
+            color: var(--text-main); 
+            white-space: nowrap; 
+        }
+        
+        tr:nth-child(even) { background-color: #fafbfc; }
+        tr:hover { background-color: #f0f4f2; }
+
+        .editable-input { 
+            width: 100%; 
+            min-width: 130px; 
+            padding: 7px 10px; 
+            text-align: center; 
+            border: 1.5px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-family: 'Cairo', sans-serif; 
+            font-size: 13px; 
+            font-weight: 700; 
+            background: #fff; 
+            color: var(--text-main);
+        }
+        
+        .editable-input:focus { 
+            border-color: var(--accent); 
+            box-shadow: 0 0 0 3px rgba(154, 115, 66, 0.1);
+        }
+
+        .invoice-input-highlight {
+            border-color: var(--success) !important;
+            background-color: #f0fdf4 !important;
+        }
+        
+        .modified-field { 
+            border-color: var(--accent) !important; 
+            background-color: #fdfaf5 !important; 
+        }
+
+        .invoices-grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-top: 15px;
+        }
+        .invoice-card-item {
+            background: #ffffff;
+            border: 2px solid #94a3b8;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        .invoice-card-item:nth-child(odd) { background: #fcfdfd; border-color: var(--primary); }
+        .invoice-card-item:nth-child(even) { background: #fffdfa; border-color: var(--accent); }
+        .invoice-card-header {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            background: #f1f5f3;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .invoice-card-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .invoice-card-table th {
+            background: var(--primary);
+            color: #fff;
+            padding: 9px;
+            font-size: 12px;
+            border: 1px solid #1b3830;
+            position: static;
+        }
+        .invoice-card-table td {
+            padding: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: normal;
+            background: #ffffff;
+        }
+
+        .swipe-page-container {
+            background: #ffffff;
+            border: 3px solid var(--primary);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+            margin-top: 10px;
+            position: relative;
+            min-height: 450px;
+            user-select: none;
+        }
+        .swipe-nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f5f3;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(18, 38, 32, 0.65); backdrop-filter: blur(4px); overflow-y: auto; padding: 30px 0; }
+        .modal-content { background-color: #fff; margin: auto; padding: 25px; border-radius: 16px; width: 95%; max-width: 950px; box-shadow: var(--shadow-lg); position: relative; border: 1px solid var(--border); }
+        .close-btn { color: var(--text-muted); float: left; font-size: 26px; font-weight: 700; cursor: pointer; transition: color 0.2s; line-height: 1; }
+        .close-btn:hover { color: var(--danger); }
+
+        .invoice-box { background: #fff; padding: 20px; border: 1px solid var(--border); border-radius: 10px; margin-top: 15px; }
+        .header-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px; font-weight: 700; background: #f8faf9; padding: 14px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; text-align: right; }
+        .modal-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .modal-table th { background: var(--primary); color: #fff; padding: 10px; font-size: 12px; border: 1px solid #1b3830; }
+        .modal-table td { padding: 8px; border: 1px solid var(--border); text-align: center; font-size: 12px; font-weight: 700; white-space: normal; }
+
+        .btn-action { 
+            padding: 9px 16px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 13px; 
+            color: white; 
+            transition: all 0.2s ease; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            text-decoration: none; 
+            text-align: center; 
+            justify-content: center; 
+            white-space: nowrap; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .btn-action:hover { opacity: 0.92; transform: translateY(-1px); }
+
+        .btn-print { background: var(--accent); }
+        .btn-png { background: var(--primary); }
+        .btn-delete { background: var(--danger); padding: 5px 10px; font-size: 11.5px; }
+        .btn-delete-group { background: #b91c1c; }
+        .btn-refresh { background: var(--success); }
+        .btn-excel { background: #0369a1; }
+        .btn-print-page { background: #7c3aed; }
+        .btn-save-batch { background: #c2410c; font-size: 13.5px; box-shadow: 0 4px 10px rgba(194, 65, 12, 0.25); }
+        .btn-new-order { background: #0f766e; }
+        .btn-migrate { background: #6d28d9; }
+        .btn-prod-page { background: #334155; }
+        .btn-settings { background: #475569; }
+        .btn-page-nav { background: var(--primary); padding: 8px 16px; font-size: 13px; }
+
+        input[type="checkbox"] { transform: scale(1.25); cursor: pointer; accent-color: var(--primary); }
+        
+        #toast { 
+            position: fixed; 
+            bottom: 24px; 
+            right: 24px; 
+            background: var(--primary); 
+            color: #fff; 
+            padding: 12px 20px; 
+            border-radius: 10px; 
+            font-size: 13.5px; 
+            font-weight: 700; 
+            z-index: 2000; 
+            display: none; 
+            box-shadow: var(--shadow-lg); 
+            border-right: 4px solid var(--accent);
+        }
+
+        /* تحسينات الإصدار 2: تقارير + نوتة A5 + مرونة أعلى */
+        input[type="time"], input[type="datetime-local"], input[type="number"] {
+            padding: 10px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Cairo', sans-serif;
+            outline: none;
+            background: #fff;
+            color: var(--text-main);
+            width: 100%;
+        }
+        input[type="time"]:focus, input[type="datetime-local"]:focus, input[type="number"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(154, 115, 66, 0.12);
+        }
+        .header-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+        .btn-report { background:#0f766e; }
+        .btn-note { background:#92400e; }
+        .btn-reset { background:#64748b; }
+        .btn-secondary { background:#475569; }
+        .filter-label { font-size:11.5px; color:var(--text-muted); display:block; margin-bottom:4px; font-weight:700; }
+        .modal-content.wide { max-width:1180px; }
+        .modal-content.xwide { max-width:1380px; }
+        .section-title {
+            display:flex; align-items:center; justify-content:space-between; gap:10px;
+            margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--border);
+            color:var(--primary); font-weight:800;
+        }
+        .sub-controls {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            gap:12px; padding:14px; background:#f8faf9; border:1px solid var(--border);
+            border-radius:10px; margin-bottom:14px; align-items:end;
+        }
+        .preview-shell { background:#e2e8f0; padding:14px; border-radius:12px; overflow:auto; max-height:65vh; }
+        /* A5 أفقي: جدول متابعة تفاعلي يحتوي على 16 عموداً. */
+        .a5-sheet {
+            width:210mm; min-width:210mm; min-height:148mm; margin:0 auto; background:#fff; padding:6mm;
+            box-shadow:0 8px 24px rgba(15,23,42,.15); color:#111827; direction:rtl;
+            font-family:'Cairo', Arial, sans-serif;
+        }
+        .a5-title { text-align:center; border-bottom:2px solid var(--primary); padding-bottom:4px; margin-bottom:4px; }
+        .a5-title h3 { margin:0; font-size:12pt; color:var(--primary); }
+        .a5-title .company { font-size:8pt; font-weight:800; color:#475569; }
+        .a5-meta { display:flex; justify-content:space-between; gap:5px; flex-wrap:wrap; font-size:7pt; margin:4px 0 6px; }
+        .a5-table { width:100%; border-collapse:collapse; table-layout:fixed; direction:rtl; }
+        .a5-table th { position:static; background:#f1f5f3; color:#122620; border:1px solid #64748b; padding:3px 1px; font-size:6pt; line-height:1.25; white-space:normal; text-align:center; overflow-wrap:anywhere; }
+        .a5-table td { border:1px solid #94a3b8; padding:3px 1px; font-size:5.8pt; font-weight:700; white-space:normal; line-height:1.3; vertical-align:middle; overflow-wrap:anywhere; text-align:center; }
+        .a5-table td:nth-child(3), .a5-table td:nth-child(4), .a5-table td:nth-child(5), .a5-table td:nth-child(12) { text-align:right; }
+        .a5-table thead { display:table-header-group; }
+        .a5-table tr { break-inside:avoid; page-break-inside:avoid; }
+        .a5-check { width:4.3mm; height:4.3mm; display:inline-flex; align-items:center; justify-content:center; border:1.4px solid #0f172a; border-radius:2px; background:#fff; vertical-align:middle; }
+        .a5-footer { margin-top:5px; padding-top:4px; border-top:1px dashed #64748b; font-size:6.8pt; display:flex; justify-content:space-between; }
+        .report-sheet { width:100%; background:#fff; padding:18px; border-radius:8px; }
+        .report-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; border-bottom:2px solid var(--primary); padding-bottom:10px; margin-bottom:12px; }
+        .report-summary { display:grid; grid-template-columns:repeat(5, minmax(120px,1fr)); gap:8px; margin-bottom:12px; }
+        .report-kpi { border:1px solid var(--border); border-radius:8px; padding:9px; background:#f8faf9; text-align:center; }
+        .report-kpi b { display:block; font-size:19px; color:var(--primary); }
+        .report-table { width:100%; border-collapse:collapse; }
+        .report-table th { position:static; padding:7px 6px; font-size:11px; }
+        .report-table td { padding:6px; font-size:10.5px; white-space:normal; }
+        .empty-state { padding:28px; text-align:center; color:var(--text-muted); font-weight:800; background:#fff; border:1px dashed var(--border); border-radius:10px; }
+        .status-pill { display:inline-block; padding:2px 7px; border-radius:999px; font-size:10px; font-weight:800; }
+        .status-ready { background:#ccfbf1; color:#115e59; }
+        .status-pending { background:#ffedd5; color:#9a3412; }
+        .status-delivered { background:#dbeafe; color:#1e40af; }
+        .toolbar-note { font-size:11px; color:var(--text-muted); font-weight:700; }
+        .date-diagnostic { border:1px solid var(--border); background:#f8faf9; padding:10px 13px; margin:10px 0; border-radius:8px; font-weight:700; font-size:12px; line-height:1.8; }
+        .date-diagnostic.warning { border-color:#fbbf24; background:#fffbeb; color:#92400e; }
+        .date-diagnostic strong { color:var(--primary); }
+        .date-help { font-size:11px; color:var(--text-muted); margin:3px 0 10px; }
+        .date-inline-action { color:#0369a1; border:1px solid #93c5fd; border-radius:6px; padding:4px 9px; background:#fff; font-family:inherit; font-weight:700; cursor:pointer; margin-inline-start:6px; }
+        .period-input { min-width:0; }
+        .calendar-mode-select {min-width:160px}
+        .hijri-input { direction:ltr; text-align:center; font-variant-numeric:tabular-nums; }
+        [data-calendar-prefix][hidden] { display:none !important; }
+        .calendar-hint {color:#64748b;font-size:11px;line-height:1.7;margin:4px 0;}
+        #mainDateStatus[hidden] {display:none!important;}
+
+        @media (max-width: 900px) {
+            body { padding:8px; }
+            .dashboard-card { padding:12px; border-radius:10px; }
+            .dash-header { align-items:flex-start; }
+            .header-actions { width:100%; justify-content:flex-start; }
+            .btn-action { flex:1 1 auto; }
+            .controls-bar { grid-template-columns:1fr 1fr; padding:12px; }
+            .report-summary { grid-template-columns:repeat(2,1fr); }
+            .a5-sheet { width:210mm; min-width:210mm; min-height:148mm; }
+        }
+        @media (max-width: 560px) {
+            .controls-bar, .sub-controls { grid-template-columns:1fr; }
+            .stats-container { grid-template-columns:1fr 1fr; gap:8px; }
+            .stat-box { padding:12px; }
+            .stat-value { font-size:20px; }
+        }
+
+        /* الإصدار 3: حالات المزامنة، ترقيم صفحات، وحماية الإدخالات */
+        .sync-status { padding:10px 14px; margin:0 0 15px; border:1px solid #cbd5e1; background:#f8faf9; color:#475569; border-radius:9px; font-size:12px; }
+        .sync-status.sync-error { color:#991b1b; border-color:#fecaca; background:#fff7f7; }
+        .pending-counter { background:#fef3c7; border:1px solid #f59e0b; color:#92400e; border-radius:8px; padding:9px 14px; font-weight:800; font-size:12px; }
+        .pending-counter[hidden] { display:none!important; }
+        .btn-action:disabled { opacity:.48; cursor:not-allowed; transform:none; box-shadow:none; }
+        .pagination-bar {display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 14px;margin:0 0 12px;background:#f1f5f3;border:1px solid #cbd5e1;border-radius:9px;font-size:12px;font-weight:800;}
+        .pagination-actions {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .pagination-actions .btn-action {padding:6px 12px;font-size:12px}
+        .pagination-actions label {display:flex;align-items:center;gap:6px}
+        .pagination-actions select {width:auto;padding:6px}
+        .order-card-top {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px}
+        .order-card-top h3 {margin:0;font-size:15px;color:var(--primary);display:flex;align-items:center;gap:8px}
+        .order-card-top h3 input {max-width:170px}
+        .order-card-actions,.row-actions {display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:center}
+        .order-card-actions label {display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+        .card-table-scroll {width:100%;overflow-x:auto}
+        .invoice-card-table {min-width:1150px}
+        .invoice-card-item .editable-input {min-width:95px}
+        .alert-dot {display:inline-block;margin-bottom:8px;padding:4px 8px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:7px;font-size:11px}
+        .unsaved-warning {color:#92400e;background:#fffbeb;padding:8px;border:1px solid #fcd34d;border-radius:6px;font-weight:800}
+        .row-actions .btn-action {padding:6px 9px;font-size:11.5px}
+        #tableContainerWrapper:has(.invoices-grid-container),#tableContainerWrapper:has(.swipe-page-container) {max-height:none;overflow:visible}
+        #tableContainerWrapper:has(.pagination-bar) {max-height:none;overflow:visible}
+        .table-h-scroll {width:100%;max-height:680px;overflow:auto;border:1px solid #cbd5e1;border-radius:9px}
+        @media(max-width:750px) { .pagination-bar,.order-card-top {align-items:stretch;flex-direction:column} .order-card-actions {justify-content:flex-start} .swipe-nav-bar {justify-content:center;text-align:center} .swipe-nav-bar>div {display:flex;gap:5px} .invoice-card-item {padding:11px} }
+
+        /* V3.6: نوتة تفاعلية مع الفرع واللون ومعاينة طباعة مستقلة */
+        .note-editor-wrap {overflow:auto;max-height:62vh;border:1px solid var(--border);border-radius:10px;background:#fff;}
+        .note-editor-table {border-collapse:separate;border-spacing:0;width:100%;min-width:1710px;table-layout:fixed;}
+        .note-editor-table th {position:sticky;top:0;background:var(--primary);color:#fff;padding:11px 5px;font-size:11px;white-space:normal;line-height:1.5;z-index:3;}
+        .note-editor-table td {padding:5px 4px;border-bottom:1px solid #cbd5e1;border-left:1px solid #e2e8f0;white-space:normal;}
+        .note-editor-table tr:nth-child(even) {background:#f8faf9}
+        .note-editor-table .editable-input {min-width:0;width:100%;font-size:11px;padding:6px 4px;text-align:center;}
+        .note-editor-table .note-text-col .editable-input {text-align:right;}
+        .note-editor-table input[type="checkbox"] {width:18px;height:18px;transform:none;accent-color:var(--success);}
+        .note-help {background:#ecfdf5;color:#065f46;padding:11px 14px;border-radius:8px;border:1px solid #99f6e4;font-size:12px;margin:9px 0 12px;line-height:1.9;}
+        .note-save-status {margin:8px 0 14px;font-size:12px;font-weight:800;color:#475569;}
+        .note-save-status.note-unsaved {color:#92400e;}
+        .note-preview-details {margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+        .note-preview-details summary {cursor:pointer;font-weight:800;color:var(--primary);padding:4px 2px;margin-bottom:5px;}
+        .a5-table td .a5-check {font-family:Arial,sans-serif;font-size:10pt;font-weight:900;}
+        .note-date-tip {color:#92400e;font-size:11px;}
+
+        /* V3.6: ملخص بنود النوتة والكميات حسب الفرع - جزء من المعاينة والطباعة */
+        .note-branch-summary { background:#f8faf9; border:1px solid #cbd5e1; border-radius:10px; padding:11px 12px; margin:10px 0 12px; }
+        .note-branch-title { font-weight:800; color:var(--primary); font-size:13px; margin-bottom:9px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+        .note-branch-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:9px; }
+        .note-branch-card { border:1px solid #d6e0da; border-right:3px solid var(--accent); background:white; border-radius:9px; padding:10px 11px; break-inside:avoid; }
+        .note-branch-card.total { border-right-color:var(--primary); background:#eef4f0; }
+        .note-branch-name { font-weight:800; font-size:12px; color:var(--primary); overflow-wrap:anywhere; }
+        .note-branch-count { display:flex; align-items:baseline; gap:6px; margin:2px 0; }
+        .note-branch-count strong { font-size:24px; color:var(--primary); font-weight:900; font-variant-numeric:tabular-nums; }
+        .note-branch-count span { font-size:10px; color:#475569; font-weight:700; }
+        .note-branch-details { color:#64748b; font-size:10px; line-height:1.5; }
+        .note-branch-explain {font-size:10px;color:#64748b;margin-top:7px;line-height:1.5;}
+        .note-branch-summary-print {background:#fff;border:1px solid #94a3b8;padding:5px;margin:5px 0 6px;border-radius:5px;}
+        .note-branch-summary-print .note-branch-title {font-size:8pt;margin-bottom:4px;}
+        .note-branch-summary-print .note-branch-cards {grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:4px;}
+        .note-branch-summary-print .note-branch-card {padding:4px 5px;border-radius:4px;}
+        .note-branch-summary-print .note-branch-name {font-size:7pt;}
+        .note-branch-summary-print .note-branch-count strong {font-size:12pt;}
+        .note-branch-summary-print .note-branch-count span,.note-branch-summary-print .note-branch-details {font-size:6pt;}
+        .note-branch-summary-print .note-branch-explain {font-size:5.8pt;margin-top:3px;}
+
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="orders-dashboard"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="dashboard-card">
+        <div class="dash-header">
+            <h2>لوحة تحكم طلبات شركة جار الخليج للصناعة <small style="font-size:11px;font-weight:700;color:#64748b;white-space:nowrap;">V3.6</small></h2>
+            <div class="header-actions">
+                <button class="btn-action btn-note" onclick="openDailyNoteModal()">🗒️ نوتة الطلبات اليومية A5</button>
+                <button class="btn-action btn-report" onclick="openReportsModal()">📈 التقارير والطباعة</button>
+                <button class="btn-action btn-settings" onclick="openSettingsModal()">⚙️ الإعدادات</button>
+                <a href="index.html" class="btn-action btn-new-order">➕ إنشاء طلب جديد</a>
+                <a href="production.html" class="btn-action btn-prod-page" target="_blank">🏭 لوحة الإنتاج</a>
+                <span id="pendingCount" class="pending-counter" role="status" hidden></span>
+                <button id="saveAllButton" class="btn-action btn-save-batch" onclick="saveAllChanges()">حفظ التعديلات 💾</button>
+                <button id="deleteSelectedButton" class="btn-action btn-delete-group" onclick="deleteSelectedOrders()">🗑️ حذف المحدد</button>
+                <a href="print.html" class="btn-action btn-print-page">🖨️ صفحة الطباعة</a>
+                <button class="btn-action btn-excel" onclick="exportToExcel()">تصدير Excel 📊</button>
+                <button class="btn-action btn-refresh" onclick="loadDashboardData()">تحديث 🔄</button>
+            </div>
+        </div>
+
+        <div id="syncStatus" class="sync-status" role="status" aria-live="polite">لم تبدأ المزامنة بعد</div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <span class="stat-title">إجمالي الطلبات</span>
+                <span class="stat-value" id="statTotal">0</span>
+            </div>
+            <div class="stat-box green">
+                <span class="stat-title">الطلبات الجاهزة</span>
+                <span class="stat-value" id="statReady">0</span>
+            </div>
+            <div class="stat-box orange">
+                <span class="stat-title">لم يتم تسليمها</span>
+                <span class="stat-value" id="statNotDelivered">0</span>
+            </div>
+            <div class="stat-box danger">
+                <span class="stat-title">لم تُطبع فاتورتها</span>
+                <span class="stat-value" id="statNoInvoice">0</span>
+            </div>
+            <div class="stat-box info">
+                <span class="stat-title">نتائج التصفية الحالية</span>
+                <span class="stat-value" id="statFiltered">0</span>
+            </div>
+        </div>
+
+        <div class="controls-bar">
+            <div>
+                <label class="filter-label">بحث شامل</label>
+                <input type="text" id="searchInput" placeholder="رقم الطلب، العميل، الصنف، المقاس، الفاتورة..." oninput="filterTable()">
+            </div>
+            <div>
+                <label class="filter-label">التقويم المستخدم في البحث</label>
+                <select id="mainCalendar" onchange="changeRangeCalendar('main')" aria-label="تقويم فترة البحث الرئيسية"><option value="gregorian">ميلادي</option><option value="hijri">هجري (أم القرى)</option></select>
+            </div>
+            <div data-calendar-prefix="main" data-calendar-mode="gregorian">
+                <label class="filter-label">من تاريخ (ميلادي)</label>
+                <input type="date" id="dateFrom" onchange="filterTable()">
+            </div>
+            <div data-calendar-prefix="main" data-calendar-mode="gregorian">
+                <label class="filter-label">إلى تاريخ (ميلادي)</label>
+                <input type="date" id="dateTo" onchange="filterTable()">
+            </div>
+            <div data-calendar-prefix="main" data-calendar-mode="hijri" hidden>
+                <label class="filter-label">من تاريخ (هجري)</label>
+                <input type="text" class="hijri-input" id="mainHijriFrom" placeholder="1448/04/30 هـ" onchange="filterTable()" autocomplete="off" inputmode="text">
+            </div>
+            <div data-calendar-prefix="main" data-calendar-mode="hijri" hidden>
+                <label class="filter-label">إلى تاريخ (هجري)</label>
+                <input type="text" class="hijri-input" id="mainHijriTo" placeholder="1448/04/30 هـ" onchange="filterTable()" autocomplete="off" inputmode="text">
+            </div>
+            <div>
+                <label class="filter-label">حالة الطلبات</label>
+                <select id="statusFilter" onchange="filterTable()">
+                    <option value="all">كل الطلبات</option>
+                    <option value="ready">الطلبات الجاهزة فقط</option>
+                    <option value="not_ready">غير الجاهزة</option>
+                    <option value="delivered">تم تسليمها</option>
+                    <option value="not_delivered">لم يتم تسليمها</option>
+                    <option value="no_invoice">لم تُطبع فاتورتها</option>
+                </select>
+            </div>
+            <div>
+                <label class="filter-label">الفرع</label>
+                <select id="branchFilter" onchange="filterTable()"><option value="all">كل الفروع</option></select>
+            </div>
+            <div>
+                <label class="filter-label">المنسق</label>
+                <select id="coordinatorFilter" onchange="filterTable()"><option value="all">كل المنسقين</option></select>
+            </div>
+            <div>
+                <label class="filter-label">ترتيب النتائج</label>
+                <select id="sortFilter" onchange="filterTable()">
+                    <option value="timestamp_desc">الأحدث أولاً</option>
+                    <option value="timestamp_asc">الأقدم أولاً</option>
+                    <option value="order_asc">رقم الطلب تصاعدي</option>
+                    <option value="order_desc">رقم الطلب تنازلي</option>
+                    <option value="delivery_asc">أقرب موعد تسليم</option>
+                    <option value="client_asc">اسم العميل</option>
+                </select>
+            </div>
+            <div style="display:flex;align-items:end;height:100%;">
+                <button class="btn-action btn-reset" style="width:100%;" onclick="resetMainFilters()">↺ تصفير الفلاتر</button>
+            </div>
+        </div>
+
+        <div id="mainDateStatus" class="date-diagnostic warning" hidden role="status" aria-live="polite"></div>
+        <div id="tableContainerWrapper" class="table-responsive" aria-label="قائمة الطلبات">
+            <table id="dashTable">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                        <th>م</th>
+                        <th>رقم الطلب</th>
+                        <th>اسم العميل</th>
+                        <th>الفرع</th>
+                        <th>المنسق</th>
+                        <th>نوع العميل</th>
+                        <th>طريقة الطلب</th>
+                        <th>صيانة</th>
+                        <th>الصنف</th>
+                        <th>المقاس</th>
+                        <th>الكمية</th>
+                        <th>الجوانب</th>
+                        <th>اللون</th>
+                        <th>الهرابات</th>
+                        <th>اتجاه الهراب</th>
+                        <th>خصم</th>
+                        <th>تاريخ التسليم</th>
+                        <th>اكسسوارات</th>
+                        <th>ملاحظات</th>
+                        <th>تاريخ الطلب</th>
+                        <th>جاهز للطباعة</th>
+                        <th>التسليم</th>
+                        <th>رقم الفاتورة الضريبية / البيع</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBodyRows">
+                    <tr><td colspan="25" class="loading-overlay">جاري جلب البيانات وتجميع الطلبات...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="settingsModal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+        <span class="close-btn" onclick="closeSettingsModal()">&times;</span>
+        <h3 style="color: var(--primary); margin-top:0; font-size:18px; font-weight:800;">⚙️ إعدادات النظام المتقدمة</h3>
+        
+        <div style="margin-top: 20px;">
+            <label style="font-weight: 800; color: var(--primary); display: block; margin-bottom: 8px;">📊 وضع عرض البيانات في اللوحة:</label>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+                <button class="btn-action" style="background:#7c3aed;" onclick="changeDisplayMode('swipe_pages')">📱 وضع بطريقة صفحات (Swipe)</button>
+                <button class="btn-action" style="background:#0369a1;" onclick="changeDisplayMode('invoices')">عرض الفواتير (ملونة)</button>
+                <button class="btn-action" style="background:var(--primary);" onclick="changeDisplayMode('detailed')">عرض مفصل (جدول)</button>
+                <button class="btn-action" style="background:var(--accent);" onclick="changeDisplayMode('compact')">عرض مختصر</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="dailyNoteModal" class="modal">
+    <div class="modal-content wide">
+        <span class="close-btn" onclick="closeDailyNoteModal()">&times;</span>
+        <div class="section-title">
+            <div>
+                <div style="font-size:19px;">🗒️ نوتة الطلبات اليومية - A5</div>
+                <div class="toolbar-note">نوتة تفاعلية مع ملخص تلقائي لعدد الأصناف والكميات لكل فرع، والتحرير والحفظ في Firebase والطباعة.</div>
+            </div>
+        </div>
+        <div class="sub-controls">
+            <div>
+                <label class="filter-label">فترة سريعة</label>
+                <select id="dailyPreset" onchange="applyDailyPreset()">
+                    <option value="all" selected>كل الفترات (للتأكد من ظهور الطلبات)</option>
+                    <option value="last24">آخر 24 ساعة</option>
+                    <option value="today">طلبات اليوم</option>
+                    <option value="yesterday">طلبات أمس</option>
+                    <option value="last7">آخر 7 أيام</option>
+                    <option value="last30">آخر 30 يومًا</option>
+                    <option value="custom">تحديد يدوي</option>
+                </select>
+            </div>
+            <div>
+                <label class="filter-label">التقويم المستخدم في فترة النوتة</label>
+                <select id="dailyCalendar" onchange="changeRangeCalendar('daily')"><option value="gregorian">ميلادي</option><option value="hijri">هجري (أم القرى)</option></select>
+            </div>
+            <div data-calendar-prefix="daily" data-calendar-mode="gregorian">
+                <label class="filter-label">من تاريخ ووقت (ميلادي / السعودية)</label>
+                <input type="datetime-local" class="period-input" id="dailyFrom" onchange="setDailyCustomAndRefresh()">
+            </div>
+            <div data-calendar-prefix="daily" data-calendar-mode="gregorian">
+                <label class="filter-label">إلى تاريخ ووقت (ميلادي / السعودية)</label>
+                <input type="datetime-local" class="period-input" id="dailyTo" onchange="setDailyCustomAndRefresh()">
+            </div>
+            <div data-calendar-prefix="daily" data-calendar-mode="hijri" hidden>
+                <label class="filter-label">من تاريخ ووقت (هجري / السعودية)</label>
+                <input type="text" class="hijri-input" id="dailyHijriFrom" placeholder="1448/04/30 08:00 هـ" onchange="setDailyCustomAndRefresh()" autocomplete="off" inputmode="text">
+            </div>
+            <div data-calendar-prefix="daily" data-calendar-mode="hijri" hidden>
+                <label class="filter-label">إلى تاريخ ووقت (هجري / السعودية)</label>
+                <input type="text" class="hijri-input" id="dailyHijriTo" placeholder="1448/04/30 23:59 هـ" onchange="setDailyCustomAndRefresh()" autocomplete="off" inputmode="text">
+            </div>
+            <div>
+                <label class="filter-label">آخر عدد ساعات</label>
+                <div style="display:flex;gap:6px;"><input type="number" id="dailyHours" min="1" max="720" value="24"><button class="btn-action btn-secondary" onclick="applyLastHours()">تطبيق</button></div>
+            </div>
+            <div>
+                <label class="filter-label">احتساب الفترة وفق</label>
+                <select id="dailyDateBasis" onchange="renderDailyNote()">
+                    <option value="created">تاريخ إنشاء الطلب</option>
+                    <option value="delivery">موعد تسليم الأصناف</option>
+                    <option value="either">تاريخ الإنشاء أو التسليم</option>
+                </select>
+            </div>
+            <div>
+                <label class="filter-label">الحالة</label>
+                <select id="dailyStatus" onchange="renderDailyNote()">
+                    <option value="all">كل الطلبات</option>
+                    <option value="not_delivered">غير المسلمة فقط</option>
+                    <option value="ready">الجاهزة فقط</option>
+                    <option value="not_ready">غير الجاهزة فقط</option>
+                </select>
+            </div>
+            <div>
+                <label class="filter-label">الفرع</label>
+                <select id="dailyBranch" onchange="renderDailyNote()"><option value="all">كل الفروع</option></select>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn-action btn-note" onclick="renderDailyNote()">🔄 تحديث عرض النوتة</button>
+            <button id="dailySaveButton" class="btn-action btn-save-batch" onclick="saveDailyNoteChanges()">💾 حفظ التعديلات في Firebase</button>
+            <button class="btn-action btn-print" onclick="printDailyNote('A5')">🖨️ طباعة A5 أفقي / PDF</button>
+            <button class="btn-action btn-secondary" onclick="printDailyNote('A4')">🖨️ طباعة A4 أفقي</button>
+            <button class="btn-action btn-png" onclick="exportDailyNotePNG()">🖼️ حفظ صورة PNG</button>
+        </div>
+        <div class="date-help">يتعرف النظام تلقائيًا على تواريخ الطلبات الهجرية والميلادية، ويحول الهجري وفق تقويم أم القرى دون تعديل القيم الأصلية في Firebase. يمكنك تحديد فترة البحث بأحد التقويمين؛ الأوقات بتوقيت السعودية (+03:00).</div>
+        <div id="dailyDateStatus" class="date-diagnostic" role="status" aria-live="polite"></div>
+        <div id="dailyNoteBranchSummary" aria-live="polite" aria-label="ملخص عدد الأصناف حسب الفرع"></div>
+        <div class="note-help">الإدخال في النوتة يجهّز التعديلات فقط؛ اضغط <b>حفظ التعديلات في Firebase</b> لتثبيتها على الطلب الحقيقي. إدخال رقم فاتورة يجعل مربع «تم الطباعة» مؤشّرًا تلقائيًا، ولا يُعد طباعة النوتة طباعةً للفاتورة. <b>الجاهزية والطباعة ورقم الفاتورة تخص الطلب بجميع أصنافه، بينما مربع ✓ الأخير يخص كل صنف على حدة.</b></div>
+        <div id="dailyNoteEditor" class="note-editor-wrap" aria-label="جدول النوتة القابل للتعديل"></div>
+        <div id="dailyNoteSaveStatus" class="note-save-status" role="status" aria-live="polite"></div>
+        <details class="note-preview-details"><summary>👁️ معاينة النوتة قبل الطباعة (A5 أفقي)</summary>
+            <div class="preview-shell"><div id="dailyNotePrintArea" class="a5-sheet"></div></div>
+        </details>
+    </div>
+</div>
+
+<div id="reportsModal" class="modal">
+    <div class="modal-content xwide">
+        <span class="close-btn" onclick="closeReportsModal()">&times;</span>
+        <div class="section-title">
+            <div>
+                <div style="font-size:19px;">📈 مركز التقارير والطباعة</div>
+                <div class="toolbar-note">تقرير مرن حسب التاريخ والوقت والحالة والفرع والمنسق مع طباعة A4 وتصدير Excel.</div>
+            </div>
+        </div>
+        <div class="sub-controls">
+            <div>
+                <label class="filter-label">الفترة السريعة</label>
+                <select id="reportPreset" onchange="applyReportPreset()">
+                    <option value="all" selected>كل الفترات</option>
+                    <option value="thisMonth">الشهر الحالي</option>
+                    <option value="today">اليوم</option>
+                    <option value="last7">آخر 7 أيام</option>
+                    <option value="last30">آخر 30 يومًا</option>
+                    <option value="custom">تحديد يدوي</option>
+                </select>
+            </div>
+            <div>
+                <label class="filter-label">التقويم المستخدم في فترة التقرير</label>
+                <select id="reportCalendar" onchange="changeRangeCalendar('report')"><option value="gregorian">ميلادي</option><option value="hijri">هجري (أم القرى)</option></select>
+            </div>
+            <div data-calendar-prefix="report" data-calendar-mode="gregorian"><label class="filter-label">من (ميلادي / السعودية)</label><input type="datetime-local" id="reportFrom" onchange="setReportCustomAndRefresh()"></div>
+            <div data-calendar-prefix="report" data-calendar-mode="gregorian"><label class="filter-label">إلى (ميلادي / السعودية)</label><input type="datetime-local" id="reportTo" onchange="setReportCustomAndRefresh()"></div>
+            <div data-calendar-prefix="report" data-calendar-mode="hijri" hidden><label class="filter-label">من (هجري / السعودية)</label><input type="text" class="hijri-input" id="reportHijriFrom" placeholder="1448/04/30 08:00 هـ" onchange="setReportCustomAndRefresh()" autocomplete="off" inputmode="text"></div>
+            <div data-calendar-prefix="report" data-calendar-mode="hijri" hidden><label class="filter-label">إلى (هجري / السعودية)</label><input type="text" class="hijri-input" id="reportHijriTo" placeholder="1448/04/30 23:59 هـ" onchange="setReportCustomAndRefresh()" autocomplete="off" inputmode="text"></div>
+            <div>
+                <label class="filter-label">احتساب الفترة وفق</label>
+                <select id="reportDateBasis" onchange="renderReport()">
+                    <option value="created">تاريخ إنشاء الطلب</option>
+                    <option value="delivery">موعد تسليم الأصناف</option>
+                    <option value="either">تاريخ الإنشاء أو التسليم</option>
+                </select>
+            </div>
+            <div>
+                <label class="filter-label">الحالة</label>
+                <select id="reportStatus" onchange="renderReport()">
+                    <option value="all">كل الحالات</option>
+                    <option value="ready">جاهز</option>
+                    <option value="not_ready">غير جاهز</option>
+                    <option value="delivered">تم التسليم</option>
+                    <option value="not_delivered">لم يتم التسليم</option>
+                    <option value="no_invoice">بدون فاتورة</option>
+                </select>
+            </div>
+            <div><label class="filter-label">الفرع</label><select id="reportBranch" onchange="renderReport()"><option value="all">كل الفروع</option></select></div>
+            <div><label class="filter-label">المنسق</label><select id="reportCoordinator" onchange="renderReport()"><option value="all">كل المنسقين</option></select></div>
+            <div>
+                <label class="filter-label">الترتيب</label>
+                <select id="reportSort" onchange="renderReport()">
+                    <option value="timestamp_desc">الأحدث أولاً</option>
+                    <option value="timestamp_asc">الأقدم أولاً</option>
+                    <option value="delivery_asc">موعد التسليم</option>
+                    <option value="order_asc">رقم الطلب</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn-action btn-report" onclick="renderReport()">🔎 إنشاء التقرير</button>
+            <button class="btn-action btn-print" onclick="printReport()">🖨️ طباعة A4 / PDF</button>
+            <button class="btn-action btn-excel" onclick="exportReportExcel()">📊 تصدير Excel</button>
+        </div>
+        <div class="date-help">يشمل البحث تلقائيًا طلبات المناديب بالتاريخ الهجري أو الميلادي وفق تقويم أم القرى. يمكنك إدخال الفترة بأي من التقويمين، ويُحتسب الوقت بتوقيت السعودية (+03:00).</div>
+        <div id="reportDateStatus" class="date-diagnostic" role="status" aria-live="polite"></div>
+        <div class="preview-shell">
+            <div id="reportPrintArea" class="report-sheet"></div>
+        </div>
+    </div>
+</div>
+
+<div id="invoiceModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h3 style="color: var(--primary); margin-top:0; font-size:18px; font-weight:800;">معاينة تفاصيل الطلب (ليست فاتورة ضريبية)</h3>
+        <div id="printArea" class="invoice-box">
+            <h2 style="text-align:center; color: var(--primary); border:none; font-size:18px; font-weight:800;">شركة جار الخليج للصناعة</h2>
+            <div class="header-meta">
+                <div>العميل: <span id="v_name" style="font-weight:700;">-</span><br>رقم الطلب: <span id="v_ord" style="font-weight:700;">-</span></div>
+                <div>الفرع: <span id="v_br" style="font-weight:700;">-</span><br>المنسق: <span id="v_co" style="font-weight:700;">-</span></div>
+                <div>النوع: <span id="v_ty" style="font-weight:700;">-</span><br>الطريقة: <span id="v_me" style="font-weight:700;">-</span></div>
+            </div>
+            <table class="modal-table">
+                <thead>
+                    <tr>
+                        <th>م</th><th>الصنف</th><th>المقاس</th><th>كمية</th><th>جوانب</th><th>لون</th><th>هراب</th><th>اتجاه</th><th>خصم</th><th>تسليم</th><th>الاكسسوارات</th><th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody"></tbody>
+            </table>
+            <div style="margin-top: 15px; font-size: 11.5px; font-weight:700; color: #475569; border-top: 1px dashed var(--border); padding-top: 10px;">
+                <div>شروط وضوابط الطلب معتمدة رسمياً لدى شركة جار الخليج للصناعة.</div>
+                <div id="v_timestamp_display" style="font-weight: 800; color: var(--primary); margin-top: 4px;">تاريخ الاصدار: -</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+            <button class="btn-action btn-print" onclick="printInvoiceArea()">طباعة تفاصيل الطلب / PDF</button>
+            <button class="btn-action btn-png" onclick="exportModalPNG()">تصدير صورة PNG</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast">تم الحفظ بنجاح</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js';
+import { getFirestore, collection, getDocs, doc, runTransaction, writeBatch } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js';
+
+// نفس مشروع الشركة الأصلي؛ لا يتم نقل البيانات إلى أي خدمة أخرى.
+const firebaseConfig = {
+    apiKey: 'AIzaSyBH4FMgOWQOr5XsgzHJojB_l4nI8is42OQ',
+    authDomain: 'jaralkhaleej-production.firebaseapp.com',
+    projectId: 'jaralkhaleej-production',
+    storageBucket: 'jaralkhaleej-production.firebasestorage.app',
+    messagingSenderId: '1083279469158',
+    appId: '1:1083279469158:web:67aa79d28403b4db609ba7',
+    measurementId: 'G-NZT603FWK7'
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+const readLocal = (key, fallback) => { try { return localStorage.getItem(key) || fallback; } catch (_) { return fallback; } };
+const writeLocal = (key, value) => { try { localStorage.setItem(key, String(value)); } catch (_) {} };
+const VALID_MODES = new Set(['swipe_pages', 'invoices', 'detailed', 'compact']);
+let currentDisplayMode = readLocal('jar_display_mode', 'swipe_pages');
+if (!VALID_MODES.has(currentDisplayMode)) currentDisplayMode = 'swipe_pages';
+let pageSize = Math.max(25, Math.min(250, Number(readLocal('jar_page_size', '100')) || 100));
+if (![25, 50, 100, 250].includes(pageSize)) pageSize = 100;
+let currentPage = 1;
+let currentSwipeIndex = 0;
+let allOrdersData = [];
+let filteredOrders = [];
+let sourceRecords = new Map();
+let groupingWarnings = 0;
+const pendingChanges = Object.create(null);
+const selectedOrders = new Set();
+let fetchInProgress = false;
+let saveInProgress = false;
+let previousOrderIds = null;
+let previousReadyIds = null;
+let toastTimer;
+let hasLoadedAtLeastOnce = false;
+let lastSyncError = '';
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const escapeAttr = escapeHtml;
+const asText = value => String(value ?? '').trim();
+// توحيد التواريخ المعروضة والمستخدمة في المرشحات على توقيت السعودية مهما كانت منطقة المتصفح.
+const SAUDI_OFFSET_MS = 3 * 60 * 60 * 1000; // المملكة لا تطبق التوقيت الصيفي.
+const dateParseCache = new Map();
+const hijriDateCache = new Map();
+const umalquraUTC = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {timeZone:'UTC',year:'numeric',month:'numeric',day:'numeric'});
+const umalquraSaudi = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'});
+const DATE_FIELD_CANDIDATES = ['timestamp','createdAt','created_at','createdOn','created_on','orderDate','order_date','dateCreated','createdDate','creationDate','date','created','hijriDate','hijri_date','hijriTimestamp','orderHijriDate','تاريخ الطلب','تاريخ_الطلب','تاريخ الإنشاء','تاريخ الانشاء','التاريخ الهجري','التاريخ_الهجري'];
+const DELIVERY_FIELD_CANDIDATES = ['delivery','deliveryDate','delivery_date','deliveryAt','expectedDelivery','expected_delivery','dueDate','hijriDelivery','hijriDeliveryDate','deliveryHijri','delivery_date_hijri','تاريخ التسليم','موعد التسليم','تاريخ التسليم الهجري'];
+function toLatinDigits(v) {
+    return String(v).replace(/[٠-٩۰-۹]/g, c => {
+        const n = c.charCodeAt(0);
+        return String(n >= 0x06F0 ? n - 0x06F0 : n - 0x0660);
+    });
+}
+function normalizeCalendarText(value) {
+    return toLatinDigits(value).replace(/[\u200e\u200f\u061c\u2066-\u2069]/g,'')
+        .replace(/[\u00a0\u202f]/g,' ').replace(/،/g,',').trim();
+}
+function saudiFields(date) {
+    const d = new Date(date.getTime() + SAUDI_OFFSET_MS);
+    return [d.getUTCFullYear(),d.getUTCMonth()+1,d.getUTCDate(),d.getUTCHours(),d.getUTCMinutes(),d.getUTCSeconds()];
+}
+function fromSaudiCivil(y,month,day,hours=0,minutes=0,seconds=0,millis=0) {
+    if (![y,month,day,hours,minutes,seconds,millis].every(Number.isFinite)) return null;
+    if (y < 1800 || y > 2200 || month < 1 || month > 12 || day < 1 || day > 31 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59 || seconds < 0 || seconds > 59 || millis < 0 || millis > 999) return null;
+    const result = new Date(Date.UTC(y,month-1,day,hours,minutes,seconds,millis) - SAUDI_OFFSET_MS);
+    const f = saudiFields(result);
+    return f[0]===y && f[1]===month && f[2]===day ? result : null;
+}
+function toHijriFields(date) {
+    if (!(date instanceof Date) || !Number.isFinite(date.getTime())) return null;
+    const parts = umalquraSaudi.formatToParts(date);
+    const o = Object.fromEntries(parts.filter(p=>['year','month','day'].includes(p.type)).map(p=>[p.type,Number(toLatinDigits(p.value))]));
+    return Number.isFinite(o.year) && Number.isFinite(o.month) && Number.isFinite(o.day) ? [o.year,o.month,o.day] : null;
+}
+function hijriToSaudiCivil(year,month,day,h=0,m=0,sec=0,millis=0) {
+    if (year < 1300 || year > 1600 || month < 1 || month > 12 || day < 1 || day > 30) return null;
+    const key = `${year}-${month}-${day}`;
+    if (hijriDateCache.has(key)) {
+        const gregorian = hijriDateCache.get(key);
+        return gregorian ? fromSaudiCivil(...gregorian,h,m,sec,millis) : null;
+    }
+    let gregorian=null;
+    try {
+        // تُستخدم مقارنة ثنائية للتحويل العكسي الدقيق من أم القرى (بدلاً من التقويم الهجري الحسابي).
+        const approx = Date.UTC(622,6,19) + Math.floor((year-1)*354.367 + (month-1)*29.5306 + day-1) * 86400000;
+        let lo=-110, hi=110;
+        const target=year*384+month*32+day;
+        while(lo<=hi) {
+            const mid=Math.floor((lo+hi)/2);
+            const trial=new Date(approx+mid*86400000);
+            const parts=umalquraUTC.formatToParts(trial);
+            const values=Object.fromEntries(parts.filter(p=>['year','month','day'].includes(p.type)).map(p=>[p.type,Number(toLatinDigits(p.value))]));
+            const keyValue=values.year*384+values.month*32+values.day;
+            if(keyValue===target) {gregorian=[trial.getUTCFullYear(),trial.getUTCMonth()+1,trial.getUTCDate()];break;}
+            if(keyValue<target) lo=mid+1;else hi=mid-1;
+        }
+    } catch(e) {console.warn('تعذر تحويل التاريخ الهجري في المتصفح',e);}
+    hijriDateCache.set(key,gregorian);
+    return gregorian ? fromSaudiCivil(...gregorian,h,m,sec,millis) : null;
+}
+// أسماء أشهر التقويم الهجري كما تظهر في بعض جوالات المناديب.
+const HIJRI_MONTHS = new Map([
+    ['محرم',1],['صفر',2],['ربيع الاول',3],['ربيع اول',3],['ربيع الاولي',3],['ربيع الثاني',4],['ربيع الاخر',4],
+    ['جمادي الاولي',5],['جمادي الاول',5],['جمادي الاخره',6],['جمادي الثانيه',6],['جمادي الاخر',6],
+    ['رجب',7],['شعبان',8],['رمضان',9],['شوال',10],['ذو القعده',11],['ذي القعده',11],['ذو الحجه',12],['ذي الحجه',12]
+]);
+const GREGORIAN_AR_MONTHS = new Map([
+    ['يناير',1],['فبراير',2],['مارس',3],['ابريل',4],['مايو',5],['يونيو',6],['يوليو',7],
+    ['اغسطس',8],['سبتمبر',9],['اكتوبر',10],['نوفمبر',11],['ديسمبر',12]
+]);
+function monthKey(s) {
+    return asText(s).replace(/[آأإٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[\u064b-\u065f\u0670\u0640]/g,'').replace(/\s+/g,' ').trim();
+}
+function extractDateParts(text) {
+    // التقاط التاريخ والساعة والمنطقة الزمنية؛ سنة 14xx تُعامل كهجرية حتى مع لاحقة ISO مثل Z.
+    const CLOCK = String.raw`(?:[T\s,]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?\s*(ص|م|AM|PM|صباحا|مساء|صباحًا|مساءً)?)?\s*(Z|[+\-]\d{2}:?\d{2})?`;
+    const numeric = new RegExp(String.raw`^(\d{1,4})[./-](\d{1,2})[./-](\d{1,4})${CLOCK}$`,'i').exec(text);
+    if(numeric) {
+        const a=Number(numeric[1]),b=Number(numeric[2]),c=Number(numeric[3]);
+        if(numeric[1].length===4)return {year:a,month:b,day:c,clock:numeric.slice(4)};
+        if(numeric[3].length===4)return {year:c,month:b,day:a,clock:numeric.slice(4)};
+    }
+    const words=new RegExp(String.raw`^(\d{1,2})[\s/-]+([\u0600-\u06ff\s]+?)[\s/-]+(\d{4})${CLOCK}$`,'i').exec(text);
+    if(words) {
+        const key=monthKey(words[2]);
+        const hijriMonth=HIJRI_MONTHS.get(key), month=hijriMonth||GREGORIAN_AR_MONTHS.get(key);
+        if(month)return {year:Number(words[3]),month,day:Number(words[1]),clock:words.slice(4),explicitHijri:!!hijriMonth};
+    }
+    const wordsYearFirst=new RegExp(String.raw`^(\d{4})[\s/-]+([\u0600-\u06ff\s]+?)[\s/-]+(\d{1,2})${CLOCK}$`,'i').exec(text);
+    if(wordsYearFirst) {
+        const key=monthKey(wordsYearFirst[2]);
+        const hijriMonth=HIJRI_MONTHS.get(key),month=hijriMonth||GREGORIAN_AR_MONTHS.get(key);
+        if(month)return {year:Number(wordsYearFirst[1]),month,day:Number(wordsYearFirst[3]),clock:wordsYearFirst.slice(4),explicitHijri:!!hijriMonth};
+    }
+    return null;
+}
+function parseCivilDateParts(parts,explicitHijri=false) {
+    if(!parts)return null;
+    const [hText,minText,secText,millisText,ampmText,zoneText]=parts.clock;
+    let h=Number(hText||0),min=Number(minText||0),sec=Number(secText||0);
+    const millis=Number(String(millisText||'0').slice(0,3).padEnd(3,'0'));
+    const meridiem=asText(ampmText).toLowerCase();
+    if(meridiem){
+        if(h<1||h>12)return null;
+        h=(/^(?:م|pm|مساء|مساءً)$/.test(meridiem)) ? h%12+12 : h%12;
+    }
+    const hijri=explicitHijri || parts.explicitHijri || (parts.year>=1300&&parts.year<=1600);
+    const instant=hijri ? hijriToSaudiCivil(parts.year,parts.month,parts.day,h,min,sec,millis)
+                        : fromSaudiCivil(parts.year,parts.month,parts.day,h,min,sec,millis);
+    if(!instant)return null;
+    if(zoneText) {
+        const zone=/^Z$/i.test(zoneText)?0:(()=>{
+            const match=/^([+-])(\d{2}):?(\d{2})$/.exec(zoneText);
+            if(!match)return null;
+            const hours=Number(match[2]),minutes=Number(match[3]);
+            return hours>23||minutes>59?null:(match[1]==='+'?1:-1)*(hours*60+minutes);
+        })();
+        if(zone===null)return null;
+        // الأصل هجري أو ميلادي بتوقيت UTC أو إزاحة صريحة؛ لحظة واحدة للمقارنة.
+        return new Date(instant.getTime()+SAUDI_OFFSET_MS-zone*60000);
+    }
+    return instant;
+}
+function numericDate(number) {
+    if (!Number.isFinite(number) || number <= 0) return null;
+    if (number > 1e11 && number < 9e12) return new Date(number); // Unix milliseconds
+    if (number > 1e9 && number < 5e9) return new Date(number*1000); // Unix seconds
+    if (Number.isInteger(number) && number >= 20000 && number < 100000) {
+        const date=new Date(Date.UTC(1899,11,30)+number*86400000);
+        return fromSaudiCivil(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate());
+    }
+    return null;
+}
+function isHijriDateString(value) {
+    if(typeof value!=='string')return false;
+    let s=normalizeCalendarText(value).replace(/(?:هـ|هجر(?:ي|ية)|AH|Hijri)/gi,'')
+        .replace(/^(?:السبت|الاحد|الأحد|الاثنين|الإثنين|الثلاثاء|الاربعاء|الأربعاء|الخميس|الجمعه|الجمعة)\s*,\s*/,'')
+        .replace(/\s+(?:في|الساعة)\s+(?=\d{1,2}:\d{2})/g,' ').replace(/\s+/g,' ').trim();
+    const p=extractDateParts(s);
+    return !!p && (p.explicitHijri || p.year>=1300&&p.year<=1600);
+}
+function parseDateFlexible(value) {
+    if (value == null || value === '') return null;
+    if (value instanceof Date) return Number.isFinite(value.getTime()) ? new Date(value.getTime()) : null;
+    if (typeof value === 'number') return numericDate(value);
+    if (typeof value === 'object') {
+        try {
+            if (typeof value.toDate === 'function') return parseDateFlexible(value.toDate());
+            if (typeof value.toMillis === 'function') return numericDate(Number(value.toMillis()));
+            if (value.timestampValue) return parseDateFlexible(value.timestampValue);
+            const seconds=value.seconds ?? value._seconds;
+            const nanos=value.nanoseconds ?? value._nanoseconds ?? 0;
+            if(seconds != null && Number.isFinite(Number(seconds))) return new Date(Number(seconds)*1000+Math.floor(Number(nanos)/1e6));
+            if(value.milliseconds != null) return numericDate(Number(value.milliseconds));
+        } catch(_) {return null;}
+        return null;
+    }
+    const input=asText(value);
+    if(!input)return null;
+    if(dateParseCache.has(input)) {
+        const millis=dateParseCache.get(input);
+        return millis == null ? null : new Date(millis);
+    }
+    const text=normalizeCalendarText(input);
+    let result=null;
+    if(/^\d{10,13}$/.test(text) || /^\d{5}$/.test(text)) result=numericDate(Number(text));
+    if(!result) {
+        const explicitHijri=/(?:هـ|هجر(?:ي|ية)|AH|Hijri)/i.test(text);
+        const cleaned=text.replace(/(?:هـ|هجر(?:ي|ية)|AH|Hijri)/gi,'')
+            .replace(/^(?:السبت|الاحد|الأحد|الاثنين|الإثنين|الثلاثاء|الاربعاء|الأربعاء|الخميس|الجمعه|الجمعة)\s*,\s*/,'')
+            .replace(/\s+(?:في|الساعة)\s+(?=\d{1,2}:\d{2})/g,' ')
+            .replace(/\s*([./-])\s*/g,'$1').replace(/\s+/g,' ').trim();
+        const components=extractDateParts(cleaned);
+        if(components)result=parseCivilDateParts(components,explicitHijri);
+        else if(!explicitHijri && !/^\d{1,4}[./-]/.test(cleaned)) {
+            const d=new Date(cleaned);
+            if(Number.isFinite(d.getTime()) && d.getUTCFullYear()>=1900)result=d;
+        }
+    }
+    dateParseCache.set(input,result ? result.getTime() : null);
+    if(dateParseCache.size>6000)dateParseCache.clear();
+    return result;
+}
+function normalizeTimestamp(value) {
+    if (value == null || value === '') return '';
+    if (typeof value === 'string') return value;
+    const d=parseDateFlexible(value);
+    if(d) return d.toISOString();
+    return typeof value === 'number' ? String(value) : '';
+}
+function normalizedBool(value) { return value === true || value === 1 || /^(true|1|yes|نعم)$/i.test(asText(value)); }
+const dateValue = d => {
+    if (!(d instanceof Date) || !Number.isFinite(d.getTime())) return '';
+    const f=saudiFields(d),pad=n=>String(n).padStart(2,'0');
+    return `${f[0]}-${pad(f[1])}-${pad(f[2])}`;
+};
+const toLocalInputValue = d => {
+    if (!(d instanceof Date) || !Number.isFinite(d.getTime())) return '';
+    const f=saudiFields(d),pad=n=>String(n).padStart(2,'0');
+    return `${dateValue(d)}T${pad(f[3])}:${pad(f[4])}`;
+};
+function formatDateAr(value) {
+    const d=parseDateFlexible(value);
+    return d ? new Intl.DateTimeFormat('ar-SA-u-ca-gregory', {timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).format(d) : asText(value);
+}
+function formatDateTimeAr(value) {
+    const d=parseDateFlexible(value);
+    return d ? new Intl.DateTimeFormat('ar-SA-u-ca-gregory', {timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d) : asText(value);
+}
+function firstValidDateField(row, keys) {
+    if (!row || typeof row !== 'object') return {value:'',field:'',date:null};
+    let firstUnrecognized=null;
+    for(const key of keys){
+        const raw=row[key];
+        if(raw == null || raw === '') continue;
+        const parsed=parseDateFlexible(raw);
+        if(parsed) return {value:normalizeTimestamp(raw),field:key,date:parsed};
+        if(!firstUnrecognized) firstUnrecognized={value:normalizeTimestamp(raw),field:key,date:null};
+    }
+    return firstUnrecognized || {value:'',field:'',date:null};
+}
+function creationField(row) {
+    const direct=firstValidDateField(row,DATE_FIELD_CANDIDATES);
+    if(direct.date) return direct;
+    // بعض الإصدارات القديمة خزنت التاريخ في أول صنف، لا في رأس الطلب.
+    if(Array.isArray(row?.items))for(const item of row.items){
+        const nested=firstValidDateField(item,DATE_FIELD_CANDIDATES);
+        if(nested.date)return {...nested,field:`items.${nested.field}`};
+    }
+    return direct;
+}
+function itemDeliveryField(item,row) {
+    const first=firstValidDateField(item,DELIVERY_FIELD_CANDIDATES);
+    if(first.date) return first;
+    const header=firstValidDateField(row,DELIVERY_FIELD_CANDIDATES);
+    return header.date ? header : (first.value ? first : header);
+}
+function sameValue(a,b) {
+    if (typeof a === 'boolean' || typeof b === 'boolean') return normalizedBool(a) === normalizedBool(b);
+    return normalizeTimestamp(a) === normalizeTimestamp(b);
+}
+function showToast(msg, danger=false) {
+    const toast = $('toast');
+    if (!toast) return;
+    clearTimeout(toastTimer);
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    toast.style.background = danger ? '#991b1b' : 'var(--primary)';
+    toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3500);
+}
+function statusMessage(message, isError=false) {
+    const el = $('syncStatus');
+    if (el) { el.textContent = message; el.className = `sync-status ${isError ? 'sync-error' : ''}`; }
+}
+function hasPending() { return Object.keys(pendingChanges).length > 0; }
+function pendingCount() {
+    return Object.values(pendingChanges).reduce((sum, c) => sum + Object.keys(c).filter(k => !k.startsWith('_')).length +
+        Object.values(c._itemChanges || {}).reduce((s, row) => s + Object.keys(row).length, 0), 0);
+}
+function updatePendingUI() {
+    const el = $('pendingCount');
+    if (el) {
+        const n = pendingCount();
+        el.hidden = !n;
+        el.textContent = n ? `${n} تعديل غير محفوظ` : '';
+    }
+    const saveButton = $('saveAllButton');
+    if (saveButton) { saveButton.disabled = saveInProgress || !hasPending(); saveButton.textContent = saveInProgress ? 'جاري الحفظ...' : 'حفظ التعديلات 💾'; }
+    const noteSaveButton = $('dailySaveButton');
+    if (noteSaveButton) {
+        noteSaveButton.disabled = saveInProgress || !hasPending();
+        noteSaveButton.textContent = saveInProgress ? '⏳ حفظ التغييرات...' : `💾 حفظ التعديلات في Firebase${pendingCount() ? ` (${pendingCount()})` : ''}`;
+    }
+    const noteStatus = $('dailyNoteSaveStatus');
+    if (noteStatus) {
+        noteStatus.textContent = saveInProgress ? '⏳ جارِ حفظ التعديلات إلى Firebase...' : hasPending() ? `⚠️ لديك ${pendingCount()} تعديل غير محفوظ. اضغط زر الحفظ قبل إغلاق الصفحة أو طباعة النسخة النهائية.` : '✓ جميع التعديلات المنجزة في هذه الجلسة محفوظة أو لم تُجرَ تعديلات بعد.';
+        noteStatus.className = 'note-save-status' + (hasPending() ? ' note-unsaved' : '');
+    }
+    const deleteButton = $('deleteSelectedButton');
+    if (deleteButton) deleteButton.textContent = `🗑️ حذف المحدد (${selectedOrders.size})`;
+    document.title = `${hasPending() ? '● ' : ''}لوحة طلبات جار الخليج - الإصدار 3.6`;
+}
+
+function playTone(kind) {
+    try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        const audio = new AC(), osc = audio.createOscillator(), gain = audio.createGain();
+        osc.type = kind === 'ready' ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(kind === 'ready' ? 880 : 540, audio.currentTime);
+        osc.frequency.linearRampToValueAtTime(kind === 'ready' ? 1100 : 740, audio.currentTime + .15);
+        gain.gain.setValueAtTime(.08, audio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .35);
+        osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime+.36);
+        osc.onended=()=>audio.close();
+    } catch (_) {}
+}
+
+const cleanKey = s => asText(s).toLocaleLowerCase('ar');
+function compatibleGroup(group, row) {
+    if (cleanKey(group.order) !== cleanKey(row.order)) return false;
+    for (const key of ['name','branch']) {
+        if (asText(group[key]) && asText(row[key]) && cleanKey(group[key]) !== cleanKey(row[key])) return false;
+    }
+    const d1 = dateValue(parseDateFlexible(group.timestamp));
+    const d2 = dateValue(creationField(row).date);
+    if (d1 && d2 && d1 !== d2) return false;
+    return true;
+}
+function groupOrders(raw) {
+    const list = [];
+    const byNumber = new Map();
+    const records = new Map();
+    for (const entry of [...raw].sort((a,b)=>a.id.localeCompare(b.id))) {
+        const row = entry.data || {};
+        const created = creationField(row);
+        records.set(entry.id, row);
+        const number = asText(row.order);
+        const numberKey = number && number !== 'بدون رقم' ? cleanKey(number) : '';
+        let group = null;
+        if (numberKey) {
+            const candidates = (byNumber.get(numberKey) || []).filter(g => compatibleGroup(g, row));
+            if (candidates.length === 1) group = candidates[0];
+        }
+        if (!group) {
+            group = {
+                id: entry.id, docIds: [], items: [], order: row.order ?? 'بدون رقم',
+                name: row.name || '', branch: row.branch || '', coordinator: row.coordinator || '',
+                type: row.type || '', method: row.method || '', maintenance: row.maintenance || '',
+                timestamp: created.value, __createdField:created.field, taxInvoice: row.taxInvoice || '',
+                isReady:false, isDelivered:false, isPrinted:false, mixedReady:false, mixedDelivered:false, invoiceConflict:false,
+                _statusesReady:[], _statusesDelivered:[], _statusesPrinted:[], _invoices:[]
+            };
+            list.push(group);
+            if (numberKey) {
+                const pool = byNumber.get(numberKey) || [];
+                pool.push(group); byNumber.set(numberKey, pool);
+            }
+        }
+        group.docIds.push(entry.id);
+        if (!parseDateFlexible(group.timestamp) && created.date) {
+            group.timestamp=created.value;group.__createdField=created.field;
+        }
+        for (const k of ['name','branch','coordinator','type','method','maintenance','taxInvoice']) {
+            if (!asText(group[k]) && asText(row[k])) group[k] = row[k];
+        }
+        group._statusesReady.push(normalizedBool(row.isReady));
+        group._statusesDelivered.push(normalizedBool(row.isDelivered));
+        // الأوامر القديمة قد تحتوي رقم الفاتورة دون حقل isPrinted؛ الرقم دليل على وضع علامة الطباعة.
+        group._statusesPrinted.push(normalizedBool(row.isPrinted) || Boolean(asText(row.taxInvoice)));
+        if (asText(row.taxInvoice)) group._invoices.push(asText(row.taxInvoice));
+        if (Array.isArray(row.items) && row.items.length) {
+            row.items.forEach((item, index) => {
+                group.items.push({ ...(item || {}), delivery:itemDeliveryField(item,row).value,
+                    __sourceDocId:entry.id, __sourceItemIndex:index, __legacy:false });
+            });
+        } else {
+            const item = {};
+            for (const key of ['name','size','qty','gnb','clor','hrbq','side','discnt','delivery','acses','note']) {
+                item[key] = key === 'delivery' ? itemDeliveryField(null,row).value : (row[key] || '');
+            }
+            group.items.push({ ...item, __sourceDocId:entry.id, __sourceItemIndex:0, __legacy:true });
+        }
+    }
+    for (const g of list) {
+        g.isReady = g._statusesReady.every(Boolean);
+        g.isDelivered = g._statusesDelivered.every(Boolean);
+        g.isPrinted = Boolean(asText(g.taxInvoice)) || g._statusesPrinted.every(Boolean);
+        g.mixedReady = g._statusesReady.some(Boolean) && !g.isReady;
+        g.mixedDelivered = g._statusesDelivered.some(Boolean) && !g.isDelivered;
+        g.invoiceConflict = new Set(g._invoices).size > 1;
+        delete g._statusesReady; delete g._statusesDelivered; delete g._statusesPrinted; delete g._invoices;
+    }
+    const ambiguousNumbers = [...byNumber.values()].filter(pool => pool.length > 1).length;
+    const statusDisagreements = list.filter(g=>g.mixedReady||g.mixedDelivered||g.invoiceConflict).length;
+    return {list, records, warnings:ambiguousNumbers + statusDisagreements};
+}
+
+async function loadDashboardData(options={}) {
+    const {silent=false, force=false} = (options && typeof options === 'object') ? options : {};
+    if (saveInProgress || fetchInProgress) return;
+    if (hasPending() && !force) {
+        if (silent) return; // لا نستبدل تعديلات المستخدم خلال التحديث التلقائي.
+        if (!confirm('لديك تعديلات لم تُحفظ. هل تريد تجاهلها وتحديث البيانات؟')) return;
+        for (const key of Object.keys(pendingChanges)) delete pendingChanges[key];
+        updatePendingUI();
+    }
+    fetchInProgress = true;
+    if (!silent) statusMessage('جاري مزامنة الطلبات...');
+    try {
+        const snapshot = await getDocs(collection(db, 'orders'));
+        const raw = [];
+        snapshot.forEach(item => raw.push({ id:item.id, data:item.data() }));
+        const result = groupOrders(raw);
+        sourceRecords = result.records;
+        allOrdersData = result.list;
+        groupingWarnings = result.warnings;
+        hasLoadedAtLeastOnce = true;
+        lastSyncError = '';
+        const knownIds = new Set(allOrdersData.map(o=>o.id));
+        for (const id of selectedOrders) if (!knownIds.has(id)) selectedOrders.delete(id);
+        const current = new Set(allOrdersData.map(o=>o.id));
+        const readyNow = new Set(allOrdersData.filter(o=>o.isReady).map(o=>o.id));
+        if (previousOrderIds && [...current].some(id=>!previousOrderIds.has(id))) {
+            playTone('new'); showToast('🚨 تم رصد طلب جديد');
+        } else if (previousReadyIds && [...readyNow].some(id=>!previousReadyIds.has(id))) {
+            playTone('ready'); showToast('🔔 طلب جاهز للطباعة');
+        }
+        previousOrderIds = current;
+        previousReadyIds = readyNow;
+        populateDynamicFilters();
+        updateStats();
+        filterTable(false);
+        if ($('dailyNoteModal')?.style.display === 'block') renderDailyNote();
+        if ($('reportsModal')?.style.display === 'block') renderReport();
+        updatePendingUI();
+        const stamp = formatDateTimeAr(new Date());
+        statusMessage(`آخر مزامنة: ${stamp} | ${allOrdersData.length} طلب${groupingWarnings ? ` | ⚠️ ${groupingWarnings} حالة تحتاج مراجعة` : ''}`);
+        if (!silent) showToast('✅ تم تحديث البيانات دون تغيير سجلاتها');
+    } catch (error) {
+        console.error('تعذر تحميل Firebase:', error);
+        lastSyncError = String(error?.code || error?.message || 'اتصال/صلاحيات');
+        if ($('dailyNoteModal')?.style.display === 'block') renderDailyNote();
+        if ($('reportsModal')?.style.display === 'block') renderReport();
+        statusMessage(`فشلت المزامنة (${error?.code || 'اتصال/صلاحيات'}). لم تُحذف البيانات المعروضة.`, true);
+        if (!silent) showToast('تعذر جلب البيانات؛ تحقق من الإنترنت وصلاحيات Firebase', true);
+    } finally { fetchInProgress = false; }
+}
+
+function ensurePending(orderId) {
+    if (!pendingChanges[orderId]) pendingChanges[orderId] = { _base:{}, _itemChanges:{}, _itemBase:{} };
+    return pendingChanges[orderId];
+}
+const allowedHeader = new Set(['order','name','branch','coordinator','taxInvoice','isReady','isDelivered','isPrinted']);
+const allowedItem = new Set(['name','size','qty','gnb','clor','hrbq','side','discnt','delivery','acses','note','noteChecked']);
+function stageChange(orderId, field, element) {
+    if (!allowedHeader.has(field)) return;
+    const order = allOrdersData.find(o=>o.id===orderId);
+    if (!order) return;
+    const change = ensurePending(orderId);
+    if (!Object.prototype.hasOwnProperty.call(change._base, field)) {
+        change._base[field] = Object.fromEntries(order.docIds.map(id => [id, sourceRecords.get(id)?.[field]]));
+    }
+    const value = element.value;
+    change[field] = value;
+    order[field] = value;
+    if (field === 'taxInvoice') {
+        // بمجرد كتابة رقم فاتورة أو مسحه تتزامن علامة «تم الطباعة».
+        stageStatusChange(orderId, 'isPrinted', Boolean(asText(value)));
+        syncNoteHeaderInputs(orderId, 'taxInvoice', value, element);
+        syncStatusInputs(orderId, 'isPrinted', Boolean(asText(value)));
+    }
+    element.classList.add('modified-field');
+    updatePendingUI();
+}
+function stageItemChange(orderId, index, field, element) {
+    if (!allowedItem.has(field)) return;
+    const order = allOrdersData.find(o=>o.id===orderId);
+    const item = order?.items?.[index];
+    if (!item) return;
+    const change = ensurePending(orderId);
+    if (!change._itemChanges[index]) change._itemChanges[index] = {};
+    if (!change._itemBase[index]) change._itemBase[index] = {};
+    if (!Object.prototype.hasOwnProperty.call(change._itemBase[index], field)) {
+        // افحص قيمة الحقل الأصلية من Firestore لا القيمة المعروضة البديلة.
+        const original = sourceRecords.get(item.__sourceDocId);
+        change._itemBase[index][field] = item.__legacy
+            ? original?.[field]
+            : original?.items?.[item.__sourceItemIndex]?.[field];
+    }
+    const value = element.type === 'checkbox' ? Boolean(element.checked) : element.value;
+    change._itemChanges[index][field] = value;
+    item[field] = value;
+    element.classList.add('modified-field');
+    updatePendingUI();
+}
+function stageStatusChange(orderId, field, checked) {
+    const order = allOrdersData.find(o=>o.id===orderId);
+    if (!order || !['isReady','isDelivered','isPrinted'].includes(field)) return;
+    const change = ensurePending(orderId);
+    if (!Object.prototype.hasOwnProperty.call(change._base, field))
+        change._base[field] = Object.fromEntries(order.docIds.map(id=>[id,sourceRecords.get(id)?.[field]]));
+    change[field] = Boolean(checked);
+    order[field] = Boolean(checked);
+    updatePendingUI();
+}
+function saveValidationConflict(message) {
+    const error = new Error(message);
+    error.code = 'EDIT_CONFLICT';
+    return error;
+}
+async function saveOneOrder(order, changes) {
+    const ids = [...order.docIds];
+    if (ids.length > 450) throw new Error('عدد سجلات هذا الطلب يتجاوز الحد المسموح للمعاملة.');
+    await runTransaction(db, async transaction => {
+        const references = ids.map(id => doc(db, 'orders', id));
+        const snapshots = [];
+        // Firestore يشترط تنفيذ كل عمليات القراءة قبل أي عملية تحديث.
+        for (const ref of references) snapshots.push(await transaction.get(ref));
+        const records = new Map();
+        for (let i=0; i<ids.length; i++) {
+            if (!snapshots[i].exists()) throw saveValidationConflict(`سجل الطلب ${ids[i]} حُذف من مصدر آخر.`);
+            records.set(ids[i], snapshots[i].data());
+        }
+        const changesByDoc = new Map(ids.map(id=>[id,{}]));
+        for (const key of Object.keys(changes).filter(k=>!k.startsWith('_'))) {
+            if (!allowedHeader.has(key)) continue;
+            for (const id of ids) {
+                const latest = records.get(id)[key];
+                const original = changes._base[key]?.[id];
+                if (!sameValue(latest, original))
+                    throw saveValidationConflict(`تم تعديل حقل (${key}) في الطلب ${order.order} من مستخدم آخر. حدّث البيانات قبل إعادة المحاولة.`);
+                changesByDoc.get(id)[key] = ['isReady','isDelivered','isPrinted'].includes(key) ? normalizedBool(changes[key]) : changes[key];
+            }
+        }
+        for (const [indexText, fieldChanges] of Object.entries(changes._itemChanges || {})) {
+            const index = Number(indexText);
+            const item = order.items[index];
+            if (!item) throw saveValidationConflict('تغير ترتيب أصناف الطلب.');
+            const id = item.__sourceDocId;
+            const latestDoc = records.get(id);
+            if (!latestDoc) throw saveValidationConflict('تعذر تحديد مستند الصنف الأصلي.');
+            const changedFields = Object.keys(fieldChanges).filter(f => allowedItem.has(f));
+            if (!changedFields.length) continue;
+            const originalDoc = sourceRecords.get(id);
+            if (item.__legacy) {
+                if (Array.isArray(latestDoc.items) && latestDoc.items.length) throw saveValidationConflict('تحول الطلب القديم إلى قائمة أصناف. حدّثه أولاً.');
+                for (const field of changedFields) {
+                    if (!sameValue(latestDoc[field], changes._itemBase[index]?.[field]))
+                        throw saveValidationConflict(`حقل (${field}) في الطلب ${order.order} تغير في قاعدة البيانات.`);
+                    if (field in changesByDoc.get(id) && !sameValue(changesByDoc.get(id)[field], fieldChanges[field]))
+                        throw saveValidationConflict('تعارض تعديل اسم العميل واسم الصنف في الطلب القديم؛ أجرِ تعديلاً واحداً.');
+                    changesByDoc.get(id)[field] = fieldChanges[field];
+                }
+            } else {
+                const live = latestDoc.items;
+                const original = originalDoc?.items;
+                const pos = item.__sourceItemIndex;
+                if (!Array.isArray(live) || !live[pos]) throw saveValidationConflict('حُذف الصنف أو تغيّر ترتيبه من مستخدم آخر.');
+                if (!sameValue(live[pos]?.name, original?.[pos]?.name)) throw saveValidationConflict('تغير الصنف الأصلي؛ أعد تحميل الطلب.');
+                for (const field of changedFields) {
+                    if (!sameValue(live[pos][field], changes._itemBase[index]?.[field]))
+                        throw saveValidationConflict(`حقل (${field}) في الصنف رقم ${pos+1} تغير من مستخدم آخر.`);
+                }
+                let items = changesByDoc.get(id).items;
+                if (!items) items = live.map(record => ({...record}));
+                for (const field of changedFields) items[pos][field] = fieldChanges[field];
+                changesByDoc.get(id).items = items;
+            }
+        }
+        for (const ref of references) {
+            const patch = changesByDoc.get(ref.id);
+            if (Object.keys(patch).length) transaction.update(ref, patch);
+        }
+    });
+}
+async function saveAllChanges() {
+    if (saveInProgress) return;
+    const keys = Object.keys(pendingChanges);
+    if (!keys.length) return showToast('لا توجد تعديلات للحفظ');
+    saveInProgress = true; updatePendingUI();
+    let completed = 0;
+    try {
+        for (const id of keys) {
+            const order = allOrdersData.find(o=>o.id===id);
+            if (!order) throw new Error('الطلب المعدّل لم يعد موجوداً في القائمة.');
+            await saveOneOrder(order, pendingChanges[id]);
+            delete pendingChanges[id];
+            completed++;
+            updatePendingUI();
+        }
+        statusMessage(`تم حفظ ${completed} طلب بنجاح`);
+        showToast(`✅ تم حفظ ${completed} طلب بنجاح`);
+    } catch (e) {
+        console.error('خطأ الحفظ:',e);
+        statusMessage(`تعذر حفظ أحد الطلبات. نجح حفظ ${completed} طلب؛ التعديلات المتبقية محفوظة مؤقتاً في الشاشة.`,true);
+        alert(`تعذر إكمال الحفظ. ${completed ? `تم حفظ ${completed} طلب. ` : ''}${e.code === 'EDIT_CONFLICT' ? e.message : 'تحقق من الاتصال وصلاحيات التعديل.\n' + (e.message || '')}\nلم يتم مسح التعديلات التي لم تنجح.`);
+    } finally {
+        saveInProgress = false; updatePendingUI();
+        // لا نعيد التحميل ما دامت هناك تعديلات لم تُحفظ.
+        if (!hasPending() && completed) await loadDashboardData({force:true});
+        if ($('dailyNoteModal')?.style.display === 'block') updatePendingUI();
+    }
+}
+async function deleteGroups(groupIds) {
+    if (hasPending()) return alert('احفظ التعديلات أو ألغِها بالتحديث قبل حذف الطلبات؛ وذلك لتجنّب فقدان البيانات.');
+    const groups = groupIds.map(id=>allOrdersData.find(o=>o.id===id)).filter(Boolean);
+    if (!groups.length) return alert('لا توجد طلبات محددة للحذف.');
+    const totalDocs = groups.reduce((s,g)=>s+g.docIds.length,0);
+    if (!confirm(`سيتم حذف ${groups.length} طلب نهائياً، بما يشمله من ${totalDocs} سجل في قاعدة البيانات. هل أنت متأكد؟`)) return;
+    const typed = prompt(`للتأكيد النهائي اكتب كلمة «حذف» لحذف ${groups.length} طلب:`);
+    if (typed !== 'حذف') return;
+    let count = 0;
+    try {
+        // نجمع الطلب كاملاً داخل دفعة واحدة؛ الحد الأقصى 450 عملية لتوفير هامش للأمان.
+        let batch = writeBatch(db), batchCount = 0, batchGroups = [];
+        const commitBatch = async () => {
+            if (!batchCount) return;
+            await batch.commit();
+            count += batchGroups.length;
+            batch = writeBatch(db); batchCount = 0; batchGroups=[];
+        };
+        for (const group of groups) {
+            if (group.docIds.length > 450) throw new Error('أحد الطلبات أكبر من حد الحذف الآمن.');
+            if (batchCount + group.docIds.length > 450) await commitBatch();
+            for (const id of group.docIds) { batch.delete(doc(db,'orders',id)); batchCount++; }
+            batchGroups.push(group.id);
+        }
+        await commitBatch();
+        selectedOrders.clear();
+        showToast(`🗑️ حُذف ${count} طلب بنجاح`);
+        await loadDashboardData({force:true});
+    } catch (e) {
+        console.error('فشل الحذف:',e);
+        alert(`تعذر إكمال الحذف. حُذف ${count} طلب قبل حدوث المشكلة. تحقق من الأذونات والاتصال، ثم حدث الصفحة.`);
+        selectedOrders.clear();
+        await loadDashboardData({force:true});
+    }
+}
+function deleteOrderRow(id) { return deleteGroups([id]); }
+function deleteSelectedOrders() { return deleteGroups([...selectedOrders]); }
+function toggleSelectAll(master) {
+    const visible = currentDisplayMode === 'swipe_pages'
+        ? [filteredOrders[currentSwipeIndex]].filter(Boolean)
+        : currentDisplayMode === 'invoices' || currentDisplayMode === 'detailed' || currentDisplayMode === 'compact'
+            ? getPageOrders().data : [];
+    for (const group of visible) master.checked ? selectedOrders.add(group.id) : selectedOrders.delete(group.id);
+    for (const checkbox of document.querySelectorAll('input[data-select-order]')) checkbox.checked = selectedOrders.has(checkbox.dataset.selectOrder);
+    updatePendingUI();
+}
+
+function updateStats() {
+    const data=allOrdersData;
+    $('statTotal').textContent = String(data.length);
+    $('statReady').textContent = String(data.filter(o=>o.isReady).length);
+    $('statNotDelivered').textContent = String(data.filter(o=>!o.isDelivered).length);
+    $('statNoInvoice').textContent = String(data.filter(o=>!asText(o.taxInvoice)).length);
+}
+function populateSelect(id, values, allLabel) {
+    const el=$(id); if (!el) return;
+    const old=el.value;
+    const options=[...new Set(values.map(asText).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+    el.innerHTML=`<option value="all">${escapeHtml(allLabel)}</option>` + options.map(s=>`<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join('');
+    if (options.includes(old)) el.value=old;
+}
+function populateDynamicFilters() {
+    const branches=allOrdersData.map(o=>o.branch), coords=allOrdersData.map(o=>o.coordinator);
+    for (const id of ['branchFilter','dailyBranch','reportBranch']) populateSelect(id,branches,'كل الفروع');
+    for (const id of ['coordinatorFilter','reportCoordinator']) populateSelect(id,coords,'كل المنسقين');
+}
+function matchesStatus(o, status) {
+    switch(status) {
+        case 'ready':return Boolean(o.isReady);
+        case 'not_ready':return !o.isReady;
+        case 'delivered':return Boolean(o.isDelivered);
+        case 'not_delivered':return !o.isDelivered;
+        case 'no_invoice':return !asText(o.taxInvoice);
+        default:return true;
+    }
+}
+function searchText(o) {
+    const header=['order','name','branch','coordinator','type','method','maintenance','taxInvoice','timestamp'].map(k=>o[k]);
+    const items=o.items.flatMap(i=>['name','size','qty','gnb','clor','hrbq','side','discnt','delivery','acses','note'].map(k=>i[k]));
+    return [...header,...items].map(v=>String(v ?? '')).join(' ').toLocaleLowerCase('ar');
+}
+const firstDeliveryDate = o => (o.items || []).map(i=>parseDateFlexible(i.delivery)).filter(Boolean).sort((a,b)=>a-b)[0] || null;
+const collator = new Intl.Collator('ar', {numeric:true, sensitivity:'base'});
+function sortOrders(data, method) {
+    const arr=[...data];
+    arr.sort((a,b)=>{
+        if (method==='timestamp_desc' || method==='timestamp_asc') {
+            const ad=parseDateFlexible(a.timestamp)?.getTime() || 0, bd=parseDateFlexible(b.timestamp)?.getTime() || 0;
+            return method==='timestamp_asc' ? ad-bd : bd-ad;
+        }
+        if (method==='delivery_asc') return (firstDeliveryDate(a)?.getTime() ?? Infinity)-(firstDeliveryDate(b)?.getTime() ?? Infinity);
+        if (method==='client_asc') return collator.compare(asText(a.name),asText(b.name));
+        const c=collator.compare(asText(a.order),asText(b.order));
+        return method==='order_desc' ? -c : c;
+    });
+    return arr;
+}
+function filterTable(resetPosition=true) {
+    if (resetPosition) { currentPage=1; currentSwipeIndex=0; }
+    const q=asText($('searchInput')?.value).toLocaleLowerCase('ar');
+    const status=$('statusFilter')?.value || 'all', {from,to}=getPeriodValues('main');
+    const range=getTimeRange(from,to);
+    const notice=$('mainDateStatus');
+    notice.hidden=range.valid;
+    notice.textContent=range.valid?'':range.reason;
+    const branch=$('branchFilter')?.value || 'all', coord=$('coordinatorFilter')?.value || 'all';
+    const mode=$('sortFilter')?.value || 'timestamp_desc';
+    filteredOrders=range.valid ? sortOrders(allOrdersData.filter(o=>{
+        if (q && !searchText(o).includes(q)) return false;
+        if (!matchesStatus(o,status)) return false;
+        if (branch!=='all' && o.branch!==branch) return false;
+        if (coord!=='all' && o.coordinator!==coord) return false;
+        if (range.hasFilter && !withinRange(parseDateFlexible(o.timestamp),range)) return false;
+        return true;
+    }),mode) : [];
+    $('statFiltered').textContent=String(filteredOrders.length);
+    buildTable();
+}
+function resetMainFilters() {
+    for (const id of ['searchInput','dateFrom','dateTo','mainHijriFrom','mainHijriTo']) if ($(id)) $(id).value='';
+    for (const id of ['statusFilter','branchFilter','coordinatorFilter']) if ($(id)) $(id).value='all';
+    $('sortFilter').value='timestamp_desc';filterTable();
+}
+function getPageOrders() {
+    const pages=Math.max(1,Math.ceil(filteredOrders.length/pageSize));
+    currentPage=Math.max(1,Math.min(pages,currentPage));
+    const start=(currentPage-1)*pageSize;
+    return {data:filteredOrders.slice(start,start+pageSize),start,pages};
+}
+function paginationMarkup(pages) {
+    if (currentDisplayMode==='swipe_pages') return '';
+    return `<div class="pagination-bar"><span>${filteredOrders.length} طلب | صفحة ${currentPage} من ${pages}</span>
+        <div class="pagination-actions"><button class="btn-action btn-secondary" data-action="page" data-page="${currentPage-1}" ${currentPage<=1?'disabled':''}>السابق</button>
+        <button class="btn-action btn-secondary" data-action="page" data-page="${currentPage+1}" ${currentPage>=pages?'disabled':''}>التالي</button>
+        <label>عدد الطلبات <select data-page-size aria-label="عدد الطلبات في الصفحة">${[25,50,100,250].map(n=>`<option value="${n}" ${n===pageSize?'selected':''}>${n}</option>`).join('')}</select></label></div></div>`;
+}
+function inputHtml(orderId, field, value, index=null, extraClass='') {
+    return `<input type="text" class="editable-input ${extraClass}" data-order-id="${escapeAttr(orderId)}" data-edit="${index==null?'header':'item'}" data-field="${escapeAttr(field)}" ${index==null?'':`data-index="${index}"`} value="${escapeAttr(value)}" autocomplete="off">`;
+}
+function statusCheckbox(id,field,value) {
+    return `<input type="checkbox" data-status-order="${escapeAttr(id)}" data-field="${field}" ${value?'checked':''} aria-label="${field==='isReady'?'جاهز':'تم التسليم'}">`;
+}
+function selectCheckbox(id) {
+    return `<input type="checkbox" class="row-checkbox" data-select-order="${escapeAttr(id)}" ${selectedOrders.has(id)?'checked':''} aria-label="تحديد الطلب">`;
+}
+function actionButtons(order) {
+    const id=escapeAttr(order.id);
+    return `<div class="row-actions"><button class="btn-action btn-print" data-action="invoice" data-id="${id}">معاينة</button><button class="btn-action btn-delete" data-action="delete" data-id="${id}">حذف</button></div>`;
+}
+function itemRowCard(o,item,index) {
+    const fields=['name','size','qty','gnb','clor','hrbq','side','discnt','delivery','acses','note'];
+    return `<tr>${fields.map(f=>`<td>${inputHtml(o.id,f,f==='delivery'?asText(item.delivery).slice(0,10):item[f],index)}</td>`).join('')}</tr>`;
+}
+function renderOrderCard(o) {
+    const safeOrder=escapeHtml(o.order), safeId=escapeAttr(o.id);
+    const rows=o.items.map((it,idx)=>itemRowCard(o,it,idx)).join('');
+    const status=(o.mixedReady || o.mixedDelivered || o.invoiceConflict) ? '<span class="alert-dot" title="توجد حالات مختلفة بين سجلات الطلب الأصلية">⚠️ اختلاف بيانات</span>' : '';
+    return `<div class="invoice-card-item"><div class="order-card-top"><h3>طلب رقم: ${inputHtml(o.id,'order',o.order)}</h3>
+        <div class="order-card-actions"><label>${selectCheckbox(o.id)} تحديد</label><label>${statusCheckbox(o.id,'isReady',o.isReady)} جاهز</label><label>${statusCheckbox(o.id,'isDelivered',o.isDelivered)} تسليم</label>${actionButtons(o)}</div></div>
+        ${status}<div class="invoice-card-header"><div>العميل: ${inputHtml(o.id,'name',o.name)}</div><div>الفرع: ${inputHtml(o.id,'branch',o.branch)}</div>
+        <div>المنسق: ${inputHtml(o.id,'coordinator',o.coordinator)}</div><div>النوع: ${escapeHtml(o.type)} | الطريقة: ${escapeHtml(o.method)}</div>
+        <div>رقم الفاتورة: ${inputHtml(o.id,'taxInvoice',o.taxInvoice,null,'invoice-input-highlight')}</div>
+        <div>تاريخ الطلب: ${escapeHtml(formatDateTimeAr(o.timestamp))}</div></div>
+        <div class="card-table-scroll"><table class="invoice-card-table"><thead><tr>${['الصنف','المقاس','الكمية','الجوانب','اللون','الهرابات','الاتجاه','الخصم','التسليم','الإكسسوارات','ملاحظات'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function renderSwipe() {
+    const wrapper=$('tableContainerWrapper');
+    if (!filteredOrders.length) { wrapper.innerHTML='<div class="empty-state">لا توجد طلبات مطابقة للبحث</div>'; return; }
+    currentSwipeIndex=Math.min(Math.max(0,currentSwipeIndex),filteredOrders.length-1);
+    const o=filteredOrders[currentSwipeIndex];
+    wrapper.innerHTML=`<div id="swipePageBox" class="swipe-page-container"><div class="swipe-nav-bar">
+        <div><button class="btn-action btn-page-nav" data-action="swipe" data-direction="first">⏮️ الأول</button>
+        <button class="btn-action btn-page-nav" data-action="swipe" data-direction="prev">◀ السابق</button></div>
+        <div>طلب <b>${escapeHtml(o.order)}</b> | ${currentSwipeIndex+1} من ${filteredOrders.length}</div>
+        <div><button class="btn-action btn-page-nav" data-action="swipe" data-direction="next">التالي ▶</button>
+        <button class="btn-action btn-page-nav" data-action="swipe" data-direction="last">الأخير ⏭️</button></div></div>
+        ${renderOrderCard(o)}</div>`;
+}
+function renderTableRows(data,mode) {
+    const detailed=mode==='detailed';
+    const headers=['<th><input type="checkbox" id="selectAll" aria-label="تحديد كل الظاهر" onclick="toggleSelectAll(this)"></th>','<th>م</th>','<th>رقم الطلب</th>','<th>اسم العميل</th>','<th>الفرع</th>','<th>المنسق</th>',
+        ...(detailed?['<th>نوع العميل</th>','<th>طريقة الطلب</th>','<th>صيانة</th>']:[]),
+        ...['الصنف','المقاس','الكمية','الجوانب','اللون'].map(x=>`<th>${x}</th>`),
+        ...(detailed?['الهرابات','اتجاه الهراب','خصم'].map(x=>`<th>${x}</th>`):[]),
+        ...['تاريخ التسليم','إكسسوارات','ملاحظات','تاريخ الطلب','جاهز','التسليم','رقم الفاتورة','إجراءات'].map(x=>`<th>${x}</th>`)].join('');
+    const start=(currentPage-1)*pageSize;
+    const rows=data.flatMap((o,ix)=>o.items.map((item,idx)=>{
+        const base=[selectCheckbox(o.id),String(start+ix+1), inputHtml(o.id,'order',o.order),inputHtml(o.id,'name',o.name),inputHtml(o.id,'branch',o.branch),inputHtml(o.id,'coordinator',o.coordinator)];
+        if (detailed) base.push(escapeHtml(o.type),escapeHtml(o.method),escapeHtml(o.maintenance));
+        for (const f of ['name','size','qty','gnb','clor']) base.push(inputHtml(o.id,f,item[f],idx));
+        if (detailed) for (const f of ['hrbq','side','discnt']) base.push(inputHtml(o.id,f,item[f],idx));
+        base.push(inputHtml(o.id,'delivery',asText(item.delivery).slice(0,10),idx),inputHtml(o.id,'acses',item.acses,idx),inputHtml(o.id,'note',item.note,idx),
+            escapeHtml(formatDateTimeAr(o.timestamp)),statusCheckbox(o.id,'isReady',o.isReady),statusCheckbox(o.id,'isDelivered',o.isDelivered),
+            inputHtml(o.id,'taxInvoice',o.taxInvoice,null,'invoice-input-highlight'),actionButtons(o));
+        return `<tr>${base.map(x=>`<td>${x}</td>`).join('')}</tr>`;
+    })).join('');
+    return `<table id="dashTable"><thead><tr>${headers}</tr></thead><tbody>${rows || `<tr><td colspan="28" class="empty-state">لا توجد طلبات مطابقة</td></tr>`}</tbody></table>`;
+}
+function buildTable() {
+    const wrapper=$('tableContainerWrapper');
+    if (currentDisplayMode==='swipe_pages') { renderSwipe(); return; }
+    const {data,pages}=getPageOrders();
+    if (currentDisplayMode==='invoices') wrapper.innerHTML=paginationMarkup(pages)+`<div class="invoices-grid-container">${data.length?data.map(renderOrderCard).join(''):'<div class="empty-state">لا توجد طلبات مطابقة</div>'}</div>`+paginationMarkup(pages);
+    else wrapper.innerHTML=paginationMarkup(pages)+`<div class="table-h-scroll">${renderTableRows(data,currentDisplayMode)}</div>`+paginationMarkup(pages);
+    const master=$('selectAll');
+    if (master) master.checked=data.length>0 && data.every(o=>selectedOrders.has(o.id));
+}
+function navigateSwipePage(step) { currentSwipeIndex=Math.max(0,Math.min(filteredOrders.length-1,currentSwipeIndex+Number(step)));renderSwipe(); }
+function jumpSwipePage(index) { currentSwipeIndex=Math.max(0,Math.min(filteredOrders.length-1,Number(index)));renderSwipe(); }
+function changeDisplayMode(mode) {
+    if (!VALID_MODES.has(mode)) return;
+    currentDisplayMode=mode;writeLocal('jar_display_mode',mode);currentPage=1;currentSwipeIndex=0;
+    closeSettingsModal();buildTable();showToast('تم تغيير طريقة العرض');
+}
+const openSettingsModal = () => $('settingsModal').style.display='block';
+const closeSettingsModal = () => $('settingsModal').style.display='none';
+
+function openInvoiceModalById(id) {
+    const o=allOrdersData.find(item=>item.id===id);
+    if (!o) return alert('الطلب غير موجود في العرض الحالي.');
+    const labels={v_name:o.name,v_ord:o.order,v_br:o.branch,v_co:o.coordinator,v_ty:o.type,v_me:o.method};
+    for (const [key,value] of Object.entries(labels)) $(key).textContent=asText(value) || '—';
+    $('v_timestamp_display').textContent=`تاريخ إنشاء الطلب: ${formatDateTimeAr(o.timestamp) || '—'}`;
+    $('modalTableBody').innerHTML=o.items.map((item,index)=>`<tr>${[
+        index+1,item.name,item.size,item.qty,item.gnb,item.clor,item.hrbq,item.side,item.discnt,
+        formatDateAr(item.delivery),item.acses,item.note
+    ].map(value=>`<td>${escapeHtml(value)}</td>`).join('')}</tr>`).join('');
+    $('invoiceModal').style.display='block';
+}
+const closeModal = () => $('invoiceModal').style.display='none';
+
+function flattenOrders(data) {
+    const rows=[];
+    for (const o of data) for (const item of o.items || [{}]) rows.push({
+        order:o.order,client:o.name,branch:o.branch,coordinator:o.coordinator,type:o.type,method:o.method,
+        item:item.name,size:item.size,qty:item.qty,sides:item.gnb,color:item.clor,drains:item.hrbq,direction:item.side,
+        discount:item.discnt,delivery:item.delivery,accessories:item.acses,note:item.note,timestamp:o.timestamp,
+        ready:o.isReady?'نعم':'لا',delivered:o.isDelivered?'نعم':'لا',invoice:o.taxInvoice
+    });
+    return rows;
+}
+const excelHeaders=['رقم الطلب','اسم العميل','الفرع','المنسق','نوع العميل','طريقة الطلب','الصنف','المقاس','الكمية','الجوانب','اللون','الهرابات','الاتجاه','الخصم','تاريخ التسليم','الإكسسوارات','ملاحظات','تاريخ الطلب','جاهز','تم التسليم','رقم الفاتورة'];
+const excelKeys=['order','client','branch','coordinator','type','method','item','size','qty','sides','color','drains','direction','discount','delivery','accessories','note','timestamp','ready','delivered','invoice'];
+function xmlEscape(value) {
+    return String(value ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+}
+function xlsxColumn(index) { let x=index+1,s='';while(x){x--;s=String.fromCharCode(65+x%26)+s;x=Math.floor(x/26);}return s; }
+function makeWorksheet(rows) {
+    const data=[excelHeaders,...rows.map(r=>excelKeys.map(k=>r[k] ?? ''))];
+    const content=data.map((cells,r)=>`<row r="${r+1}">${cells.map((v,c)=>{
+        const ref=`${xlsxColumn(c)}${r+1}`;
+        const text=String(v ?? '');
+        const quantity=c===8 && r>0 && /^[0-9]+(?:\.[0-9]+)?$/.test(text) && Number.isFinite(+text);
+        return quantity ? `<c r="${ref}" t="n" s="1"><v>${text}</v></c>` : `<c r="${ref}" t="inlineStr" s="${r?'1':'2'}"><is><t xml:space="preserve">${xmlEscape(text)}</t></is></c>`;
+    }).join('')}</row>`).join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews><cols>${excelHeaders.map((_,i)=>`<col min="${i+1}" max="${i+1}" width="${[17,28,18,20,18,18,24,17,12,14,14,16,17,13,22,25,30,24,12,15,22][i]}" customWidth="1"/>`).join('')}</cols><sheetData>${content}</sheetData><autoFilter ref="A1:U${Math.max(1,data.length)}"/></worksheet>`;
+}
+const encoder=new TextEncoder();
+function crc32(bytes) {
+    let crc=0xFFFFFFFF;
+    for (const b of bytes) { crc^=b;for(let j=0;j<8;j++)crc=(crc>>>1)^((crc&1)?0xEDB88320:0); }
+    return (crc^0xFFFFFFFF)>>>0;
+}
+function zipFiles(files) {
+    const pieces=[], directory=[];let offset=0;
+    const push=(arr,b)=>{arr.push(b);};
+    for (const [path,xml] of Object.entries(files)) {
+        const name=encoder.encode(path), data=encoder.encode(xml),crc=crc32(data);
+        const local=new ArrayBuffer(30+name.length),h=new DataView(local);
+        h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);
+        h.setUint16(8,0,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);
+        new Uint8Array(local,30).set(name);
+        push(pieces,new Uint8Array(local));push(pieces,data);
+        const central=new ArrayBuffer(46+name.length),c=new DataView(central);
+        c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);
+        c.setUint16(10,0,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);
+        c.setUint16(28,name.length,true);c.setUint32(42,offset,true);new Uint8Array(central,46).set(name);
+        directory.push(new Uint8Array(central));offset+=local.byteLength+data.length;
+    }
+    const directorySize=directory.reduce((s,b)=>s+b.length,0);
+    const end=new ArrayBuffer(22),v=new DataView(end);
+    v.setUint32(0,0x06054b50,true);v.setUint16(8,directory.length,true);v.setUint16(10,directory.length,true);
+    v.setUint32(12,directorySize,true);v.setUint32(16,offset,true);
+    return new Blob([...pieces,...directory,new Uint8Array(end)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function downloadExcel(rows,filename) {
+    const files={
+        '[Content_Types].xml':`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
+        '_rels/.rels':`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+        'xl/workbook.xml':`<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="طلبات جار الخليج" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+        'xl/_rels/workbook.xml.rels':`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+        'xl/styles.xml':`<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF122620"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0"><alignment horizontal="center"/></xf></cellXfs></styleSheet>`,
+        'xl/worksheets/sheet1.xml':makeWorksheet(rows)
+    };
+    const blob=zipFiles(files),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),8000);
+}
+function exportToExcel() {
+    downloadExcel(flattenOrders(filteredOrders),`JarAlkhaleej_Orders_${dateValue(new Date())}.xlsx`);
+    showToast(`تجهيز ملف Excel يتضمن ${filteredOrders.length} طلب`);
+}
+
+function printElement(id,pageCss,title) {
+    const element=$(id);if (!element) return alert('لا توجد بيانات للطباعة.');
+    const pop=window.open('','_blank','width=1100,height=800');
+    if (!pop) return alert('يرجى السماح بالنوافذ المنبثقة لاستخدام الطباعة.');
+    const notePaperCss = id==='dailyNotePrintArea' && /A4\s+landscape/.test(pageCss)
+        ? '.a5-table th,.a5-table td{font-size:7pt;padding:1.4mm .9mm;line-height:1.3}.a5-check{width:5.5mm;height:5.5mm;font-size:11pt}' : '';
+    const css=`@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        @page { ${pageCss} } *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#111827;direction:rtl;font-family:Cairo,Arial,sans-serif}
+        table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #94a3b8;padding:4px;overflow-wrap:anywhere;word-break:normal;text-align:center}th{background:#e2e8f0;font-weight:800}tr{break-inside:avoid;page-break-inside:avoid}
+        .a5-sheet,.report-sheet,.invoice-box{width:100%;min-height:auto;padding:0;box-shadow:none;border:0;margin:0}.a5-title{text-align:center;border-bottom:2px solid #122620}.a5-title h3{margin:2px;font-size:13pt}.a5-title .company{font-size:8pt}.a5-meta,.a5-footer{display:flex;justify-content:space-between;gap:8px;font-size:7pt;padding:5px 0}.a5-footer{border-top:1px dashed #666;margin-top:6px}.a5-table{font-size:6.7pt;table-layout:fixed;direction:rtl}.a5-table th,.a5-table td{font-size:5.35pt;padding:1mm .5mm;line-height:1.2;vertical-align:middle;overflow-wrap:anywhere}.a5-table thead{display:table-header-group}.a5-table tr{page-break-inside:avoid;break-inside:avoid}.a5-table td:nth-child(3),.a5-table td:nth-child(4),.a5-table td:nth-child(5),.a5-table td:nth-child(12){text-align:right}.a5-check{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;border:1.1px solid #0f172a;width:4.3mm;height:4.3mm;border-radius:1px;font-size:9pt;font-weight:800}
+        .report-header{display:flex;justify-content:space-between;border-bottom:2px solid #122620;padding-bottom:8px;margin-bottom:8px}.report-header h2{font-size:15pt;margin:0}.report-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:8px 0}.report-kpi{text-align:center;border:1px solid #bbb;font-size:8pt;padding:4px}.report-kpi b{display:block;font-size:14pt}.report-table{font-size:7pt}.report-table th,.report-table td{padding:3px}
+        .invoice-box h2{text-align:center;font-size:16pt;margin:0 0 8px;border:0}.header-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border:1px solid #cbd5e1;background:#f8faf9;padding:10px;margin-bottom:12px;font-size:9pt}.modal-table{font-size:8pt;table-layout:auto}.modal-table th,.modal-table td{font-size:7pt;white-space:normal;padding:3px} .status-pill{font-weight:700}
+        .note-branch-summary{background:#fff;border:1px solid #94a3b8;border-radius:4px;padding:3px 4px;margin:4px 0 5px;break-inside:avoid;page-break-inside:avoid}
+        .note-branch-title{display:flex;justify-content:space-between;font-size:7pt;font-weight:800;margin-bottom:3px}
+        .note-branch-cards{display:flex;flex-wrap:wrap;gap:3px}
+        .note-branch-card{border:1px solid #cbd5e1;border-right:2px solid #9a7342;min-width:26mm;flex:1 1 26mm;padding:2px 3px;break-inside:avoid}
+        .note-branch-card.total{background:#f1f5f3;border-right-color:#122620}
+        .note-branch-name{font-size:6pt;font-weight:800}
+        .note-branch-count{display:flex;align-items:baseline;gap:3px;font-size:6pt}
+        .note-branch-count strong{font-size:11pt}
+        .note-branch-details{font-size:5.6pt;color:#475569}
+        .note-branch-explain{font-size:5.3pt;margin-top:3px;color:#475569}
+        ${notePaperCss}`;
+    // مصدر HTML المعروض خضع لترميز كل الحقول الديناميكية قبل إدراجها.
+    pop.document.open();pop.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>${css}</style></head><body>${element.outerHTML}</body></html>`);pop.document.close();
+    pop.onload=()=>{const fonts=pop.document.fonts?.ready || Promise.resolve();fonts.finally(()=>setTimeout(()=>{try{pop.focus();pop.print();}catch(e){console.error(e);}},250));};
+}
+function printInvoiceArea() {printElement('printArea','size:A4 landscape; margin:9mm;','تفاصيل الطلب');}
+async function exportPNG(id,filename) {
+    if (typeof window.html2canvas !== 'function') return alert('تعذر تحميل مكتبة الصور. تحقق من الاتصال بالإنترنت.');
+    try {
+        const canvas=await window.html2canvas($(id),{scale:2,backgroundColor:'#ffffff',useCORS:true});
+        const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    } catch(e) {console.error(e);alert('تعذر تصدير الصورة؛ جرّب الطباعة بدلاً منها.');}
+}
+function exportModalPNG() {return exportPNG('printArea',`Order_${dateValue(new Date())}.png`);}
+
+// فحص زمني مستقل لكل طلب: تاريخ الإنشاء وموعد التسليم، بالهجري أو الميلادي وتوقيت السعودية.
+function getTimeRange(fromValue,toValue) {
+    const from=fromValue ? parseDateFlexible(fromValue) : null;
+    const to=toValue ? parseDateFlexible(toValue) : null;
+    if ((fromValue && !from) || (toValue && !to)) return {valid:false,reason:'تعذر قراءة أحد التاريخين المحددين. استخدم 1448/04/30 هـ أو 2026/10/11.'};
+    if (to && typeof toValue==='string') {
+        const text=normalizeCalendarText(toValue);
+        // نهاية التاريخ دون ساعة تشمل اليوم كله، سواء كان هجريًا أو ميلاديًا.
+        const clock=/[T\s,]+\d{1,2}:\d{2}(?::\d{2})?/.exec(text);
+        if(!clock)to.setTime(to.getTime()+86400000-1);
+        else if(/\d{1,2}:\d{2}:\d{2}/.test(clock[0]))to.setTime(to.getTime()+1000-1);
+        else to.setTime(to.getTime()+60000-1);
+    }
+    if (from && to && from>to) return {valid:false,reason:'تاريخ البداية بعد تاريخ النهاية.'};
+    return {valid:true,from,to,hasFilter:!!(fromValue||toValue)};
+}
+function rangeIsValid(from,to) {return getTimeRange(from,to).valid;}
+function withinRange(d,range) {
+    return !!d && (!range.from || d>=range.from) && (!range.to || d<=range.to);
+}
+function deliveryDates(order) {return (order.items||[]).map(i=>parseDateFlexible(i.delivery)).filter(Boolean);}
+function getDataByDateTimeRange(fromValue,toValue,status='all',branch='all',basis='created') {
+    const range=getTimeRange(fromValue,toValue);
+    if(!range.valid)return [];
+    const result=[];
+    for(const o of allOrdersData) {
+        if(!matchesStatus(o,status) || branch!=='all'&&o.branch!==branch)continue;
+        if(!range.hasFilter) {result.push(o);continue;}
+        const created=withinRange(parseDateFlexible(o.timestamp),range);
+        const matchedItems=(o.items||[]).filter(i=>withinRange(parseDateFlexible(i.delivery),range));
+        if(basis==='created') {if(created)result.push(o);}
+        else if(basis==='delivery') {if(matchedItems.length)result.push({...o,items:matchedItems});}
+        else if(created)result.push(o);
+        else if(matchedItems.length)result.push({...o,items:matchedItems});
+    }
+    return result;
+}
+function dateBasisLabel(value) {
+    return value==='delivery' ? 'موعد تسليم الأصناف' : value==='either' ? 'تاريخ الإنشاء أو التسليم' : 'تاريخ إنشاء الطلب';
+}
+function dateCoverage(basis) {
+    let recognized=0, missing=0, hijriRecognized=0;
+    let earliest=null, latest=null;
+    const fields=new Map();
+    for(const o of allOrdersData) {
+        const ds=basis==='created' ? [parseDateFlexible(o.timestamp)].filter(Boolean)
+            : basis==='delivery' ? deliveryDates(o) : [parseDateFlexible(o.timestamp),...deliveryDates(o)].filter(Boolean);
+        if(ds.length) {
+            recognized++;
+            if ((basis!=='delivery' && isHijriDateString(o.timestamp)) ||
+                (basis!=='created' && (o.items||[]).some(i=>isHijriDateString(i.delivery))))hijriRecognized++;
+            for (const d of ds) {
+                const t=d.getTime();
+                if(earliest===null||t<earliest)earliest=t;
+                if(latest===null||t>latest)latest=t;
+            }
+            if(basis==='created') fields.set(o.__createdField||'timestamp',(fields.get(o.__createdField||'timestamp')||0)+1);
+        } else missing++;
+    }
+    return {recognized,missing,hijriRecognized,earliest:earliest===null?null:new Date(earliest),latest:latest===null?null:new Date(latest),fields};
+}
+function updateDateStatus(elementId, basis, selected, range, status, branch) {
+    const el=$(elementId);if(!el)return;
+    const coverage=dateCoverage(basis);
+    let text=`<strong>نتائج الفترة: ${selected.length} طلب</strong> | إجمالي قاعدة البيانات: ${allOrdersData.length} | ${dateBasisLabel(basis)} | توقيت السعودية (+03:00).`;
+    if(lastSyncError)text+=`<div>⚠️ فشلت أحدث مزامنة (${escapeHtml(lastSyncError)})، وقد تكون البيانات المعروضة قديمة. تحقق من الاتصال وقواعد Firebase.</div>`;
+    else if(!hasLoadedAtLeastOnce)text+='<div>⏳ جاري انتظار تحميل الطلبات من Firebase...</div>';
+    else if(!allOrdersData.length)text+='<div>لم تُرجع قاعدة البيانات أي طلبات عند آخر مزامنة ناجحة.</div>';
+    if(coverage.earliest) text+=`<div>التواريخ المتاحة وفق هذا الاختيار: من ${escapeHtml(formatDateTimeAr(coverage.earliest))} إلى ${escapeHtml(formatDateTimeAr(coverage.latest))}.</div>`;
+    if(coverage.hijriRecognized) text+=`<div>✓ تم التعرف على تواريخ هجرية في ${coverage.hijriRecognized} طلب واحتسابها تلقائيًا وفق تقويم أم القرى، دون تعديل التواريخ الأصلية.</div>`;
+    if(coverage.missing) text+=`<div>⚠️ يوجد ${coverage.missing} طلب بلا تاريخ صالح من النوع المحدد، ولا يمكن تحديد انتمائه إلى فترة زمنية دون إصلاح مصدر التاريخ.</div>`;
+    if(!selected.length && allOrdersData.length) {
+        text+='<div>لا توجد مطابقة حاليًا. تحقق من نوع التاريخ والفترة والحالة والفرع، أو جرّب «كل الفترات».</div>';
+        if(!coverage.recognized) text+='<div>لا توجد أي تواريخ معروفة بهذا النوع: ربما البيانات مخزنة بحقل أو صيغة أخرى لم يصلنا مثال منها.</div>';
+    }
+    if(coverage.fields.size && basis==='created') {
+        text+=`<div>حقول تاريخ الإنشاء التي عُثر عليها: ${[...coverage.fields].map(([field,n])=>`${escapeHtml(field)} (${n})`).join('، ')}.</div>`;
+    }
+    el.className=`date-diagnostic ${(!selected.length&&allOrdersData.length || coverage.missing)?'warning':''}`;
+    el.innerHTML=text;
+}
+// كل شاشات البحث تستخدم نطاقًا زمنيًا واحدًا محولًا إلى لحظات UTC للمقارنة.
+function getPeriodValues(prefix) {
+    const cal=$(prefix+'Calendar')?.value || 'gregorian';
+    const gregFrom=prefix==='main'?'dateFrom':prefix+'From';
+    const gregTo=prefix==='main'?'dateTo':prefix+'To';
+    const first=cal==='hijri' ? prefix+'HijriFrom' : gregFrom;
+    const second=cal==='hijri' ? prefix+'HijriTo' : gregTo;
+    return {from:$(first)?.value?.trim()||'',to:$(second)?.value?.trim()||'',calendar:cal};
+}
+function toHijriInputValue(value, includeTime) {
+    const d=value instanceof Date ? value : parseDateFlexible(value);
+    const fields=d && toHijriFields(d);
+    if(!fields)return '';
+    const pad=n=>String(n).padStart(2,'0');
+    const hours=saudiFields(d);
+    return `${fields[0]}/${pad(fields[1])}/${pad(fields[2])}${includeTime?` ${pad(hours[3])}:${pad(hours[4])}`:''} هـ`;
+}
+function syncHijriInputs(prefix) {
+    const gregFrom=prefix==='main'?'dateFrom':prefix+'From';
+    const gregTo=prefix==='main'?'dateTo':prefix+'To';
+    const withClock=prefix!=='main';
+    $(prefix+'HijriFrom').value=toHijriInputValue($(gregFrom).value,withClock);
+    $(prefix+'HijriTo').value=toHijriInputValue($(gregTo).value,withClock);
+}
+function changeRangeCalendar(prefix) {
+    const selected=$(prefix+'Calendar').value;
+    const sections=[...document.querySelectorAll(`[data-calendar-prefix="${prefix}"]`)];
+    const was=sections.find(section=>!section.hidden)?.dataset.calendarMode || 'gregorian';
+    if(selected===was)return;
+    if(selected==='hijri') syncHijriInputs(prefix);
+    else {
+        const withClock=prefix!=='main';
+        for(const end of ['From','To']) {
+            const text=$(prefix+'Hijri'+end).value.trim();
+            const dest=$(prefix==='main'?(end==='From'?'dateFrom':'dateTo'):prefix+end);
+            if(!text){dest.value='';continue;}
+            const parsed=parseDateFlexible(text);
+            if(!parsed){
+                $(prefix+'Calendar').value=was;
+                showToast('تاريخ هجري غير صالح؛ صححه قبل تغيير التقويم.',true);
+                return;
+            }
+            // إذا أُدخل تاريخ هجري بلا ساعة، احتفظ باحتساب كامل يوم النهاية عند التحويل إلى datetime-local.
+            const isEnd=end==='To';
+            const hasClock=/[T\s,]+\d{1,2}:\d{2}/.test(normalizeCalendarText(text));
+            dest.value=withClock ? (isEnd && !hasClock ? `${dateValue(parsed)}T23:59` : toLocalInputValue(parsed)) : dateValue(parsed);
+        }
+    }
+    sections.forEach(section=>{section.hidden=section.dataset.calendarMode!==selected;});
+    if(prefix==='main')filterTable(false);
+    else if(prefix==='daily')renderDailyNote();
+    else renderReport();
+}
+function clearPeriodInputs(prefix) {for(const part of ['From','To','HijriFrom','HijriTo'])$(prefix+part).value='';}
+function applyPresetToInputs(prefix,preset) {
+    if(preset==='all') {clearPeriodInputs(prefix);return;}
+    if(preset==='custom')return;
+    const now=new Date();let from=new Date(now),to=new Date(now);
+    if(preset==='today') {
+        const f=saudiFields(now);from=fromSaudiCivil(f[0],f[1],f[2]);
+        to=new Date(from.getTime()+86400000-1);
+    } else if(preset==='yesterday') {
+        const f=saudiFields(now);to=fromSaudiCivil(f[0],f[1],f[2]);from=new Date(to.getTime()-86400000);
+        to=new Date(to.getTime()-1);
+    } else if(preset==='thisMonth') {
+        const f=saudiFields(now);from=fromSaudiCivil(f[0],f[1],1);
+    } else if(preset==='last24')from=new Date(now.getTime()-86400000);
+    else if(preset==='last7')from=new Date(now.getTime()-7*86400000);
+    else if(preset==='last30')from=new Date(now.getTime()-30*86400000);
+    $(prefix+'From').value=toLocalInputValue(from);
+    $(prefix+'To').value=toLocalInputValue(to);
+    syncHijriInputs(prefix);
+}
+function openDailyNoteModal() {
+    $('dailyNoteModal').style.display='block';populateDynamicFilters();applyDailyPreset();
+}
+const closeDailyNoteModal=()=>$('dailyNoteModal').style.display='none';
+function applyDailyPreset() {
+    applyPresetToInputs('daily',$('dailyPreset').value);
+    renderDailyNote();
+}
+function setDailyCustomAndRefresh() {$('dailyPreset').value='custom';renderDailyNote();}
+function applyLastHours() {
+    const num=Number($('dailyHours').value);
+    const hours=Number.isFinite(num) ? Math.max(1,Math.min(720,num)) : 24;
+    $('dailyHours').value=String(hours);
+    const now=new Date();$('dailyPreset').value='custom';
+    $('dailyFrom').value=toLocalInputValue(new Date(now-hours*3600000));
+    $('dailyTo').value=toLocalInputValue(now);syncHijriInputs('daily');renderDailyNote();
+}
+// أعمدة النوتة: الفرع من بيانات الطلب، واللون من بيانات الصنف، مع بقية حالات المتابعة.
+const NOTE_COLUMNS = [
+    ['م',3],['رقم الطلب',7],['العميل',9],['الفرع',7],['الصنف',9],['المقاس',7],
+    ['اللون',7],['الاتجاه',6],['نوع الجوانب',7],['الكمية',4],['الخصم',4],
+    ['الملاحظات',9],['الجاهزية',5],['تم الطباعة',5],['رقم الفاتورة',7],['✓',4]
+];
+function getDailyNoteContext() {
+    const {from,to}=getPeriodValues('daily'),basis=$('dailyDateBasis').value;
+    const range=getTimeRange(from,to);
+    if(!range.valid)return {valid:false,reason:range.reason};
+    // اجمع صيغ أسماء الفروع المتكافئة في الملخص والتصفية معاً (جدة/جده، مكة/مكه).
+    const branchValue=$('dailyBranch').value;
+    const branchKey=branchValue==='all' ? null : noteBranchName(branchValue).key;
+    const filtered=getDataByDateTimeRange(from,to,$('dailyStatus').value,'all',basis);
+    const data=sortOrders(branchKey===null ? filtered : filtered.filter(o=>noteBranchName(o.branch).key===branchKey),'timestamp_asc');
+    const rows=[];
+    for(const filteredOrder of data) {
+        const fullOrder=allOrdersData.find(o=>o.id===filteredOrder.id);
+        if(!fullOrder)continue;
+        for(const item of filteredOrder.items||[]) {
+            const itemIndex=fullOrder.items.indexOf(item);
+            if(itemIndex<0)continue;
+            rows.push({order:fullOrder,item,index:itemIndex});
+        }
+    }
+    const period=range.hasFilter ? `${formatDateTimeAr(from)||'البداية'} — ${formatDateTimeAr(to)||'الآن'}` : 'كل الفترات';
+    return {valid:true,range,data,rows,period,basis};
+}
+// احصائية مباشرة لبنود الأصناف لكل فرع، من الصفوف المطابقة لفترة النوتة ومرشحاتها فقط.
+// لا نعد النوع الواحد مرة واحدة، بل نعد كل سطر صنف في الطلب؛ لذلك يظهر عبء العمل الحقيقي.
+function noteBranchName(raw) {
+    const label=asText(raw);
+    if(!label)return {key:'__unassigned', label:'غير محدد'};
+    const normalized=label.replace(/[\u064b-\u065f\u0670\u0640]/g,'')
+        .replace(/[آأإٱ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي')
+        .replace(/\s+/g,' ').toLocaleLowerCase('ar');
+    if(normalized==='مكه' || normalized==='مكه المكرمه')return {key:'مكة',label:'مكة'};
+    if(normalized==='جده')return {key:'جدة',label:'جدة'};
+    return {key:normalized,label};
+}
+function noteQuantityNumber(raw) {
+    // نجمع الكميات الرقمية فقط؛ النصوص مثل «حسب الطلب» أو «2+3» لا تُخمن.
+    let value=toLatinDigits(asText(raw)).replace(/\u066b/g,'.').replace(/\u066c/g,'').trim();
+    value=value.replace(/\s*(?:قطعة|قطع|حبة|حبات|وحدة|وحدات|pcs|pc)\s*$/i,'').trim();
+    if(!/^\d+(?:\.\d+)?$/.test(value))return null;
+    const n=Number(value);
+    return Number.isFinite(n) && n>=0 ? n : null;
+}
+function noteBranchStats(context) {
+    const map=new Map(),allOrderIds=new Set();
+    let totalQuantity=0, unknownQuantity=0;
+    for(const {order,item} of context.rows || []) {
+        const b=noteBranchName(order.branch);
+        if(!map.has(b.key))map.set(b.key,{key:b.key,name:b.label,items:0,orders:new Set(),quantity:0,unknown:0});
+        const g=map.get(b.key);
+        g.items++;
+        g.orders.add(order.id);
+        allOrderIds.add(order.id);
+        const number=noteQuantityNumber(item.qty);
+        if(number===null){g.unknown++;unknownQuantity++;} else {g.quantity+=number;totalQuantity+=number;}
+    }
+    const branches=[...map.values()].sort((a,b)=>b.items-a.items || a.name.localeCompare(b.name,'ar'));
+    return {branches,items:(context.rows||[]).length,orders:allOrderIds.size,quantity:totalQuantity,unknown:unknownQuantity};
+}
+const noteFormatNumber=n=>new Intl.NumberFormat('ar-SA-u-nu-latn',{maximumFractionDigits:2}).format(n);
+function branchSummaryMarkup(context,forPrint=false) {
+    const stats=noteBranchStats(context);
+    const cards=stats.branches.map(b=>({name:b.name,items:b.items,orders:b.orders.size,quantity:b.quantity,unknown:b.unknown,total:false}));
+    cards.push({name:'إجمالي النوتة',items:stats.items,orders:stats.orders,quantity:stats.quantity,unknown:stats.unknown,total:true});
+    const content=cards.map(b=>`<div class="note-branch-card${b.total?' total':''}">
+        <div class="note-branch-name">${escapeHtml(b.name)}</div>
+        <div class="note-branch-count"><strong>${noteFormatNumber(b.items)}</strong><span>بند صنف</span></div>
+        <div class="note-branch-details">${noteFormatNumber(b.orders)} طلب · مجموع الكميات الرقمية: ${noteFormatNumber(b.quantity)}${b.unknown?` · ${noteFormatNumber(b.unknown)} كمية غير رقمية/فارغة`:''}</div>
+    </div>`).join('');
+    return `<section class="note-branch-summary${forPrint?' note-branch-summary-print':''}" aria-label="إحصائية أصناف الطلبات حسب الفرع">
+        <div class="note-branch-title"><span>📊 ملخص النوتة حسب الفرع</span><span>${noteFormatNumber(stats.branches.length)} فرع</span></div>
+        <div class="note-branch-cards">${content}</div>
+        <div class="note-branch-explain">عدد الأصناف = عدد بنود الأصناف الظاهرة في النوتة بعد تطبيق الفترة والحالة والفرع. مجموع الكميات يحسب القيم الرقمية فقط${stats.unknown?'، ويستثني غير الرقمية أو الفارغة':''}.</div>
+    </section>`;
+}
+function refreshDailyNoteBranchSummary(context) {
+    const box=$('dailyNoteBranchSummary');
+    if(box)box.innerHTML=context.valid ? branchSummaryMarkup(context) : `<div class="empty-state">${escapeHtml(context.reason)}</div>`;
+}
+function syncNoteHeaderInputs(orderId,field,value,source=null) {
+    document.querySelectorAll('input[data-edit="header"]').forEach(input=>{
+        if(input!==source && input.dataset.orderId===orderId && input.dataset.field===field) input.value=value;
+    });
+}
+function syncStatusInputs(orderId,field,checked,source=null) {
+    document.querySelectorAll('input[data-status-order]').forEach(input=>{
+        if(input!==source && input.dataset.statusOrder===orderId && input.dataset.field===field)input.checked=Boolean(checked);
+    });
+}
+function noteInputHtml(orderId,field,value,index=null,isWide=false) {
+    const markup=inputHtml(orderId,field,value,index);
+    return markup.replace('class="editable-input ',`class="editable-input ${isWide?'note-text-col-input ':''}`);
+}
+function noteEditorCell(content,cls='') {return `<td${cls?` class="${cls}"`:''}>${content}</td>`;}
+function renderDailyNoteEditor(context) {
+    const el=$('dailyNoteEditor');if(!el)return;
+    const head=NOTE_COLUMNS.map(([name])=>`<th>${escapeHtml(name)}</th>`).join('');
+    const rows=context.rows.map(({order,item,index},rowIndex)=>{
+        const id=order.id;
+        const values=[
+            noteEditorCell(rowIndex+1),
+            noteEditorCell(noteInputHtml(id,'order',order.order)),
+            noteEditorCell(noteInputHtml(id,'name',order.name,null,true),'note-text-col'),
+            noteEditorCell(noteInputHtml(id,'branch',order.branch,null,true),'note-text-col'),
+            noteEditorCell(noteInputHtml(id,'name',item.name,index,true),'note-text-col'),
+            noteEditorCell(noteInputHtml(id,'size',item.size,index)),
+            noteEditorCell(noteInputHtml(id,'clor',item.clor,index)),
+            noteEditorCell(noteInputHtml(id,'side',item.side,index)),
+            noteEditorCell(noteInputHtml(id,'gnb',item.gnb,index)),
+            noteEditorCell(noteInputHtml(id,'qty',item.qty,index)),
+            noteEditorCell(noteInputHtml(id,'discnt',item.discnt,index)),
+            noteEditorCell(noteInputHtml(id,'note',item.note,index,true),'note-text-col'),
+            noteEditorCell(`<input type="checkbox" data-status-order="${escapeAttr(id)}" data-field="isReady" ${order.isReady?'checked':''} aria-label="جاهز">`),
+            noteEditorCell(`<input type="checkbox" data-status-order="${escapeAttr(id)}" data-field="isPrinted" ${order.isPrinted?'checked':''} aria-label="تم طباعة الفاتورة">`),
+            noteEditorCell(noteInputHtml(id,'taxInvoice',order.taxInvoice,null),'note-invoice'),
+            noteEditorCell(`<input type="checkbox" data-edit="item" data-order-id="${escapeAttr(id)}" data-index="${index}" data-field="noteChecked" ${normalizedBool(item.noteChecked)?'checked':''} aria-label="علامة متابعة البند">`)
+        ];
+        return `<tr>${values.join('')}</tr>`;
+    }).join('');
+    const colWidth=[50,115,150,125,140,100,130,100,110,75,80,150,78,82,130,64];
+    el.innerHTML=`<table class="note-editor-table"><colgroup>${colWidth.map(w=>`<col style="width:${w}px">`).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${rows||`<tr><td colspan="${NOTE_COLUMNS.length}" class="empty-state">لا توجد طلبات في الفترة أو الحالة المحددة.</td></tr>`}</tbody></table>`;
+}
+function makeDailyNotePrintArea(context) {
+    const rows=context.rows;
+    const renderChecked=(flag,label)=>`<span class="a5-check" role="img" aria-label="${label}">${flag?'✓':''}</span>`;
+    const content=rows.map(({order,item},i)=>{
+        const values=[i+1,order.order,order.name,order.branch,item.name,item.size,item.clor,item.side,item.gnb,item.qty,item.discnt,item.note];
+        return `<tr>${values.map(value=>`<td>${escapeHtml(value)}</td>`).join('')}
+            <td>${renderChecked(order.isReady,'جاهزية')}</td><td>${renderChecked(order.isPrinted,'تم الطباعة')}</td><td>${escapeHtml(order.taxInvoice)}</td><td>${renderChecked(normalizedBool(item.noteChecked),'متابعة البند')}</td></tr>`;
+    }).join('');
+    return `<div class="a5-title"><div class="company">شركة جار الخليج للصناعة</div><h3>نوتة الطلبات اليومية</h3></div>
+        <div class="a5-meta"><span><b>الفترة:</b> ${escapeHtml(context.period)} (${escapeHtml(dateBasisLabel(context.basis))})</span><span><b>الطلبات:</b> ${context.data.length}</span><span><b>البنود:</b> ${rows.length}</span></div>
+        ${branchSummaryMarkup(context,true)}
+        <table class="a5-table"><colgroup>${NOTE_COLUMNS.map(([,width])=>`<col style="width:${width}%">`).join('')}</colgroup><thead><tr>${NOTE_COLUMNS.map(([label])=>`<th>${escapeHtml(label)}</th>`).join('')}</tr></thead><tbody>${content||`<tr><td colspan="${NOTE_COLUMNS.length}">لا توجد بيانات ضمن الفترة المختارة.</td></tr>`}</tbody></table>
+        <div class="a5-footer"><span>المسؤول: __________________</span><span>تاريخ الطباعة: ${escapeHtml(formatDateTimeAr(new Date()))}</span></div>`;
+}
+let notePreviewTimer;
+function refreshDailyNotePrintPreview() {
+    const ctx=getDailyNoteContext();
+    refreshDailyNoteBranchSummary(ctx);
+    if(ctx.valid)$('dailyNotePrintArea').innerHTML=makeDailyNotePrintArea(ctx);
+    return ctx.valid;
+}
+function queueNotePrintRefresh() {
+    clearTimeout(notePreviewTimer);
+    notePreviewTimer=setTimeout(refreshDailyNotePrintPreview,130);
+}
+function renderDailyNote() {
+    const context=getDailyNoteContext(),area=$('dailyNotePrintArea');
+    if(!context.valid) {
+        area.innerHTML=`<div class="empty-state">${escapeHtml(context.reason)}</div>`;
+        $('dailyNoteEditor').innerHTML=`<div class="empty-state">${escapeHtml(context.reason)}</div>`;
+        refreshDailyNoteBranchSummary(context);
+        $('dailyDateStatus').textContent=context.reason;
+        return false;
+    }
+    updateDateStatus('dailyDateStatus',context.basis,context.data,context.range,$('dailyStatus').value,$('dailyBranch').value);
+    refreshDailyNoteBranchSummary(context);
+    renderDailyNoteEditor(context);
+    area.innerHTML=makeDailyNotePrintArea(context);
+    updatePendingUI();
+    return true;
+}
+async function saveDailyNoteChanges() {
+    if(saveInProgress)return;
+    if(!hasPending())return showToast('لا توجد تغييرات جديدة لحفظها.');
+    // تحفظ نفس المعاملة الحقول المعدلة من أي جزء في اللوحة؛ وليس مجرد نسخة ورقية للنوتة.
+    await saveAllChanges();
+    if($('dailyNoteModal')?.style.display==='block'&&!hasPending())renderDailyNote();
+}
+function confirmPendingNotePrint() {
+    return !hasPending() || confirm('يوجد تعديل لم يُحفظ بعد في Firebase. هل تريد طباعة النوتة بالقيم الظاهرة حاليًا رغم عدم حفظها؟');
+}
+function printDailyNote(paper='A5') {
+    if(!refreshDailyNotePrintPreview() || !confirmPendingNotePrint())return;
+    const p=paper==='A4'?'A4':'A5';
+    printElement('dailyNotePrintArea',`size:${p} landscape; margin:${p==='A5'?4:8}mm;`,'نوتة الطلبات اليومية');
+}
+function exportDailyNotePNG() {
+    if(!refreshDailyNotePrintPreview() || !confirmPendingNotePrint())return;
+    return exportPNG('dailyNotePrintArea',`Daily_Orders_A5_${dateValue(new Date())}.png`);
+}
+function openReportsModal(){
+    $('reportsModal').style.display='block';populateDynamicFilters();applyReportPreset();
+}
+const closeReportsModal=()=>$('reportsModal').style.display='none';
+function applyReportPreset(){applyPresetToInputs('report',$('reportPreset').value);renderReport();}
+function setReportCustomAndRefresh(){$('reportPreset').value='custom';renderReport();}
+function getReportData(){
+    const {from,to}=getPeriodValues('report');
+    const data=getDataByDateTimeRange(from,to,$('reportStatus').value,$('reportBranch').value,$('reportDateBasis').value)
+        .filter(o=>$('reportCoordinator').value==='all'||o.coordinator===$('reportCoordinator').value);
+    return sortOrders(data,$('reportSort').value);
+}
+function renderReport(){
+    const area=$('reportPrintArea'),{from,to}=getPeriodValues('report'),basis=$('reportDateBasis').value;
+    const range=getTimeRange(from,to);
+    if(!range.valid){area.innerHTML=`<div class="empty-state">${escapeHtml(range.reason)}</div>`;$('reportDateStatus').textContent=range.reason;return false;}
+    const data=getReportData(),rows=flattenOrders(data);
+    updateDateStatus('reportDateStatus',basis,data,range,$('reportStatus').value,$('reportBranch').value);
+    const ready=data.filter(o=>o.isReady).length,notDelivered=data.filter(o=>!o.isDelivered).length,noInvoice=data.filter(o=>!asText(o.taxInvoice)).length;
+    const table=rows.map((r,i)=>`<tr>${[i+1,r.order,r.client,r.branch,r.coordinator,r.item,r.size,r.qty,formatDateAr(r.timestamp),formatDateAr(r.delivery),r.ready,r.delivered].map(v=>`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('');
+    const period=range.hasFilter ? `${formatDateTimeAr(from)||'البداية'} — ${formatDateTimeAr(to)||'الآن'}` : 'كل الفترات';
+    area.innerHTML=`<div class="report-header"><div><h2>تقرير الطلبات</h2><div>شركة جار الخليج للصناعة</div></div><div>الفترة: ${escapeHtml(period)}<div>نوع التاريخ: ${escapeHtml(dateBasisLabel(basis))}</div><div>توقيت السعودية UTC+3</div><div>تاريخ الطباعة: ${escapeHtml(formatDateTimeAr(new Date()))}</div></div></div>
+        <div class="report-summary">${[['إجمالي الطلبات',data.length],['عدد الأصناف',rows.length],['جاهزة',ready],['بانتظار التسليم',notDelivered],['بدون فاتورة',noInvoice]].map(([label,value])=>`<div class="report-kpi">${label}<b>${value}</b></div>`).join('')}</div>
+        ${hasPending()?'<p class="unsaved-warning">تنبيه: يوجد تعديل غير محفوظ في هذه الجلسة، وقد يظهر ضمن التقرير.</p>':''}
+        <table class="report-table"><thead><tr>${['م','الطلب','العميل','الفرع','المنسق','الصنف','المقاس','الكمية','تاريخ الطلب','موعد التسليم','الجاهزية','تم التسليم'].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${table||'<tr><td colspan="12">لا توجد بيانات مطابقة ضمن الفترة.</td></tr>'}</tbody></table>`;
+    return true;
+}
+function printReport(){if(renderReport())printElement('reportPrintArea','size:A4 landscape; margin:8mm;','تقرير الطلبات');}
+function exportReportExcel(){
+    const {from,to}=getPeriodValues('report');
+    if(!rangeIsValid(from,to))return alert('تعذر قراءة تاريخ البداية أو النهاية، أو أن البداية بعد النهاية.');
+    const data=getReportData();downloadExcel(flattenOrders(data),`JarAlkhaleej_Report_${dateValue(new Date())}.xlsx`);
+    showToast(`تم تجهيز تقرير Excel لـ ${data.length} طلب`);
+}
+
+function handleDelegatedInput(event) {
+    const target=event.target;
+    if (!target?.dataset?.edit || target.type==='checkbox') return;
+    const id=target.dataset.orderId,field=target.dataset.field;
+    if (target.dataset.edit==='item') stageItemChange(id,Number(target.dataset.index),field,target);
+    else stageChange(id,field,target);
+    // توحيد خانات بيانات الطلب عند تكرارها داخل صفوف الأصناف.
+    if (target.dataset.edit==='header') syncNoteHeaderInputs(id,field,target.value,target);
+    if ($('dailyNoteModal')?.style.display==='block') queueNotePrintRefresh();
+}
+function handleDelegatedChange(event) {
+    const target=event.target;
+    if (target?.dataset?.statusOrder) {
+        if (target.dataset.field==='isPrinted' && !target.checked) {
+            const order=allOrdersData.find(o=>o.id===target.dataset.statusOrder);
+            if (order && asText(order.taxInvoice)) {
+                target.checked=true;
+                showToast('لمسح حالة الطباعة، امسح رقم الفاتورة أولاً ثم احفظ التعديل.',true);
+                return;
+            }
+        }
+        stageStatusChange(target.dataset.statusOrder,target.dataset.field,target.checked);
+        syncStatusInputs(target.dataset.statusOrder,target.dataset.field,target.checked,target);
+        if ($('dailyNoteModal')?.style.display==='block') queueNotePrintRefresh();
+    } else if (target?.dataset?.edit==='item' && target.type==='checkbox' && target.dataset.field==='noteChecked') {
+        stageItemChange(target.dataset.orderId,Number(target.dataset.index),'noteChecked',target);
+        if ($('dailyNoteModal')?.style.display==='block') queueNotePrintRefresh();
+    } else if (target?.dataset?.selectOrder) {
+        target.checked?selectedOrders.add(target.dataset.selectOrder):selectedOrders.delete(target.dataset.selectOrder);
+        for(const cb of document.querySelectorAll('input[data-select-order]'))if(cb!==target&&cb.dataset.selectOrder===target.dataset.selectOrder)cb.checked=target.checked;
+        updatePendingUI();
+    } else if (target?.hasAttribute?.('data-page-size')) {
+        pageSize=Number(target.value)||100;writeLocal('jar_page_size',pageSize);currentPage=1;buildTable();
+    }
+}
+function handleDelegatedClick(event) {
+    const btn=event.target.closest?.('[data-action]');if (!btn) return;
+    const action=btn.dataset.action;
+    if (action==='invoice') openInvoiceModalById(btn.dataset.id);
+    if (action==='delete') deleteOrderRow(btn.dataset.id);
+    if (action==='page') { const p=Number(btn.dataset.page);const max=Math.max(1,Math.ceil(filteredOrders.length/pageSize));if(p>=1&&p<=max){currentPage=p;buildTable();$('tableContainerWrapper').scrollTop=0;} }
+    if (action==='swipe') { const d=btn.dataset.direction; if(d==='first')jumpSwipePage(0);else if(d==='last')jumpSwipePage(filteredOrders.length-1);else navigateSwipePage(d==='next'?1:-1); }
+}
+let touchStart=null;
+function onTouchStart(e) {
+    if (!e.target.closest?.('#swipePageBox') || e.target.closest('button,input,textarea,select'))return;
+    if(e.touches?.length===1)touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
+}
+function onTouchEnd(e) {
+    if(!touchStart)return;
+    const end=e.changedTouches?.[0];if(!end){touchStart=null;return;}
+    const dx=end.clientX-touchStart.x,dy=end.clientY-touchStart.y;touchStart=null;
+    if(Math.abs(dx)>75&&Math.abs(dx)>Math.abs(dy)*1.4)navigateSwipePage(dx<0?1:-1);
+}
+function init() {
+    document.addEventListener('input',handleDelegatedInput);
+    document.addEventListener('change',handleDelegatedChange);
+    document.addEventListener('click',handleDelegatedClick);
+    document.addEventListener('touchstart',onTouchStart,{passive:true});
+    document.addEventListener('touchend',onTouchEnd,{passive:true});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const id of ['invoiceModal','settingsModal','dailyNoteModal','reportsModal'])$(id).style.display='none';});
+    window.addEventListener('click',e=>{if(e.target?.classList?.contains('modal'))e.target.style.display='none';});
+    window.addEventListener('beforeunload',e=>{if(hasPending()){e.preventDefault();e.returnValue='';}});
+    updatePendingUI();
+    loadDashboardData();
+    setInterval(()=>{if(!document.hidden&&!hasPending())loadDashboardData({silent:true});},60000);
+}
+Object.assign(window, {
+    loadDashboardData,saveAllChanges,deleteOrderRow,deleteSelectedOrders,toggleSelectAll,changeRangeCalendar,
+    openInvoiceModalById,changeDisplayMode,openSettingsModal,closeSettingsModal,closeModal,
+    filterTable,resetMainFilters,navigateSwipePage,jumpSwipePage,exportToExcel,
+    printInvoiceArea,exportModalPNG,openDailyNoteModal,closeDailyNoteModal,applyDailyPreset,
+    setDailyCustomAndRefresh,applyLastHours,renderDailyNote,saveDailyNoteChanges,printDailyNote,exportDailyNotePNG,
+    openReportsModal,closeReportsModal,applyReportPreset,setReportCustomAndRefresh,renderReport,printReport,exportReportExcel,
+    getGlobalData:()=>allOrdersData,getPending:()=>pendingChanges,getCurrentDisplayMode:()=>currentDisplayMode,
+    // للواجهات الداخلية وللاختبار فقط؛ لا يمنح هذا الوصول أي صلاحية في Firestore.
+    getLastFilteredData:()=>filteredOrders
+});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+
+</script>
+</body>
+</html>

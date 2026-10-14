@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شركة جار الخليج للصناعة - نظام إدارة التدفقات النقدية والصناديق</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font - Tajawal -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- HTML2Canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        /* تحسينات الطباعة ودعم الأسطر المخصصة */
+        @media print {
+            .no-print, header, #authSection, #fundsManagementSection, #statsCards, #voucherFormSection, #tabButtons, #filterSection, #calcModal, #settlementModal, #printSettingsModal, #transferModal { 
+                display: none !important; 
+            }
+            body { 
+                background: white !important; 
+                color: black !important;
+                font-size: 11pt;
+            }
+            .overflow-x-auto, .overflow-y-auto { 
+                overflow: visible !important; 
+                max-height: none !important;
+            }
+            
+            /* عند طباعة السند المفرد */
+            body.printing-single-receipt #mainSection {
+                display: none !important;
+            }
+            body.printing-single-receipt #receiptModal {
+                position: static !important;
+                background: white !important;
+                display: block !important;
+                padding: 0 !important;
+            }
+            body.printing-single-receipt #printableVoucher {
+                border: 2px solid #000 !important;
+                box-shadow: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                page-break-inside: avoid;
+            }
+
+            /* عند طباعة التقرير العام */
+            table { 
+                width: 100% !important; 
+                border-collapse: collapse !important;
+                table-layout: auto !important;
+            }
+            th, td { 
+                border: 1px solid #334155 !important; 
+                padding: var(--print-padding, 5px) !important;
+                color: black !important;
+            }
+            th { 
+                background-color: #f1f5f9 !important; 
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="cash-manager"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 font-sans min-h-screen">
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="authSection" class="flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-slate-300">
+            <h2 class="text-2xl font-black text-center text-slate-800 mb-1">شركة جار الخليج للصناعة</h2>
+            <p class="text-sm font-bold text-center text-slate-600 mb-6">نظام إدارة التدفقات النقدية والصناديق</p>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">البريد الإلكتروني</label>
+                    <input type="email" id="email" required class="w-full p-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">كلمة المرور</label>
+                    <input type="password" id="password" required class="w-full p-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-extrabold py-3 rounded-lg text-lg transition shadow">دخول</button>
+            </form>
+            <p id="authError" class="text-red-600 font-bold text-sm mt-3 text-center hidden"></p>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم الرئيسية -->
+    <div id="mainSection" class="hidden min-h-screen flex flex-col">
+        <!-- الشريط العلوي -->
+        <header class="bg-slate-900 text-white p-4 no-print flex flex-wrap justify-between items-center shadow-lg gap-4">
+            <div>
+                <h1 class="text-xl font-black">شركة جار الخليج للصناعة</h1>
+                <p class="text-xs text-slate-400 font-bold">نظام إدارة التدفقات النقدية والصناديق</p>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="exportBackupJSON()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow flex items-center gap-1">
+                    📥 تصدير نسخة احتياطية
+                </button>
+                <button onclick="document.getElementById('restoreFileInput').click()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow flex items-center gap-1">
+                    📤 استعادة نسخة احتياطية
+                </button>
+                <input type="file" id="restoreFileInput" accept=".json" class="hidden" onchange="importBackupJSON(event)">
+            </div>
+
+            <div class="flex items-center gap-4">
+                <span id="userDisplay" class="text-sm bg-slate-800 font-bold px-3 py-1.5 rounded-full border border-slate-700"></span>
+                <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded-lg text-sm font-bold transition">خروج</button>
+            </div>
+        </header>
+
+        <main class="p-4 md:p-6 flex-1 max-w-7xl mx-auto w-full space-y-6">
+            
+            <!-- قسم إدارة الصناديق -->
+            <div id="fundsManagementSection" class="bg-white p-6 rounded-xl shadow-sm border-2 border-slate-200 no-print space-y-4">
+                <div class="flex justify-between items-center border-b-2 border-slate-100 pb-3">
+                    <h2 class="text-lg font-black text-slate-800">إدارة الصناديق والخزائن</h2>
+                    <span class="text-xs font-bold text-slate-500">قم بإضافة وتعديل صناديق المناديب، نوعها، وأرقام جوالاتها للتواصل السريع</span>
+                </div>
+                
+                <form id="fundForm" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                    <input type="hidden" id="editFundId">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">اسم الصندوق / المندوب</label>
+                        <input type="text" id="fundName" required placeholder="مثال: مندوب الرياض - أحمد / الخزينة" class="w-full p-2 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">جوال الواتساب للمندوب</label>
+                        <input type="text" id="fundPhone" placeholder="05XXXXXXXX" class="w-full p-2 border-2 border-emerald-300 rounded-lg font-bold focus:ring-2 focus:ring-emerald-600 text-xs bg-emerald-50/40">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">نوع الصندوق</label>
+                        <select id="fundType" class="w-full p-2 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600 text-xs">
+                            <option value="مندوب">صندوق مندوب</option>
+                            <option value="رئيسي">خزينة الشركة الرئيسية</option>
+                            <option value="فرعي">صندوق فرعي / آخر</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" id="saveFundBtn" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-extrabold py-2 rounded-lg text-xs transition shadow">حفظ</button>
+                        <button type="button" id="cancelFundEditBtn" onclick="resetFundForm()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-2 rounded-lg text-xs">إلغاء</button>
+                    </div>
+                </form>
+
+                <div id="fundsList" class="flex flex-wrap gap-2 pt-2">
+                </div>
+            </div>
+
+            <!-- كروت الإحصائيات للفترة الحالية -->
+            <div id="statsCards" class="grid grid-cols-1 md:grid-cols-3 gap-6 no-print">
+                <div class="bg-white p-5 rounded-xl shadow-sm border-r-8 border-emerald-600 border border-slate-200">
+                    <p class="text-slate-600 font-bold text-sm">مقبوضات الفترة الحالية (+)</p>
+                    <h3 id="totalIncome" class="text-3xl font-black text-emerald-600 mt-2">0.00</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-r-8 border-rose-600 border border-slate-200">
+                    <p class="text-slate-600 font-bold text-sm">مصروفات الفترة الحالية (-)</p>
+                    <h3 id="totalExpense" class="text-3xl font-black text-rose-600 mt-2">0.00</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-r-8 border-blue-600 border border-slate-200">
+                    <p class="text-slate-600 font-bold text-sm">صافي رصيد الفترة النشطة</p>
+                    <h3 id="currentBalance" class="text-3xl font-black text-blue-700 mt-2">0.00</h3>
+                </div>
+            </div>
+
+            <!-- نموذج إضافة / تعديل سند -->
+            <div id="voucherFormSection" class="bg-white p-6 rounded-xl shadow-sm border-2 border-slate-200 no-print">
+                <div class="flex justify-between items-center mb-4 border-b-2 border-slate-100 pb-3">
+                    <h2 id="formTitle" class="text-lg font-black text-slate-800">إصدار سند جديد</h2>
+                    <button id="cancelEditBtn" onclick="resetForm()" class="hidden text-sm font-bold text-red-600 hover:underline">إلغاء التعديل</button>
+                </div>
+                <form id="voucherForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="hidden" id="editDocId">
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">نوع السند</label>
+                        <select id="vType" class="w-full p-2.5 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600">
+                            <option value="receipt">سند قبض (مدين +)</option>
+                            <option value="payment">سند صرف (دائن -)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">تاريخ السند</label>
+                        <input type="date" id="vDate" required class="w-full p-2.5 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">الصندوق المستهدف</label>
+                        <select id="vAgent" required class="w-full p-2.5 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600 bg-slate-50">
+                        </select>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-extrabold text-slate-700">المبلغ</label>
+                            <span class="text-[11px] font-bold text-blue-700 cursor-pointer" onclick="openCalcModal()">(انقر مرتين للحاسبة 🧮)</span>
+                        </div>
+                        <input type="number" step="0.01" id="vAmount" required placeholder="0.00" ondblclick="openCalcModal()" class="w-full p-2.5 border-2 border-amber-300 rounded-lg font-black text-slate-900 focus:ring-2 focus:ring-blue-600 bg-amber-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">اسم الحساب / الجهة</label>
+                        <input type="text" id="vParty" required placeholder="اسم العميل أو المورد أو الجهة" class="w-full p-2.5 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">رقم جوال العميل/المستلم</label>
+                        <input type="text" id="vPhone" placeholder="05XXXXXXXX" class="w-full p-2.5 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">البيان / السبب</label>
+                        <input type="text" id="vDescription" required placeholder="تفاصيل العملية المالية..." class="w-full p-2.5 border-2 border-slate-300 rounded-lg font-bold focus:ring-2 focus:ring-blue-600">
+                    </div>
+                    <div class="md:col-span-3 flex justify-end">
+                        <button type="submit" id="submitBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-8 py-3 rounded-lg text-base transition shadow">حفظ وإصدار السند</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- سجل الحركة والمستندات -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border-2 border-slate-200 space-y-4">
+                
+                <!-- تبويبات التنقل (Tabs) -->
+                <div id="tabButtons" class="flex flex-wrap justify-between items-center gap-4 no-print border-b-2 border-slate-200 pb-3">
+                    <div class="flex border-2 border-slate-300 rounded-xl overflow-hidden p-1 bg-slate-100 gap-1">
+                        <button id="tabActiveBtn" onclick="switchTab('active')" class="px-5 py-2 rounded-lg text-sm font-black transition bg-blue-700 text-white shadow">
+                            📊 الحركة الحالية النشطة
+                        </button>
+                        <button id="tabArchiveBtn" onclick="switchTab('archived')" class="px-5 py-2 rounded-lg text-sm font-black transition text-slate-700 hover:bg-slate-200">
+                            📁 أرشيف القيود المرحّلة
+                        </button>
+                        <button id="tabVoidBtn" onclick="switchTab('voided')" class="px-5 py-2 rounded-lg text-sm font-black transition text-slate-700 hover:bg-slate-200">
+                            🚫 السندات الملغاة
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <button onclick="openTransferModal()" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow flex items-center gap-1">
+                            💸 تحويل بين الصناديق
+                        </button>
+                        <button onclick="openPrintSettingsModal()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow flex items-center gap-1">
+                            ⚙️ أسطر الطباعة
+                        </button>
+                        <button onclick="openSettlementModal()" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow flex items-center gap-1">
+                            🔄 تصفية وترحيل الفترة
+                        </button>
+                        <button onclick="exportToExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow">تصدير Excel</button>
+                        <button onclick="printReport()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg transition shadow">طباعة التقرير 🖨️</button>
+                    </div>
+                </div>
+
+                <!-- عنوان الجدول النشط -->
+                <div class="flex justify-between items-center">
+                    <h2 id="tableHeadingTitle" class="text-lg font-black text-slate-800">تقرير التدفقات النقدية للفترة الحالية</h2>
+                    <span id="activeTabBadge" class="text-xs font-extrabold px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300 no-print">الفترة النشطة</span>
+                </div>
+                
+                <!-- لوحة التصفية والفرز -->
+                <div id="filterSection" class="grid grid-cols-1 md:grid-cols-6 gap-3 no-print bg-slate-100 p-4 rounded-xl border border-slate-300">
+                    
+                    <!-- قائمة اختيار معرف التصفية للقيود الأرشيفية -->
+                    <div id="archiveSelectWrapper" class="hidden">
+                        <label class="block text-xs font-extrabold text-purple-900 mb-1">اختر معرف التصفية (الأرشيف)</label>
+                        <select id="filterSettlementName" onchange="applyFilters()" class="w-full p-2 border-2 border-purple-300 bg-purple-50 rounded-lg text-xs font-bold text-purple-900 focus:ring-2 focus:ring-purple-600">
+                            <option value="">-- جميع معرّفات الأرشيف --</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">بحث شامل</label>
+                        <input type="text" id="globalSearch" placeholder="بحث باسم/رقم/بيان..." class="w-full p-2 border-2 border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">نوع السند</label>
+                        <select id="filterType" class="w-full p-2 border-2 border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-600">
+                            <option value="all">جميع السندات</option>
+                            <option value="receipt">قبض فقط (مدين)</option>
+                            <option value="payment">صرف فقط (دائن)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">الصندوق</label>
+                        <select id="filterAgent" class="w-full p-2 border-2 border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-600">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">من تاريخ</label>
+                        <input type="date" id="filterFromDate" class="w-full p-2 border-2 border-slate-300 rounded-lg text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">إلى تاريخ</label>
+                        <input type="date" id="filterToDate" class="w-full p-2 border-2 border-slate-300 rounded-lg text-xs font-bold">
+                    </div>
+                    <!-- خيار إظهار / إخفاء الرصيد الافتتاحي -->
+                    <div class="flex items-center gap-2 pt-5">
+                        <input type="checkbox" id="showOpeningBalance" checked onchange="applyFilters()" class="w-4 h-4 text-blue-600 border-2 border-slate-300 rounded focus:ring-blue-500 cursor-pointer">
+                        <label for="showOpeningBalance" class="text-xs font-black text-slate-700 cursor-pointer select-none">إظهار الرصيد الافتتاحي</label>
+                    </div>
+                </div>
+
+                <!-- جدول كشف الحساب -->
+                <div class="overflow-x-auto">
+                    <table id="printableLedgerTable" class="w-full text-right border-collapse border-2 border-slate-300">
+                        <thead>
+                            <tr class="bg-slate-900 text-white text-xs font-extrabold border-b-2 border-slate-400">
+                                <th class="p-3 border-r border-slate-700">رقم السند</th>
+                                <th class="p-3 border-r border-slate-700">تاريخ العملية</th>
+                                <th class="p-3 border-r border-slate-700">الصندوق</th>
+                                <th class="p-3 border-r border-slate-700">الجهة / الحساب</th>
+                                <th class="p-3 border-r border-slate-700">البيان</th>
+                                <th class="p-3 bg-emerald-800 text-center border-r border-slate-700">مدين (+)</th>
+                                <th class="p-3 bg-rose-800 text-center border-r border-slate-700">دائن (-)</th>
+                                <th class="p-3 bg-blue-900 text-center border-r border-slate-700">الرصيد</th>
+                                <th class="p-3 no-print text-center">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vouchersTableBody" class="divide-y divide-slate-300 text-sm font-bold">
+                        </tbody>
+                        <tfoot id="vouchersTableFoot" class="bg-slate-200 font-extrabold text-sm border-t-2 border-slate-400">
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- نافذة التحويل بين الصناديق -->
+    <div id="transferModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl border-2 border-slate-300">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-black text-indigo-900 flex items-center gap-2">
+                    <span>💸</span> <span>تحويل نقدية بين الصناديق</span>
+                </h3>
+                <button onclick="closeTransferModal()" class="text-slate-400 hover:text-slate-600 font-black text-2xl">&times;</button>
+            </div>
+
+            <form id="transferForm" onsubmit="executeFundTransfer(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">تاريخ التحويل</label>
+                    <input type="date" id="tDate" required class="w-full p-2.5 border-2 border-slate-300 rounded-lg text-sm font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">من الصندوق (المصدر)</label>
+                    <select id="tFromFund" required class="w-full p-2.5 border-2 border-rose-300 bg-rose-50/50 rounded-lg text-sm font-bold">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">إلى الصندوق (المستلم)</label>
+                    <select id="tToFund" required class="w-full p-2.5 border-2 border-emerald-300 bg-emerald-50/50 rounded-lg text-sm font-bold">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">المبلغ المحوّل (SAR)</label>
+                    <input type="number" step="0.01" min="0.01" id="tAmount" required placeholder="0.00" class="w-full p-2.5 border-2 border-amber-300 bg-amber-50/50 rounded-lg text-sm font-black">
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">ملاحظات / البيان</label>
+                    <input type="text" id="tNotes" placeholder="مثال: توريد الإيراد اليومي إلى الخزينة..." class="w-full p-2.5 border-2 border-slate-300 rounded-lg text-sm font-bold">
+                </div>
+
+                <div class="flex gap-2 pt-3 border-t">
+                    <button type="submit" id="confirmTransferBtn" class="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold py-2.5 rounded-lg text-sm transition shadow">
+                        تأكيد وتنفيذ التحويل
+                    </button>
+                    <button type="button" onclick="closeTransferModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2.5 rounded-lg text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة للتحكم في أسطر وكثافة جدول الطباعة -->
+    <div id="printSettingsModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl border-2 border-slate-300">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-black text-amber-900 flex items-center gap-2">
+                    <span>⚙️</span> <span>إعدادات أسطر ومعاينة الطباعة</span>
+                </h3>
+                <button onclick="closePrintSettingsModal()" class="text-slate-400 hover:text-slate-600 font-black text-2xl">&times;</button>
+            </div>
+            
+            <div class="space-y-4 pt-2">
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">إضافة أسطر فارغة إضافية للطباعة</label>
+                    <input type="number" id="extraBlankRowsInput" min="0" max="20" value="0" class="w-full p-2.5 border-2 border-amber-300 rounded-lg text-sm font-bold">
+                    <span class="text-[11px] text-slate-500 font-bold block mt-1">تفيد لإكمال ورقة الطباعة يدويًا بأسطر فارغة.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">ارتفاع أسطر الجدول (Padding)</label>
+                    <select id="rowPaddingInput" class="w-full p-2.5 border-2 border-slate-300 rounded-lg text-sm font-bold">
+                        <option value="4px">مضغوط جدًا (للطباعة الكثيفة)</option>
+                        <option value="8px" selected>متوسط عادي (قياسي)</option>
+                        <option value="14px">واسع (متباعد)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-3 border-t">
+                <button onclick="savePrintSettings()" class="flex-1 bg-amber-700 hover:bg-amber-800 text-white font-extrabold py-2.5 rounded-lg text-sm transition shadow">
+                    تطبيق وتحديث الجدول
+                </button>
+                <button onclick="closePrintSettingsModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2.5 rounded-lg text-sm">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة لتحديد فترة التصفية والترحيل ومعرف التصفية -->
+    <div id="settlementModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl border-2 border-slate-300">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-black text-purple-900 flex items-center gap-2">
+                    <span>🔄</span> <span>تصفية الصناديق وترحيل الرصيد</span>
+                </h3>
+                <button onclick="closeSettlementModal()" class="text-slate-400 hover:text-slate-600 font-black text-2xl">&times;</button>
+            </div>
+            
+            <p class="text-xs font-bold text-slate-600 leading-relaxed">
+                سيتم أرشفة القيود اليومية للفترة المحددة ونقل الرصيد الصافي كـ **سند افتتاح جديد** للفترة التالية، وستنتقل جميع القيود السابقة تلقائياً إلى <strong class="text-purple-700">أرشيف القيود المرحّلة</strong>.
+            </p>
+
+            <div class="space-y-3 pt-2">
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">اسم / معرف التصفية (مرجع البحث للأرشيف)</label>
+                    <input type="text" id="settleNameInput" required placeholder="أدخل اسماً فريداً للتصفية..." class="w-full p-2.5 border-2 border-purple-300 bg-purple-50/50 rounded-lg text-sm font-bold focus:ring-2 focus:ring-purple-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">من تاريخ</label>
+                    <input type="date" id="settleFromDate" class="w-full p-2.5 border-2 border-slate-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-purple-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">إلى تاريخ</label>
+                    <input type="date" id="settleToDate" class="w-full p-2.5 border-2 border-slate-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-purple-600">
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-3 border-t">
+                <button onclick="executeSettlementByDateRange()" class="flex-1 bg-purple-700 hover:bg-purple-800 text-white font-extrabold py-2.5 rounded-lg text-sm transition shadow">
+                    تأكيد التصفية والترحيل
+                </button>
+                <button onclick="closeSettlementModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2.5 rounded-lg text-sm">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة حاسبة الفئات النقدية -->
+    <div id="calcModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl border-2 border-slate-300">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <span>🧮</span> <span id="calcTitle">حاسبة الفئات النقدية (SAR)</span>
+                </h3>
+                <button onclick="closeCalcModal()" class="text-slate-400 hover:text-slate-600 font-black text-2xl">&times;</button>
+            </div>
+
+            <div class="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border">
+                    <span class="font-bold text-slate-800 w-24">500 ريال</span>
+                    <input type="number" min="0" id="denom500" placeholder="0" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-slate-300 rounded text-center font-bold">
+                    <span id="subTotal500" class="w-24 text-left font-black text-emerald-700 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border">
+                    <span class="font-bold text-slate-800 w-24">200 ريال</span>
+                    <input type="number" min="0" id="denom200" placeholder="0" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-slate-300 rounded text-center font-bold">
+                    <span id="subTotal200" class="w-24 text-left font-black text-emerald-700 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border">
+                    <span class="font-bold text-slate-800 w-24">100 ريال</span>
+                    <input type="number" min="0" id="denom100" placeholder="0" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-slate-300 rounded text-center font-bold">
+                    <span id="subTotal100" class="w-24 text-left font-black text-emerald-700 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border">
+                    <span class="font-bold text-slate-800 w-24">50 ريال</span>
+                    <input type="number" min="0" id="denom50" placeholder="0" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-slate-300 rounded text-center font-bold">
+                    <span id="subTotal50" class="w-24 text-left font-black text-emerald-700 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border">
+                    <span class="font-bold text-slate-800 w-24">20 ريال</span>
+                    <input type="number" min="0" id="denom20" placeholder="0" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-slate-300 rounded text-center font-bold">
+                    <span id="subTotal20" class="w-24 text-left font-black text-emerald-700 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border">
+                    <span class="font-bold text-slate-800 w-24">10 ريال</span>
+                    <input type="number" min="0" id="denom10" placeholder="0" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-slate-300 rounded text-center font-bold">
+                    <span id="subTotal10" class="w-24 text-left font-black text-emerald-700 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border">
+                    <span class="font-bold text-slate-800 w-24">5 ريال</span>
+                    <input type="number" min="0" id="denom5" placeholder="0" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-slate-300 rounded text-center font-bold">
+                    <span id="subTotal5" class="w-24 text-left font-black text-emerald-700 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-amber-50 p-2 rounded-lg border border-amber-300">
+                    <span class="font-bold text-slate-800 w-24">الهللات</span>
+                    <input type="number" step="0.01" min="0" id="denomHalala" placeholder="0.00" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-amber-300 rounded text-center font-bold">
+                    <span id="subTotalHalala" class="w-24 text-left font-black text-amber-800 text-sm">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-blue-50 p-2 rounded-lg border border-blue-300">
+                    <span class="font-bold text-slate-800 w-28 text-xs">مبالغ أخرى</span>
+                    <input type="number" step="0.01" min="0" id="denomOther" placeholder="0.00" oninput="calculateDenominations()" class="w-24 p-1.5 border-2 border-blue-300 rounded text-center font-bold">
+                    <span id="subTotalOther" class="w-24 text-left font-black text-blue-800 text-sm">0.00</span>
+                </div>
+            </div>
+
+            <div class="border-t-2 pt-3 flex justify-between items-center">
+                <span class="font-black text-slate-800">الإجمالي الكلي:</span>
+                <span id="calcTotalSum" class="text-2xl font-black text-blue-700">0.00 ر.س</span>
+            </div>
+
+            <div id="calcActions" class="flex gap-2 pt-2">
+                <button onclick="applyCalculatedAmount()" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-extrabold py-2.5 rounded-lg transition shadow">تأكيد ونقل المبلغ</button>
+                <button onclick="resetCalcModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2.5 rounded-lg text-sm">تصفير</button>
+            </div>
+            <div id="calcViewOnlyClose" class="hidden pt-2">
+                <button onclick="closeCalcModal()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg transition">إغلاق المعاينة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة معاينة وطباعة السند المفرد -->
+    <div id="receiptModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl border-2 border-slate-300">
+            <div id="printableVoucher" class="border-2 border-slate-400 p-6 rounded-lg bg-white space-y-4">
+                <div class="flex justify-between items-center border-b-2 border-slate-300 pb-3">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800" id="mCompanyTitle">شركة جار الخليج للصناعة</h2>
+                        <p class="text-xs font-bold text-slate-500">سند مالي رسمي - نظام إدارة التدفقات النقدية</p>
+                    </div>
+                    <div class="text-left">
+                        <span id="mVoucherCode" class="text-xl font-black text-blue-700 block"></span>
+                        <span id="mVoucherDate" class="text-xs font-bold text-slate-500"></span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center my-2">
+                    <span id="mTypeBadge" class="px-3 py-1 rounded-full text-sm font-black"></span>
+                    <div class="text-left flex flex-col items-end">
+                        <span class="text-2xl font-black text-slate-900 block" id="mAmount"></span>
+                        <span class="text-xs font-extrabold text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 mt-1" id="mAmountText"></span>
+                    </div>
+                </div>
+                <div class="space-y-2 text-sm border-t-2 border-b-2 border-slate-200 py-3 font-bold text-slate-800">
+                    <p><strong>استلمنا من / صرفنا إلى:</strong> <span id="mParty" class="font-normal"></span></p>
+                    <p><strong>الصندوق:</strong> <span id="mAgent" class="font-normal"></span></p>
+                    <p><strong>وذلك عن (البيان):</strong> <span id="mDescription" class="font-normal"></span></p>
+                </div>
+                <div class="flex justify-between items-center pt-4 text-xs font-bold text-slate-500">
+                    <p>توقيع المستلم: ....................</p>
+                    <p>توقيع أمين الصندوق: ....................</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 justify-end no-print">
+                <button onclick="printSingleReceipt()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-lg text-sm">طباعة السند 🖨️</button>
+                <button id="whatsappBtn" onclick="shareVoucherToOwnerWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
+                    واتساب لصاحب الصندوق 📱
+                </button>
+                <button onclick="downloadAsImage()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-lg text-sm">تنزيل صورة</button>
+                <button onclick="closeModal()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-4 py-2 rounded-lg text-sm">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('vDate').valueAsDate = new Date();
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBWqYwPwHjoNB_f67OGLGthUU-KIR9weoA",
+            authDomain: "money-tracker-8c6bf.firebaseapp.com",
+            projectId: "money-tracker-8c6bf",
+            storageBucket: "money-tracker-8c6bf.firebasestorage.app",
+            messagingSenderId: "856276057414",
+            appId: "1:856276057414:web:959c9ef60c2dbbd514f947"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let allVouchers = [];
+        let allFunds = [];
+        let activeVoucher = null;
+        let currentCalculatedTotal = 0;
+        
+        // حالة التبويب النشط: 'active' أو 'archived' أو 'voided'
+        let currentTab = 'active';
+        
+        // إعدادات أسطر الطباعة
+        let extraBlankRows = 0;
+        let selectedRowPadding = '8px';
+
+        let currentDenominations = {
+            d500: 0, d200: 0, d100: 0, d50: 0, d20: 0, d10: 0, d5: 0, halala: 0, other: 0
+        };
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('mainSection').classList.remove('hidden');
+                document.getElementById('userDisplay').innerText = user.email;
+                loadFunds();
+                loadVouchers();
+            } else {
+                document.getElementById('authSection').classList.remove('hidden');
+                document.getElementById('mainSection').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('authError');
+            errorElement.classList.add('hidden');
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (err) {
+                errorElement.innerText = "خطأ في بيانات الدخول: " + err.message;
+                errorElement.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+
+        // ==========================================
+        //          التحكم بالتبويبات (Tabs)
+        // ==========================================
+        function switchTab(tab) {
+            currentTab = tab;
+            const activeBtn = document.getElementById('tabActiveBtn');
+            const archiveBtn = document.getElementById('tabArchiveBtn');
+            const voidBtn = document.getElementById('tabVoidBtn');
+            const titleEl = document.getElementById('tableHeadingTitle');
+            const badgeEl = document.getElementById('activeTabBadge');
+            const archiveWrapper = document.getElementById('archiveSelectWrapper');
+
+            activeBtn.className = "px-5 py-2 rounded-lg text-sm font-black transition text-slate-700 hover:bg-slate-200";
+            archiveBtn.className = "px-5 py-2 rounded-lg text-sm font-black transition text-slate-700 hover:bg-slate-200";
+            voidBtn.className = "px-5 py-2 rounded-lg text-sm font-black transition text-slate-700 hover:bg-slate-200";
+            archiveWrapper.classList.add('hidden');
+
+            if (tab === 'active') {
+                activeBtn.className = "px-5 py-2 rounded-lg text-sm font-black transition bg-blue-700 text-white shadow";
+                titleEl.innerText = "تقرير التدفقات النقدية - الفترة الحالية النشطة";
+                badgeEl.innerText = "الفترة النشطة";
+                badgeEl.className = "text-xs font-extrabold px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300 no-print";
+            } else if (tab === 'archived') {
+                archiveBtn.className = "px-5 py-2 rounded-lg text-sm font-black transition bg-purple-700 text-white shadow";
+                titleEl.innerText = "أرشيف القيود والحركات المرحّلة سابقاً";
+                badgeEl.innerText = "أرشيف القيود المرحّلة";
+                badgeEl.className = "text-xs font-extrabold px-3 py-1 bg-purple-100 text-purple-800 rounded-full border border-purple-300 no-print";
+                archiveWrapper.classList.remove('hidden');
+            } else if (tab === 'voided') {
+                voidBtn.className = "px-5 py-2 rounded-lg text-sm font-black transition bg-red-700 text-white shadow";
+                titleEl.innerText = "السندات والحركات الملغاة (خارج الحسابات)";
+                badgeEl.innerText = "سندات ملغاة";
+                badgeEl.className = "text-xs font-extrabold px-3 py-1 bg-rose-100 text-rose-800 rounded-full border border-rose-300 no-print";
+            }
+
+            applyFilters();
+        }
+
+        // ==========================================
+        //         إدارة الصناديق (CRUD)
+        // ==========================================
+        function loadFunds() {
+            db.collection('funds').onSnapshot(snapshot => {
+                allFunds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (allFunds.length === 0) {
+                    db.collection('funds').add({ name: "خزينة الشركة الرئيسية", type: "رئيسي", phone: "" });
+                    return;
+                }
+
+                renderFundsList();
+                populateFundDropdowns();
+            });
+        }
+
+        function renderFundsList() {
+            const container = document.getElementById('fundsList');
+            container.innerHTML = '';
+            allFunds.forEach(fund => {
+                const badgeColor = fund.type === 'رئيسي' ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-blue-50 text-blue-800 border-blue-200';
+                const phoneText = fund.phone ? ` 📱 ${fund.phone}` : '';
+                const item = `
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold ${badgeColor}">
+                        <span>${fund.name} (${fund.type})${phoneText}</span>
+                        <button onclick="editFund('${fund.id}', '${fund.name}', '${fund.type}', '${fund.phone || ''}')" class="text-amber-700 hover:text-amber-900 font-black">تعديل</button>
+                        <button onclick="deleteFund('${fund.id}')" class="text-red-600 hover:text-red-800 font-black">✕</button>
+                    </div>
+                `;
+                container.innerHTML += item;
+            });
+        }
+
+        function populateFundDropdowns() {
+            const vAgentSelect = document.getElementById('vAgent');
+            const filterAgentSelect = document.getElementById('filterAgent');
+
+            const selectedFormVal = vAgentSelect.value;
+            const selectedFilterVal = filterAgentSelect.value;
+
+            vAgentSelect.innerHTML = '<option value="">-- اختر الصندوق --</option>';
+            filterAgentSelect.innerHTML = '<option value="all">جميع الصناديق</option>';
+
+            allFunds.forEach(fund => {
+                vAgentSelect.innerHTML += `<option value="${fund.name}">${fund.name} (${fund.type})</option>`;
+                filterAgentSelect.innerHTML += `<option value="${fund.name}">${fund.name}</option>`;
+            });
+
+            if (selectedFormVal) vAgentSelect.value = selectedFormVal;
+            if (selectedFilterVal) filterAgentSelect.value = selectedFilterVal;
+        }
+
+        function populateSettlementNamesDropdown() {
+            const select = document.getElementById('filterSettlementName');
+            const currentSelected = select.value;
+            select.innerHTML = '<option value="">-- جميع معرّفات الأرشيف --</option>';
+
+            const uniqueNames = [...new Set(allVouchers.filter(v => v.settlementName).map(v => v.settlementName))];
+            
+            uniqueNames.forEach(name => {
+                select.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+
+            if (currentSelected) select.value = currentSelected;
+        }
+
+        document.getElementById('fundForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editFundId').value;
+            const name = document.getElementById('fundName').value.trim();
+            const type = document.getElementById('fundType').value;
+            const phone = document.getElementById('fundPhone').value.trim();
+
+            if (!name) return;
+
+            try {
+                if (id) {
+                    await db.collection('funds').doc(id).update({ name, type, phone });
+                } else {
+                    await db.collection('funds').add({ name, type, phone });
+                }
+                resetFundForm();
+            } catch (err) {
+                alert("حدث خطأ أثناء حفظ الصندوق: " + err.message);
+            }
+        });
+
+        function editFund(id, name, type, phone) {
+            document.getElementById('editFundId').value = id;
+            document.getElementById('fundName').value = name;
+            document.getElementById('fundType').value = type;
+            document.getElementById('fundPhone').value = phone || '';
+            document.getElementById('saveFundBtn').innerText = "تحديث";
+            document.getElementById('cancelFundEditBtn').classList.remove('hidden');
+        }
+
+        function resetFundForm() {
+            document.getElementById('fundForm').reset();
+            document.getElementById('editFundId').value = '';
+            document.getElementById('saveFundBtn').innerText = "حفظ";
+            document.getElementById('cancelFundEditBtn').classList.add('hidden');
+        }
+
+        async function deleteFund(id) {
+            if (confirm("هل أنت تأكد من رغبتك في حذف هذا الصندوق؟")) {
+                await db.collection('funds').doc(id).delete();
+            }
+        }
+
+        // ==========================================
+        //             حاسبة الفئات
+        // ==========================================
+        function openCalcModal() {
+            document.getElementById('calcTitle').innerText = "حاسبة الفئات النقدية (SAR)";
+            document.getElementById('calcActions').classList.remove('hidden');
+            document.getElementById('calcViewOnlyClose').classList.add('hidden');
+            
+            setInputsDisabledState(false);
+            setCalcFormValues(currentDenominations);
+            calculateDenominations();
+
+            document.getElementById('calcModal').classList.remove('hidden');
+        }
+
+        function viewVoucherDenominations(id) {
+            const voucher = allVouchers.find(item => item.id === id);
+            if (!voucher) return;
+
+            document.getElementById('calcTitle').innerText = `تفاصيل فئات السند (${voucher.voucherCode || ''})`;
+            document.getElementById('calcActions').classList.add('hidden');
+            document.getElementById('calcViewOnlyClose').classList.remove('hidden');
+
+            const denoms = voucher.denominations || {
+                d500: 0, d200: 0, d100: 0, d50: 0, d20: 0, d10: 0, d5: 0, halala: 0, other: 0
+            };
+
+            setCalcFormValues(denoms);
+            calculateDenominations();
+            
+            setInputsDisabledState(true);
+            document.getElementById('calcModal').classList.remove('hidden');
+        }
+
+        function setInputsDisabledState(state) {
+            const ids = ['denom500', 'denom200', 'denom100', 'denom50', 'denom20', 'denom10', 'denom5', 'denomHalala', 'denomOther'];
+            ids.forEach(id => document.getElementById(id).disabled = state);
+        }
+
+        function setCalcFormValues(d) {
+            document.getElementById('denom500').value = d.d500 || '';
+            document.getElementById('denom200').value = d.d200 || '';
+            document.getElementById('denom100').value = d.d100 || '';
+            document.getElementById('denom50').value = d.d50 || '';
+            document.getElementById('denom20').value = d.d20 || '';
+            document.getElementById('denom10').value = d.d10 || '';
+            document.getElementById('denom5').value = d.d5 || '';
+            document.getElementById('denomHalala').value = d.halala || '';
+            document.getElementById('denomOther').value = d.other || '';
+        }
+
+        function closeCalcModal() {
+            document.getElementById('calcModal').classList.add('hidden');
+        }
+
+        function calculateDenominations() {
+            const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
+
+            const sum500 = getVal('denom500') * 500;
+            const sum200 = getVal('denom200') * 200;
+            const sum100 = getVal('denom100') * 100;
+            const sum50 = getVal('denom50') * 50;
+            const sum20 = getVal('denom20') * 20;
+            const sum10 = getVal('denom10') * 10;
+            const sum5 = getVal('denom5') * 5;
+            const sumHalala = getVal('denomHalala');
+            const sumOther = getVal('denomOther');
+
+            document.getElementById('subTotal500').innerText = sum500.toFixed(2);
+            document.getElementById('subTotal200').innerText = sum200.toFixed(2);
+            document.getElementById('subTotal100').innerText = sum100.toFixed(2);
+            document.getElementById('subTotal50').innerText = sum50.toFixed(2);
+            document.getElementById('subTotal20').innerText = sum20.toFixed(2);
+            document.getElementById('subTotal10').innerText = sum10.toFixed(2);
+            document.getElementById('subTotal5').innerText = sum5.toFixed(2);
+            document.getElementById('subTotalHalala').innerText = sumHalala.toFixed(2);
+            document.getElementById('subTotalOther').innerText = sumOther.toFixed(2);
+
+            currentCalculatedTotal = sum500 + sum200 + sum100 + sum50 + sum20 + sum10 + sum5 + sumHalala + sumOther;
+            document.getElementById('calcTotalSum').innerText = currentCalculatedTotal.toFixed(2) + " ر.س";
+        }
+
+        function applyCalculatedAmount() {
+            const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
+            currentDenominations = {
+                d500: getVal('denom500'),
+                d200: getVal('denom200'),
+                d100: getVal('denom100'),
+                d50: getVal('denom50'),
+                d20: getVal('denom20'),
+                d10: getVal('denom10'),
+                d5: getVal('denom5'),
+                halala: getVal('denomHalala'),
+                other: getVal('denomOther')
+            };
+
+            document.getElementById('vAmount').value = currentCalculatedTotal.toFixed(2);
+            closeCalcModal();
+        }
+
+        function resetCalcModal() {
+            ['denom500', 'denom200', 'denom100', 'denom50', 'denom20', 'denom10', 'denom5', 'denomHalala', 'denomOther'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            currentDenominations = { d500: 0, d200: 0, d100: 0, d50: 0, d20: 0, d10: 0, d5: 0, halala: 0, other: 0 };
+            calculateDenominations();
+        }
+
+        // ==========================================
+        //     التحويل المالي المباشر بين الصناديق
+        // ==========================================
+        function openTransferModal() {
+            const fromSelect = document.getElementById('tFromFund');
+            const toSelect = document.getElementById('tToFund');
+            document.getElementById('tDate').valueAsDate = new Date();
+            document.getElementById('tAmount').value = '';
+            document.getElementById('tNotes').value = '';
+
+            fromSelect.innerHTML = '<option value="">-- اختر صندوق المصدر --</option>';
+            toSelect.innerHTML = '<option value="">-- اختر صندوق المستلم --</option>';
+
+            allFunds.forEach(fund => {
+                fromSelect.innerHTML += `<option value="${fund.name}">${fund.name}</option>`;
+                toSelect.innerHTML += `<option value="${fund.name}">${fund.name}</option>`;
+            });
+
+            document.getElementById('transferModal').classList.remove('hidden');
+        }
+
+        function closeTransferModal() {
+            document.getElementById('transferModal').classList.add('hidden');
+        }
+
+        async function executeFundTransfer(e) {
+            e.preventDefault();
+
+            const transferDate = document.getElementById('tDate').value;
+            const fromFund = document.getElementById('tFromFund').value;
+            const toFund = document.getElementById('tToFund').value;
+            const amount = parseFloat(document.getElementById('tAmount').value);
+            const notes = document.getElementById('tNotes').value.trim();
+
+            if (!fromFund || !toFund) {
+                alert("يرجى اختيار الصندوقين المعنيين بالعملية.");
+                return;
+            }
+            if (fromFund === toFund) {
+                alert("لا يمكن التحويل من وإلى نفس الصندوق!");
+                return;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                alert("يرجى إدخال مبلغ تحويل صحيح.");
+                return;
+            }
+
+            const confirmMsg = `تأكيد التحويل:\nمن: ${fromFund}\nإلى: ${toFund}\nالمبلغ: ${amount.toFixed(2)} ر.س`;
+            if (!confirm(confirmMsg)) return;
+
+            const transferId = "TRF-" + Date.now();
+            const batch = db.batch();
+
+            const countPaySnap = await db.collection('vouchers').where('type', '==', 'payment').get();
+            const payCode = 'PAY-' + (1001 + countPaySnap.size);
+
+            const countRecSnap = await db.collection('vouchers').where('type', '==', 'receipt').get();
+            const recCode = 'REC-' + (1001 + countRecSnap.size);
+
+            const payRef = db.collection('vouchers').doc();
+            const recRef = db.collection('vouchers').doc();
+
+            const descNote = notes ? ` (${notes})` : '';
+
+            batch.set(payRef, {
+                voucherCode: payCode,
+                type: 'payment',
+                voucherDate: transferDate,
+                agent: fromFund,
+                party: `تحويل إلى: ${toFund}`,
+                description: `تحويل نقدية إلى ${toFund}${descNote}`,
+                amount: amount,
+                transferId: transferId,
+                isArchived: false,
+                isVoided: false,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            batch.set(recRef, {
+                voucherCode: recCode,
+                type: 'receipt',
+                voucherDate: transferDate,
+                agent: toFund,
+                party: `تحويل من: ${fromFund}`,
+                description: `استلام نقدية محولة من ${fromFund}${descNote}`,
+                amount: amount,
+                transferId: transferId,
+                isArchived: false,
+                isVoided: false,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            try {
+                await batch.commit();
+                closeTransferModal();
+                alert(`تم التحويل بنجاح برقم مرجعي: ${transferId}`);
+            } catch (err) {
+                alert("حدث خطأ أثناء إجراء التحويل: " + err.message);
+            }
+        }
+
+        // ==========================================
+        //         إعدادات أسطر ومعاينة الطباعة
+        // ==========================================
+        function openPrintSettingsModal() {
+            document.getElementById('extraBlankRowsInput').value = extraBlankRows;
+            document.getElementById('rowPaddingInput').value = selectedRowPadding;
+            document.getElementById('printSettingsModal').classList.remove('hidden');
+        }
+
+        function closePrintSettingsModal() {
+            document.getElementById('printSettingsModal').classList.add('hidden');
+        }
+
+        function savePrintSettings() {
+            extraBlankRows = parseInt(document.getElementById('extraBlankRowsInput').value) || 0;
+            selectedRowPadding = document.getElementById('rowPaddingInput').value;
+            
+            document.documentElement.style.setProperty('--print-padding', selectedRowPadding);
+            closePrintSettingsModal();
+            applyFilters();
+        }
+
+        // ==========================================
+        //         حفظ وتعديل وحذف وإلغاء السندات
+        // ==========================================
+        document.getElementById('voucherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const docId = document.getElementById('editDocId').value;
+            const type = document.getElementById('vType').value;
+            const voucherDate = document.getElementById('vDate').value;
+            const agent = document.getElementById('vAgent').value;
+            const amount = parseFloat(document.getElementById('vAmount').value);
+            const party = document.getElementById('vParty').value;
+            const phone = document.getElementById('vPhone').value;
+            const description = document.getElementById('vDescription').value;
+
+            if (!agent) {
+                alert("يرجى اختيار الصندوق المستهدف أولاً.");
+                return;
+            }
+
+            try {
+                let savedId = docId;
+                if (docId) {
+                    await db.collection('vouchers').doc(docId).update({
+                        type, voucherDate, agent, amount, party, phone, description,
+                        denominations: currentDenominations
+                    });
+                    resetForm();
+                } else {
+                    const prefix = type === 'receipt' ? 'REC-' : 'PAY-';
+                    const countSnapshot = await db.collection('vouchers').where('type', '==', type).get();
+                    const sequenceNumber = 1001 + countSnapshot.size;
+                    const voucherCode = prefix + sequenceNumber;
+
+                    const newDoc = await db.collection('vouchers').add({
+                        voucherCode, type, voucherDate, agent, amount, party, phone, description,
+                        denominations: currentDenominations,
+                        isArchived: false,
+                        isVoided: false,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    savedId = newDoc.id;
+                    resetForm();
+                }
+
+                // إظهار شاشة المعاينة المنبثقة مباشرة بعد الحفظ
+                setTimeout(() => {
+                    openVoucherModal(savedId);
+                }, 300);
+
+            } catch (err) {
+                alert("حدث خطأ أثناء حفظ السند: " + err.message);
+            }
+        });
+
+        // دالة إلغاء السند
+        async function voidVoucher(id) {
+            const v = allVouchers.find(item => item.id === id);
+            if (!v) return;
+
+            if (confirm(`هل أنت متأكد من إلغاء السند رقم (${v.voucherCode})؟\nسيتم استبعاده من كافة الحسابات والأرصدة ونقله إلى تبويب السندات الملغاة.`)) {
+                try {
+                    await db.collection('vouchers').doc(id).update({
+                        isVoided: true,
+                        voidedAt: new Date().toISOString().slice(0, 10)
+                    });
+                } catch (err) {
+                    alert("تعذر إلغاء السند: " + err.message);
+                }
+            }
+        }
+
+        // دالة استرجاع السند الملغي
+        async function restoreVoucher(id) {
+            if (confirm("هل تريد استعادة هذا السند وإعادته إلى كشف الحركة النشطة؟")) {
+                try {
+                    await db.collection('vouchers').doc(id).update({
+                        isVoided: false
+                    });
+                } catch (err) {
+                    alert("تعذر استرجاع السند: " + err.message);
+                }
+            }
+        }
+
+        function parseVoucherDate(data) {
+            if (data.voucherDate) {
+                if (typeof data.voucherDate === 'string') return data.voucherDate.slice(0, 10);
+                if (data.voucherDate.toDate) return data.voucherDate.toDate().toISOString().slice(0, 10);
+            }
+            if (data.timestamp && data.timestamp.toDate) {
+                return data.timestamp.toDate().toISOString().slice(0, 10);
+            }
+            if (data.date) return String(data.date).slice(0, 10);
+            return '1970-01-01';
+        }
+
+        function loadVouchers() {
+            db.collection('vouchers').onSnapshot(snapshot => {
+                allVouchers = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        voucherCode: data.voucherCode || doc.id.substring(0, 6),
+                        type: data.type || 'receipt',
+                        agent: data.agent || data.account || 'غير محدد',
+                        party: data.party || data.client || 'غير محدد',
+                        description: data.description || data.notes || '-',
+                        amount: parseFloat(data.amount) || 0,
+                        phone: data.phone || '',
+                        denominations: data.denominations || null,
+                        displayDate: parseVoucherDate(data),
+                        rawDate: data.voucherDate || null,
+                        isArchived: data.isArchived || false,
+                        isVoided: data.isVoided || false,
+                        settlementName: data.settlementName || null,
+                        settlementPeriod: data.settlementPeriod || null,
+                        transferId: data.transferId || null
+                    };
+                });
+                
+                populateFundDropdowns();
+                populateSettlementNamesDropdown();
+                applyFilters();
+            });
+        }
+
+        function renderLedgerTable(vouchers) {
+            const tableBody = document.getElementById('vouchersTableBody');
+            const tableFoot = document.getElementById('vouchersTableFoot');
+            tableBody.innerHTML = '';
+
+            let runningBalance = 0;
+            let totalDebit = 0;
+            let totalCredit = 0;
+
+            vouchers.forEach((v) => {
+                const isReceipt = v.type === 'receipt';
+                const debit = isReceipt ? v.amount : 0;
+                const credit = !isReceipt ? v.amount : 0;
+
+                // إذا كان السند ليس ملغياً يتم احتسابه في الرصيد
+                if (!v.isVoided) {
+                    totalDebit += debit;
+                    totalCredit += credit;
+                    runningBalance += (debit - credit);
+                }
+
+                let archiveBadge = '';
+                if (v.isArchived) {
+                    archiveBadge = `<span class="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded border border-purple-300 ml-1">أرشيف: ${v.settlementName || 'مؤرشف'}</span>`;
+                }
+
+                let transferBadge = '';
+                if (v.transferId) {
+                    transferBadge = `<span class="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded border border-indigo-300 ml-1">تحويل داخلي</span>`;
+                }
+
+                let actionButtons = '';
+                if (v.isVoided) {
+                    actionButtons = `
+                        <button onclick="openVoucherModal('${v.id}')" class="text-blue-700 hover:text-blue-900 font-extrabold text-xs">معاينة</button>
+                        <button onclick="restoreVoucher('${v.id}')" class="text-emerald-700 hover:text-emerald-900 font-extrabold text-xs">استرجاع</button>
+                    `;
+                } else {
+                    actionButtons = `
+                        <button onclick="openVoucherModal('${v.id}')" class="text-blue-700 hover:text-blue-900 font-extrabold text-xs">معاينة</button>
+                        <button onclick="editVoucher('${v.id}')" class="text-amber-700 hover:text-amber-900 font-extrabold text-xs">تعديل</button>
+                        <button onclick="voidVoucher('${v.id}')" class="text-rose-700 hover:text-rose-900 font-extrabold text-xs">إلغاء</button>
+                    `;
+                }
+
+                const row = `
+                    <tr class="hover:bg-slate-100 transition border-b border-slate-300 ${v.isVoided ? 'bg-rose-50/50 line-through opacity-75' : v.isArchived ? 'bg-purple-50/30' : ''}">
+                        <td class="p-3 font-black text-slate-800 border-r border-slate-200 flex flex-wrap items-center gap-1">
+                            ${v.voucherCode}
+                            ${archiveBadge}
+                            ${transferBadge}
+                        </td>
+                        <td class="p-3 text-slate-700 whitespace-nowrap border-r border-slate-200">${v.displayDate}</td>
+                        <td class="p-3 font-bold text-slate-800 border-r border-slate-200">${v.agent}</td>
+                        <td class="p-3 font-bold text-slate-800 border-r border-slate-200">${v.party}</td>
+                        <td class="p-3 text-slate-700 border-r border-slate-200">${v.description}</td>
+                        <td class="p-3 font-black text-center text-emerald-700 bg-emerald-50/50 border-r border-slate-200 cursor-pointer select-none"
+                            ondblclick="viewVoucherDenominations('${v.id}')" title="انقر مرتين لمشاهدة توزيع الفئات">
+                            ${debit > 0 ? debit.toFixed(2) : '-'}
+                        </td>
+                        <td class="p-3 font-black text-center text-rose-700 bg-rose-50/50 border-r border-slate-200 cursor-pointer select-none"
+                            ondblclick="viewVoucherDenominations('${v.id}')" title="انقر مرتين لمشاهدة توزيع الفئات">
+                            ${credit > 0 ? credit.toFixed(2) : '-'}
+                        </td>
+                        <td class="p-3 font-black text-center text-blue-900 bg-blue-50/70 border-r border-slate-200">
+                            ${v.isVoided ? 'ملغي' : runningBalance.toFixed(2)}
+                        </td>
+                        <td class="p-3 no-print text-center flex justify-center gap-2">
+                            ${actionButtons}
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+            // إضافة الأسطر الفارغة المحددة لإعدادات الطباعة
+            for (let i = 1; i <= extraBlankRows; i++) {
+                const emptyRow = `
+                    <tr class="border-b border-slate-300">
+                        <td class="p-3 border-r border-slate-200 text-slate-300 font-normal">--</td>
+                        <td class="p-3 border-r border-slate-200"></td>
+                        <td class="p-3 border-r border-slate-200"></td>
+                        <td class="p-3 border-r border-slate-200"></td>
+                        <td class="p-3 border-r border-slate-200"></td>
+                        <td class="p-3 border-r border-slate-200"></td>
+                        <td class="p-3 border-r border-slate-200"></td>
+                        <td class="p-3 border-r border-slate-200"></td>
+                        <td class="p-3 no-print"></td>
+                    </tr>
+                `;
+                tableBody.innerHTML += emptyRow;
+            }
+
+            tableFoot.innerHTML = `
+                <tr class="bg-slate-300 border-t-2 border-slate-400">
+                    <td colspan="5" class="p-3 text-left font-black text-slate-900">إجمالي الجدول الظاهر:</td>
+                    <td class="p-3 text-center font-black text-emerald-800 text-base border-r border-slate-400">${totalDebit.toFixed(2)}</td>
+                    <td class="p-3 text-center font-black text-rose-800 text-base border-r border-slate-400">${totalCredit.toFixed(2)}</td>
+                    <td class="p-3 text-center font-black text-blue-950 text-base border-r border-slate-400">${runningBalance.toFixed(2)}</td>
+                    <td class="p-3 no-print"></td>
+                </tr>
+            `;
+
+            if (currentTab === 'active') {
+                document.getElementById('totalIncome').innerText = totalDebit.toFixed(2);
+                document.getElementById('totalExpense').innerText = totalCredit.toFixed(2);
+                document.getElementById('currentBalance').innerText = runningBalance.toFixed(2);
+            }
+        }
+
+        function editVoucher(id) {
+            const v = allVouchers.find(item => item.id === id);
+            if (!v) return;
+
+            document.getElementById('editDocId').value = v.id;
+            document.getElementById('vType').value = v.type;
+            document.getElementById('vDate').value = v.displayDate;
+            document.getElementById('vAgent').value = v.agent;
+            document.getElementById('vAmount').value = v.amount;
+            document.getElementById('vParty').value = v.party;
+            document.getElementById('vPhone').value = v.phone || '';
+            document.getElementById('vDescription').value = v.description;
+
+            currentDenominations = v.denominations || { d500: 0, d200: 0, d100: 0, d50: 0, d20: 0, d10: 0, d5: 0, halala: 0, other: 0 };
+
+            document.getElementById('formTitle').innerText = "تعديل السند (" + v.voucherCode + ")";
+            document.getElementById('submitBtn').innerText = "تحديث السند";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('voucherForm').reset();
+            document.getElementById('editDocId').value = '';
+            document.getElementById('vDate').valueAsDate = new Date();
+            document.getElementById('formTitle').innerText = "إصدار سند جديد";
+            document.getElementById('submitBtn').innerText = "حفظ وإصدار السند";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            resetCalcModal();
+        }
+
+        async function deleteVoucher(id) {
+            if (confirm("هل أنت تأكد من رغبتك في حذف هذا السند نهائياً؟")) {
+                await db.collection('vouchers').doc(id).delete();
+            }
+        }
+
+        const filterInputs = ['globalSearch', 'filterType', 'filterAgent', 'filterFromDate', 'filterToDate', 'filterSettlementName', 'showOpeningBalance'];
+        filterInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', applyFilters);
+        });
+        document.getElementById('globalSearch').addEventListener('input', applyFilters);
+
+        function applyFilters() {
+            const search = document.getElementById('globalSearch').value.toLowerCase();
+            const typeFilter = document.getElementById('filterType').value;
+            const agentFilter = document.getElementById('filterAgent').value;
+            const fromDateStr = document.getElementById('filterFromDate').value;
+            const toDateStr = document.getElementById('filterToDate').value;
+            const selectedSettlementName = document.getElementById('filterSettlementName').value;
+            const showOpening = document.getElementById('showOpeningBalance').checked;
+
+            const filtered = allVouchers.filter(v => {
+                let matchesTab = false;
+                if (currentTab === 'active') {
+                    matchesTab = !v.isArchived && !v.isVoided;
+                } else if (currentTab === 'archived') {
+                    matchesTab = v.isArchived && !v.isVoided;
+                    if (selectedSettlementName) {
+                        matchesTab = matchesTab && v.settlementName === selectedSettlementName;
+                    }
+                } else if (currentTab === 'voided') {
+                    matchesTab = v.isVoided;
+                }
+
+                const isOpening = (v.voucherCode && v.voucherCode.startsWith('REC-OPEN')) ||
+                                  (v.party && v.party.includes('رصيد مرحّل')) ||
+                                  (v.description && v.description.includes('رصيد افتتاح'));
+
+                if (!showOpening && isOpening) {
+                    return false;
+                }
+
+                const textMatch = !search || 
+                    (v.voucherCode && v.voucherCode.toLowerCase().includes(search)) ||
+                    (v.agent && v.agent.toLowerCase().includes(search)) ||
+                    (v.party && v.party.toLowerCase().includes(search)) ||
+                    (v.description && v.description.toLowerCase().includes(search)) ||
+                    (v.settlementName && v.settlementName.toLowerCase().includes(search));
+
+                const matchesType = typeFilter === 'all' || v.type === typeFilter;
+                const matchesAgent = agentFilter === 'all' || v.agent === agentFilter;
+                const matchesFrom = !fromDateStr || v.displayDate >= fromDateStr;
+                const matchesTo = !toDateStr || v.displayDate <= toDateStr;
+
+                return matchesTab && textMatch && matchesType && matchesAgent && matchesFrom && matchesTo;
+            });
+
+            filtered.sort((a, b) => a.displayDate.localeCompare(b.displayDate));
+            renderLedgerTable(filtered);
+        }
+
+        // ==========================================
+        //         تصفية وترحيل الفترة بالكامل
+        // ==========================================
+        function openSettlementModal() {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            
+            document.getElementById('settleNameInput').value = "تصفية_" + todayStr;
+            document.getElementById('settleFromDate').value = document.getElementById('filterFromDate').value || '';
+            document.getElementById('settleToDate').value = document.getElementById('filterToDate').value || todayStr;
+            
+            document.getElementById('settlementModal').classList.remove('hidden');
+        }
+
+        function closeSettlementModal() {
+            document.getElementById('settlementModal').classList.add('hidden');
+        }
+
+        async function executeSettlementByDateRange() {
+            const settleName = document.getElementById('settleNameInput').value.trim();
+            const fromDate = document.getElementById('settleFromDate').value;
+            const toDate = document.getElementById('settleToDate').value;
+
+            if (!settleName) {
+                alert("يرجى إدخال اسم أو معرف صحيح للتصفية.");
+                return;
+            }
+
+            const targetVouchers = allVouchers.filter(v => {
+                if (v.isArchived || v.isVoided) return false;
+                const matchesFrom = !fromDate || v.displayDate >= fromDate;
+                const matchesTo = !toDate || v.displayDate <= toDate;
+                return matchesFrom && matchesTo;
+            });
+
+            if (targetVouchers.length === 0) {
+                alert("لا توجد عمليات نشطة في هذا النطاق الزمني لتصفيتها.");
+                return;
+            }
+
+            let periodBalance = 0;
+            targetVouchers.forEach(v => {
+                const debit = v.type === 'receipt' ? v.amount : 0;
+                const credit = v.type === 'payment' ? v.amount : 0;
+                periodBalance += (debit - credit);
+            });
+
+            const mainFundObj = allFunds.find(f => f.type === 'رئيسي') || { name: 'خزينة الشركة الرئيسية' };
+            const rangeText = (fromDate ? `من ${fromDate} ` : '') + (toDate ? `إلى ${toDate}` : '');
+
+            const confirmText = `هل أنت تأكد من إجراء التصفية والترحيل للمعرف (${settleName})؟\n\n` +
+                                `- عدد العمليات التي ستُنقل إلى الأرشيف: ${targetVouchers.length}\n` +
+                                `- صافي رصيد الفترة: ${periodBalance.toFixed(2)} ر.س\n` +
+                                `- سيتم نقل الرصيد كـ (سند قبض افتتاح) للفترة الجديدة في "${mainFundObj.name}".`;
+
+            if (!confirm(confirmText)) return;
+
+            try {
+                const batch = db.batch();
+                const settlementDate = new Date().toISOString().slice(0, 10);
+                const settlementBatchId = "SETTLE-" + Date.now();
+
+                targetVouchers.forEach(v => {
+                    const ref = db.collection('vouchers').doc(v.id);
+                    batch.update(ref, { 
+                        isArchived: true, 
+                        settlementId: settlementBatchId,
+                        settlementName: settleName,
+                        archivedAt: settlementDate,
+                        settlementPeriod: rangeText
+                    });
+                });
+
+                if (periodBalance > 0) {
+                    const newVoucherRef = db.collection('vouchers').doc();
+                    batch.set(newVoucherRef, {
+                        voucherCode: 'REC-OPEN-' + Math.floor(1000 + Math.random() * 9000),
+                        type: 'receipt',
+                        voucherDate: settlementDate,
+                        agent: mainFundObj.name,
+                        party: 'رصيد مرحّل من التصفية: ' + settleName,
+                        description: `رصيد افتتاح مرحّل من التصفية (${settleName} - ${rangeText})`,
+                        amount: periodBalance,
+                        isArchived: false,
+                        isVoided: false,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                await batch.commit();
+                closeSettlementModal();
+                alert(`تمت تصفية وترحيل الأرشيف تحت المعرف: "${settleName}" بنجاح!`);
+            } catch (err) {
+                alert("حدث خطأ أثناء تنفيذ عملية التصفية: " + err.message);
+            }
+        }
+
+        // ==========================================
+        //               وظائف المعاينة والطباعة
+        // ==========================================
+        function openVoucherModal(id) {
+            activeVoucher = allVouchers.find(item => item.id === id);
+            if (!activeVoucher) return;
+
+            document.getElementById('mVoucherCode').innerText = activeVoucher.voucherCode;
+            document.getElementById('mVoucherDate').innerText = activeVoucher.displayDate;
+            
+            let typeBadge = document.getElementById('mTypeBadge');
+            typeBadge.innerText = activeVoucher.type === 'receipt' ? 'سند قبض نقدية' : 'سند صرف نقدية';
+            typeBadge.className = `px-3 py-1 rounded-full text-sm font-black ${activeVoucher.type === 'receipt' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`;
+            
+            document.getElementById('mAmount').innerText = activeVoucher.amount.toFixed(2) + " ر.س";
+            document.getElementById('mAmountText').innerText = tafqeet(activeVoucher.amount);
+
+            document.getElementById('mParty').innerText = activeVoucher.party;
+            document.getElementById('mAgent').innerText = activeVoucher.agent;
+            document.getElementById('mDescription').innerText = activeVoucher.description;
+
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+        }
+
+        function printSingleReceipt() {
+            document.body.classList.add('printing-single-receipt');
+            window.print();
+            document.body.classList.remove('printing-single-receipt');
+        }
+
+        function printReport() {
+            document.body.classList.remove('printing-single-receipt');
+            window.print();
+        }
+
+        // إرسال صورة السند عبر الواتساب مباشرة لصاحب الصندوق
+        async function shareVoucherToOwnerWhatsApp() {
+            if (!activeVoucher) return;
+
+            // استخراج رقم جوال صاحب الصندوق
+            const fundObj = allFunds.find(f => f.name === activeVoucher.agent);
+            let phone = (fundObj && fundObj.phone) ? fundObj.phone : (activeVoucher.phone || '');
+            
+            phone = phone.replace(/[^0-9]/g, '');
+            if (phone.startsWith('05')) phone = '966' + phone.substring(1);
+
+            const msgText = `شركة جار الخليج للصناعة\nسند ${activeVoucher.type === 'receipt' ? 'قبض' : 'صرف'} رقم: ${activeVoucher.voucherCode}\nالمبلغ: ${activeVoucher.amount.toFixed(2)} ر.س\nالصندوق: ${activeVoucher.agent}\nالبيان: ${activeVoucher.description}`;
+
+            const element = document.getElementById("printableVoucher");
+
+            try {
+                const canvas = await html2canvas(element, { scale: 2 });
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                const file = new File([blob], `${activeVoucher.voucherCode}.png`, { type: 'image/png' });
+
+                // إرسال مباشر عبر Web Share API (يفتح تطبيق الواتساب فوراً ويرفق الصورة مباشرة)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: `سند مالي ${activeVoucher.voucherCode}`,
+                        text: msgText
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.log("Web Share API غير مدعوم على هذا الجهاز، سيتم التحويل لرابط الواتساب:", err);
+            }
+
+            // خيار بديل إذا لم يكن المتصفح يدعم مشاركة الملفات المباشرة
+            window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msgText)}`, '_blank');
+        }
+
+        function downloadAsImage() {
+            const element = document.getElementById("printableVoucher");
+            html2canvas(element).then(canvas => {
+                const link = document.createElement("a");
+                link.download = `${activeVoucher.voucherCode}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            });
+        }
+
+        function exportToExcel() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "رقم السند,تاريخ العملية,معرف التصفية,الصندوق,الجهة,البيان,مدين (+),دائن (-),الحالة\n";
+
+            allVouchers.forEach(v => {
+                const debit = v.type === 'receipt' ? v.amount : 0;
+                const credit = v.type === 'payment' ? v.amount : 0;
+                const status = v.isVoided ? 'ملغي' : (v.isArchived ? 'مؤرشف' : 'نشط');
+                const row = `"${v.voucherCode}","${v.displayDate}","${v.settlementName || ''}","${v.agent}","${v.party}","${v.description}","${debit}","${credit}","${status}"`;
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `التدفقات_النقدية_جار_الخليج_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ==========================================
+        //         النسخ الاحتياطي واستعادة البيانات
+        // ==========================================
+        async function exportBackupJSON() {
+            try {
+                const fundsSnap = await db.collection('funds').get();
+                const vouchersSnap = await db.collection('vouchers').get();
+
+                const fundsData = fundsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const vouchersData = vouchersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const backupObject = {
+                    version: "1.0",
+                    exportedAt: new Date().toISOString(),
+                    funds: fundsData,
+                    vouchers: vouchersData
+                };
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObject, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `نسخة_احتياطية_جار_الخليج_${new Date().toISOString().slice(0,10)}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            } catch (err) {
+                alert("حدث خطأ أثناء استخراج النسخة الاحتياطية: " + err.message);
+            }
+        }
+
+        async function importBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.funds && !data.vouchers) {
+                        alert("ملف غير صالح! يجب اختيار ملف نسخة احتياطية صادر من النظام.");
+                        return;
+                    }
+
+                    if (!confirm("هل أنت تأكد من استعادة النسخة الاحتياطية؟")) {
+                        event.target.value = '';
+                        return;
+                    }
+
+                    const batch = db.batch();
+                    let countFunds = 0;
+                    let countVouchers = 0;
+
+                    if (Array.isArray(data.funds)) {
+                        data.funds.forEach(fund => {
+                            const fundId = fund.id || db.collection('funds').doc(fund.name).id;
+                            const fundRef = db.collection('funds').doc(fundId);
+                            const copyFund = { ...fund };
+                            delete copyFund.id;
+                            batch.set(fundRef, copyFund, { merge: true });
+                            countFunds++;
+                        });
+                    }
+
+                    if (Array.isArray(data.vouchers)) {
+                        data.vouchers.forEach(v => {
+                            const docId = v.id || (v.voucherCode ? `voucher_${v.voucherCode}` : db.collection('vouchers').doc().id);
+                            const voucherRef = db.collection('vouchers').doc(docId);
+                            const copyVoucher = { ...v };
+                            delete copyVoucher.id;
+                            batch.set(voucherRef, copyVoucher, { merge: true });
+                            countVouchers++;
+                        });
+                    }
+
+                    await batch.commit();
+                    alert(`تمت استعادة النسخة الاحتياطية بنجاح!\nتم تحديث/إضافة: ${countFunds} صندوق، و ${countVouchers} سند.`);
+                } catch (err) {
+                    alert("فشلت عملية استعادة النسخة الاحتياطية: " + err.message);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+        //           دالة تفقيط المبالغ المالية
+        // ==========================================
+        function tafqeet(number) {
+            const ones = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة", "عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+            const tens = ["", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+            const hundreds = ["", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+
+            function convertGroup(num) {
+                let str = "";
+                let h = Math.floor(num / 100);
+                let rem = num % 100;
+                if (h > 0) str += hundreds[h];
+                if (rem > 0) {
+                    if (str !== "") str += " و ";
+                    if (rem < 20) {
+                        str += ones[rem];
+                    } else {
+                        let t = Math.floor(rem / 10);
+                        let o = rem % 10;
+                        if (o > 0) str += ones[o] + " و " + tens[t];
+                        else str += tens[t];
+                    }
+                }
+                return str;
+            }
+
+            if (!number || number === 0) return "فقط صفر ريال سعودي لا غير.";
+            
+            let text = "فقط ";
+            let parts = Number(number).toFixed(2).split(".");
+            let intPart = parseInt(parts[0], 10);
+            let decPart = parseInt(parts[1], 10);
+            let result = [];
+            
+            if (intPart > 0) {
+                let m = Math.floor(intPart / 1000000);
+                let intRem = intPart % 1000000;
+                let th = Math.floor(intRem / 1000);
+                let rem = intRem % 1000;
+
+                if (m > 0) {
+                    if (m === 1) result.push("مليون");
+                    else if (m === 2) result.push("مليونان");
+                    else if (m >= 3 && m <= 10) result.push(convertGroup(m) + " ملايين");
+                    else result.push(convertGroup(m) + " مليون");
+                }
+                if (th > 0) {
+                    if (th === 1) result.push("ألف");
+                    else if (th === 2) result.push("ألفان");
+                    else if (th >= 3 && th <= 10) result.push(convertGroup(th) + " آلاف");
+                    else result.push(convertGroup(th) + " ألف");
+                }
+                if (rem > 0) result.push(convertGroup(rem));
+            }
+            
+            if (result.length > 0) text += result.join(" و ") + " ريال سعودي";
+            
+            if (decPart > 0) {
+                if (result.length > 0) text += " و ";
+                text += convertGroup(decPart) + " هللة";
+            }
+
+            text += " لا غير.";
+            return text;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق المندوب - الإدخال المؤقت ومتابعة الطلبات</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- خط Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <!-- html2canvas لتصدير الصور -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="sales-field"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 p-2 sm:p-4 md:p-6 min-h-screen">
+
+    <div class="max-w-5xl mx-auto space-y-4 sm:space-y-6">
+        
+        <!-- Header -->
+        <header class="bg-emerald-800 text-white p-4 sm:p-5 rounded-2xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+                <span class="text-[11px] sm:text-xs font-bold text-emerald-200 block">شركة جار الخليج للصناعة</span>
+                <h1 class="text-base sm:text-xl font-black">واجهة المندوب الميداني - الإدخال والمتابعة 📱</h1>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="text-xs bg-emerald-900/60 px-3 py-1.5 rounded-xl border border-emerald-700">
+                    <span class="block text-emerald-300 font-bold">طلبات السلة المؤقتة</span>
+                    <span id="temp-leads-count" class="text-base sm:text-lg font-black text-white">0</span>
+                </div>
+                <div class="text-xs bg-emerald-900/60 px-3 py-1.5 rounded-xl border border-emerald-700">
+                    <span class="block text-emerald-300 font-bold">طلبات السيستم المحفوظة</span>
+                    <span id="system-leads-count" class="text-base sm:text-lg font-black text-white">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- نافذة التحقق من اسم المندوب لأول مرة -->
+        <div id="rep-setup-modal" class="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-black text-amber-900">مرحباً بك يا مهندس/مندوب جار الخليج</h3>
+                <p class="text-xs text-amber-800 font-bold">الرجاء إدخال اسمك الثلاثي (سيتم حفظه واعتماده لجميع طلباتك ومتابعتها حصرياً):</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <input type="text" id="sales-rep-input" class="border border-amber-400 rounded-xl p-2.5 text-xs font-bold bg-white outline-none flex-1 sm:w-64" placeholder="مثال: أحمد محمد علي">
+                <button onclick="saveSalesRepName()" class="bg-amber-600 hover:bg-amber-700 text-white font-black px-4 py-2.5 rounded-xl text-xs transition-colors shadow">
+                    حفظ واعتماد
+                </button>
+            </div>
+        </div>
+
+        <!-- لوحة عرض اسم المندوب الحالي (تظهر بعد الحفظ) -->
+        <div id="rep-active-banner" class="hidden bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center justify-between text-xs">
+            <div class="font-bold text-emerald-900">
+                👤 المندوب النشط حالياً: <span id="display-rep-name" class="font-black text-emerald-950 underline text-sm"></span> 
+                <span class="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded mr-2">🔒 يعرض ويسجل طلباتك وحدك</span>
+            </div>
+            <button onclick="changeSalesRepName()" class="text-rose-600 hover:text-rose-800 font-extrabold text-[11px] bg-white border border-rose-200 px-2.5 py-1 rounded-lg">
+                تغيير الاسم
+            </button>
+        </div>
+
+        <!-- أزرار التنقل بين التبويبات -->
+        <div class="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 gap-2">
+            <button onclick="switchTab('input')" id="tab-btn-input" class="flex-1 py-3 rounded-xl font-black text-xs transition-all bg-emerald-800 text-white shadow-sm">
+                📝 الإدخال المؤقت والسلة
+            </button>
+            <button onclick="switchTab('followup')" id="tab-btn-followup" class="flex-1 py-3 rounded-xl font-black text-xs transition-all bg-slate-100 text-slate-700 hover:bg-slate-200">
+                📊 متابعة وتعديل حالات الطلبات (السيرفر)
+            </button>
+        </div>
+
+        <!-- ================= تبويب 1: الإدخال المؤقت والسلة ================= -->
+        <div id="tab-content-input" class="space-y-4">
+            
+            <!-- Form Card -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h2 id="form-section-title" class="text-sm font-black text-slate-900 border-b pb-2">إضافة طلب جديد إلى السلة المؤقتة</h2>
+                
+                <form id="lead-form" onsubmit="saveItemToTempCart(event)" class="space-y-3 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-800 mb-1">اسم العميل *</label>
+                            <input type="text" id="client-name" required class="w-full border border-slate-300 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="اسم العميل">
+                        </div>
+
+                        <!-- حقل رقم الجوال الاحترافي مع قائمة دائرية صغيرة للأعلام ومفتاح الدولة -->
+                        <div>
+                            <label class="block font-bold text-slate-800 mb-1">رقم الجوال مع مفتاح الدولة *</label>
+                            <div class="flex items-center gap-2">
+                                <select id="country-code-select" onchange="updatePhonePrefix()" class="border border-slate-300 rounded-full py-2.5 px-3 font-black bg-white focus:ring-2 focus:ring-emerald-500 outline-none text-xs text-center shadow-sm cursor-pointer shrink-0">
+                                    <option value="+966">🇸🇦 +966</option>
+                                    <option value="+966">ye +967</option>
+                                    <option value="+971">🇦🇪 +971</option>
+                                    <option value="+965">🇰🇼 +965</option>
+                                    <option value="+974">🇶🇦 +974</option>
+                                    <option value="+973">🇧🇭 +973</option>
+                                    <option value="+968">🇴🇲 +968</option>
+                                    <option value="+20">🇪🇬 +20</option>
+                                    <option value="+962">🇯🇴 +962</option>
+                                    <option value="+961">🇱🇧 +961</option>
+                                    <option value="+1">🇺🇸 +1</option>
+                                    <option value="+44">🇬🇧 +44</option>
+                                    <option value="other">🌐 أخرى</option>
+                                </select>
+                                <input type="tel" id="client-phone" required oninput="detectCountryFromPaste(this.value)" class="flex-1 border border-slate-300 rounded-lg p-2.5 font-bold font-mono focus:ring-2 focus:ring-emerald-500 outline-none text-xs" placeholder="الرقم، أو ألصقه كاملاً هنا...">
+                            </div>
+                            <span class="text-[10px] text-slate-500 block mt-1">💡 يدعم اللصق التلقائي للمفتاح والرقم (مثلاً: +96650...).</span>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-800 mb-1">المنطقة / المدينة *</label>
+                            <input type="text" id="client-region" required class="w-full border border-slate-300 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="الرياض، جدة، الدمام...">
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-800 mb-1">نوع العميل *</label>
+                            <select id="client-type" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <option value="عميل فردي">عميل فردي</option>
+                                <option value="شركة">شركة</option>
+                                <option value="مؤسسة">مؤسسة</option>
+                                <option value="موزع">موزع</option>
+                                <option value="مقاول / مقاولات">مقاول / مقاولات</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-800 mb-1">مصدر الإعلان</label>
+                            <select id="ad-source" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <option value="واتساب">واتساب</option>
+                                <option value="سناب شات">سناب شات</option>
+                                <option value="تيك توك">تيك توك</option>
+                                <option value="انستقرام">انستقرام</option>
+                                <option value="فيسبوك">فيسبوك</option>
+                                <option value="جوجل">حملات جوجل</option>
+                                <option value="مباشر">تواصل مباشر</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-800 mb-1">نوع المنتج المطلوب *</label>
+                            <input type="text" id="product-type" required class="w-full border border-slate-300 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="تفاصيل المنتج">
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="block font-bold text-slate-800 mb-1">حالة الطلب الأولية</label>
+                            <select id="lead-status" onchange="toggleStatusFields()" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <option value="عميل محتمل">عميل محتمل</option>
+                                <option value="عميل متفاعل">عميل متفاعل</option>
+                                <option value="قيد التفاوض">قيد التفاوض</option>
+                                <option value="تم إرسال عرض السعر">تم إرسال عرض السعر</option>
+                                <option value="تم الشراء">تم الشراء</option>
+                                <option value="تم التحويل">تم التحويل</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- حقل رقم عرض السعر -->
+                    <div id="quotation-container" class="hidden bg-sky-50 p-2.5 rounded-lg border border-sky-300">
+                        <label class="block font-bold text-sky-950 mb-1">رقم عرض السعر *</label>
+                        <input type="text" id="quotation-number" class="w-full border border-sky-400 rounded-lg p-2 font-bold bg-white focus:ring-2 focus:ring-sky-500 outline-none" placeholder="رقم عرض السعر المرسل">
+                    </div>
+
+                    <!-- حقل التحويل -->
+                    <div id="assigned-to-container" class="hidden bg-amber-50 p-2.5 rounded-lg border border-amber-300">
+                        <label class="block font-bold text-amber-950 mb-1">اسم المسؤول المحول عليه *</label>
+                        <input type="text" id="assigned-to" class="w-full border border-amber-400 rounded-lg p-2 font-bold bg-white focus:ring-2 focus:ring-amber-500 outline-none" placeholder="اسم الشخص أو القسم">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">ملاحظات إضافية</label>
+                        <textarea id="client-notes" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="أي تفاصيل أخرى..."></textarea>
+                    </div>
+
+                    <button type="submit" id="submit-cart-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-xl transition-all shadow">
+                        ➕ إضافة الطلب إلى السلة المؤقتة
+                    </button>
+                </form>
+            </div>
+
+            <!-- جدول السلة المؤقتة -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h2 class="text-sm font-black text-slate-900">جدول السلة المؤقتة (لم تُحفظ بعد في السيرفر) 🛒</h2>
+                    <button onclick="submitAllTempLeads()" id="upload-all-btn" class="hidden bg-emerald-800 hover:bg-emerald-900 text-white text-xs px-4 py-2.5 rounded-xl font-black transition-all shadow">
+                        🚀 حفظ ورفع كل طلبات السلة إلى قاعدة البيانات
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-right border-collapse text-xs whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-800 font-black border-b border-slate-200">
+                                <th class="p-2.5">#</th>
+                                <th class="p-2.5">العميل</th>
+                                <th class="p-2.5">الجوال</th>
+                                <th class="p-2.5">المنطقة</th>
+                                <th class="p-2.5">نوع العميل</th>
+                                <th class="p-2.5">المصدر</th>
+                                <th class="p-2.5">المنتج</th>
+                                <th class="p-2.5">الحالة</th>
+                                <th class="p-2.5">رقم العرض</th>
+                                <th class="p-2.5 text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="temp-table-body" class="divide-y divide-slate-200 font-bold">
+                            <tr>
+                                <td colspan="10" class="p-4 text-center text-slate-400">السلة المؤقتة فارغة حالياً. أضف طلبات للأعلى.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= تبويب 2: متابعة وتعديل حالات الطلبات ================= -->
+        <div id="tab-content-followup" class="hidden space-y-4">
+            
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b pb-3">
+                    <div>
+                        <h2 class="text-sm font-black text-slate-900">متابعة وتحديث حالات طلباتك المعتمدة 📊</h2>
+                        <p class="text-[11px] text-slate-500 font-bold">هنا يمكنك رؤية طلباتك فقط وتعديل حالتها (من محتمل إلى تم الشراء) في أي وقت</p>
+                    </div>
+
+                    <!-- أزرار التصدير -->
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <button onclick="copyWhatsAppSummary()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2.5 rounded-lg font-extrabold transition-colors flex items-center justify-center gap-1 shadow-sm">
+                            💬 نسخ للواتساب
+                        </button>
+                        <button onclick="exportPDF()" class="flex-1 md:flex-none bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-2.5 rounded-lg font-extrabold transition-colors flex items-center justify-center gap-1 shadow-sm">
+                            🖨️ طباعة / PDF
+                        </button>
+                        <button onclick="exportPNG()" class="flex-1 md:flex-none bg-indigo-700 hover:bg-indigo-800 text-white text-xs px-3 py-2.5 rounded-lg font-extrabold transition-colors flex items-center justify-center gap-1 shadow-sm">
+                            🖼️ تصدير صورة (PNG)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- فلترة سريعة -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                    <span class="text-slate-500 font-bold">فلترة حسب الحالة:</span>
+                    <button onclick="filterTable('all')" id="filter-all" class="px-2.5 py-1 rounded-lg bg-emerald-800 text-white font-bold transition-all">الكل</button>
+                    <button onclick="filterTable('عميل محتمل')" id="filter-potential" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold transition-all">محتمل</button>
+                    <button onclick="filterTable('قيد التفاوض')" id="filter-negotiating" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold transition-all">قيد التفاوض</button>
+                    <button onclick="filterTable('تم إرسال عرض السعر')" id="filter-quotation" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold transition-all">عروض الأسعار</button>
+                    <button onclick="filterTable('تم الشراء')" id="filter-purchased" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold transition-all">تم الشراء</button>
+                    <button onclick="filterTable('تم التحويل')" id="filter-assigned" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold transition-all">المحولة</button>
+                </div>
+
+                <!-- جدول متابعة الطلبات المعتمدة (السيرفر) -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-right border-collapse text-xs whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-800 font-black border-b border-slate-200">
+                                <th class="p-2.5">#</th>
+                                <th class="p-2.5">رقم الطلب</th>
+                                <th class="p-2.5">العميل</th>
+                                <th class="p-2.5">الجوال</th>
+                                <th class="p-2.5">المنطقة</th>
+                                <th class="p-2.5">نوع العميل</th>
+                                <th class="p-2.5">المصدر</th>
+                                <th class="p-2.5">المنتج</th>
+                                <th class="p-2.5">الحالة الحالية</th>
+                                <th class="p-2.5">رقم العرض</th>
+                                <th class="p-2.5 text-center">تحديث ومتابعة الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="system-leads-tbody" class="divide-y divide-slate-200 font-bold">
+                            <tr>
+                                <td colspan="11" class="p-4 text-center text-slate-400">الرجاء اعتماد اسم المندوب لعرض طلباتك المسجلة في السيرفر</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- نافذة منبثقة لتعديل حالة الطلب المعتمد حياً -->
+    <div id="update-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-5 space-y-4 text-xs">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-sm font-black text-slate-900">تعديل ومتابعة حالة الطلب: <span id="modal-order-num" class="text-emerald-800 font-mono"></span></h3>
+                <button onclick="closeUpdateModal()" class="text-slate-400 hover:text-slate-700 font-bold text-base">✕</button>
+            </div>
+
+            <input type="hidden" id="modal-doc-id" value="">
+
+            <div class="space-y-3 font-bold">
+                <div>
+                    <label class="block text-slate-700 mb-1">اسم العميل</label>
+                    <input type="text" id="modal-client-name" disabled class="w-full bg-slate-100 border border-slate-300 rounded-lg p-2.5 text-slate-600">
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 mb-1">حالة الطلب الجديدة *</label>
+                    <select id="modal-lead-status" onchange="toggleModalStatusFields()" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <option value="عميل محتمل">عميل محتمل</option>
+                        <option value="عميل متفاعل">عميل متفاعل</option>
+                        <option value="قيد التفاوض">قيد التفاوض</option>
+                        <option value="تم إرسال عرض السعر">تم إرسال عرض السعر</option>
+                        <option value="تم الشراء">تم الشراء</option>
+                        <option value="تم التحويل">تم التحويل</option>
+                    </select>
+                </div>
+
+                <div id="modal-quotation-container" class="hidden bg-sky-50 p-2.5 rounded-lg border border-sky-300">
+                    <label class="block text-sky-950 mb-1">رقم عرض السعر *</label>
+                    <input type="text" id="modal-quotation-number" class="w-full border border-sky-400 rounded-lg p-2 bg-white outline-none" placeholder="أدخل رقم عرض السعر">
+                </div>
+
+                <div id="modal-assigned-container" class="hidden bg-amber-50 p-2.5 rounded-lg border border-amber-300">
+                    <label class="block text-amber-950 mb-1">اسم المسؤول المحول عليه *</label>
+                    <input type="text" id="modal-assigned-to" class="w-full border border-amber-400 rounded-lg p-2 bg-white outline-none" placeholder="اسم المسؤول">
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 mb-1">ملاحظات المتابعة والتحديث</label>
+                    <textarea id="modal-client-notes" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none" placeholder="اكتب ملاحظات التطورات الجديدة للطلب..."></textarea>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2 border-t">
+                <button onclick="saveLeadStatusUpdate()" class="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white font-black py-2.5 rounded-xl transition-all shadow">
+                    💾 حفظ وتحديث الحالة فوراً
+                </button>
+                <button onclick="closeUpdateModal()" class="bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- حاوية مخفية لتصدير صورة PNG -->
+    <div id="png-export-card" class="fixed -left-[9999px] top-0 w-[1100px] bg-white text-slate-900 p-8 border-t-8 border-emerald-700 shadow-xl" style="font-family: 'Cairo', sans-serif;">
+        <div class="flex justify-between items-start border-b-2 border-slate-300 pb-4 mb-4">
+            <div>
+                <div class="text-xs font-black text-emerald-800 mb-1">شركة جار الخليج للصناعة - تقرير ومتابعة طلبات المندوب</div>
+                <h2 class="text-xl font-black text-slate-900" id="exp-rep-name">المندوب: -</h2>
+            </div>
+            <div class="text-left bg-slate-100 px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-bold">
+                <div class="text-[10px] text-slate-600">تاريخ التقرير</div>
+                <div id="exp-card-date" class="font-black text-emerald-900"></div>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border-2 border-slate-300 mb-4">
+            <table class="w-full text-right border-collapse text-xs font-bold">
+                <thead>
+                    <tr class="bg-slate-200 text-slate-900 font-black border-b-2 border-slate-300">
+                        <th class="p-2.5">#</th>
+                        <th class="p-2.5">رقم الطلب</th>
+                        <th class="p-2.5">العميل</th>
+                        <th class="p-2.5">الجوال</th>
+                        <th class="p-2.5">المنطقة</th>
+                        <th class="p-2.5">نوع العميل</th>
+                        <th class="p-2.5">المصدر</th>
+                        <th class="p-2.5">المنتج المطلوب</th>
+                        <th class="p-2.5">الحالة</th>
+                        <th class="p-2.5">رقم العرض</th>
+                        <th class="p-2.5">تفاصيل وملاحظات التحديث</th>
+                    </tr>
+                </thead>
+                <tbody id="export-table-body" class="divide-y border-slate-300 text-slate-900 font-bold">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 pt-2 border-t border-slate-200">
+            <div>إجمالي الطلبات: <span id="exp-total-count" class="font-black text-emerald-800">0</span></div>
+            <div>شركة جار الخليج للصناعة - نظام المندوب الميداني</div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAcBNwpOiDOLHoqIdKV1oYHurIGv5ukrDY",
+            authDomain: "whatsapp-leads-db.firebaseapp.com",
+            projectId: "whatsapp-leads-db",
+            storageBucket: "whatsapp-leads-db.firebasestorage.app",
+            messagingSenderId: "384852647986",
+            appId: "1:384852647986:web:46fe4cdcac4e55aa811c2b",
+            measurementId: "G-82FQ6ZSPEC"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let tempLeads = [];      
+        let systemLeads = [];    
+        let currentFilter = 'all';
+        let currentSalesRep = '';
+        let editingTempIndex = -1; 
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedRep = localStorage.getItem('sales_rep_name');
+            if (savedRep) {
+                currentSalesRep = savedRep;
+                document.getElementById('rep-setup-modal').classList.add('hidden');
+                document.getElementById('rep-active-banner').classList.remove('hidden');
+                document.getElementById('display-rep-name').innerText = savedRep;
+                fetchSystemLeads(savedRep);
+            }
+        });
+
+        function saveSalesRepName() {
+            const nameVal = document.getElementById('sales-rep-input').value.trim();
+            if (!nameVal) {
+                alert("الرجاء كتابة اسم المندوب بشكل صحيح أولاً!");
+                return;
+            }
+            localStorage.setItem('sales_rep_name', nameVal);
+            currentSalesRep = nameVal;
+            document.getElementById('rep-setup-modal').classList.add('hidden');
+            document.getElementById('rep-active-banner').classList.remove('hidden');
+            document.getElementById('display-rep-name').innerText = nameVal;
+            fetchSystemLeads(nameVal);
+        }
+
+        function changeSalesRepName() {
+            if (confirm("هل تريد بالتأكيد تغيير اسم المندوب المسجل؟")) {
+                localStorage.removeItem('sales_rep_name');
+                location.reload();
+            }
+        }
+
+        function switchTab(tabName) {
+            const tabInput = document.getElementById('tab-content-input');
+            const tabFollowup = document.getElementById('tab-content-followup');
+            const btnInput = document.getElementById('tab-btn-input');
+            const btnFollowup = document.getElementById('tab-btn-followup');
+
+            if (tabName === 'input') {
+                tabInput.classList.remove('hidden');
+                tabFollowup.classList.add('hidden');
+                btnInput.className = "flex-1 py-3 rounded-xl font-black text-xs transition-all bg-emerald-800 text-white shadow-sm";
+                btnFollowup.className = "flex-1 py-3 rounded-xl font-black text-xs transition-all bg-slate-100 text-slate-700 hover:bg-slate-200";
+            } else {
+                tabInput.classList.add('hidden');
+                tabFollowup.classList.remove('hidden');
+                btnFollowup.className = "flex-1 py-3 rounded-xl font-black text-xs transition-all bg-emerald-800 text-white shadow-sm";
+                btnInput.className = "flex-1 py-3 rounded-xl font-black text-xs transition-all bg-slate-100 text-slate-700 hover:bg-slate-200";
+                if(currentSalesRep) fetchSystemLeads(currentSalesRep);
+            }
+        }
+
+        function toggleStatusFields() {
+            const status = document.getElementById('lead-status').value;
+            const quotContainer = document.getElementById('quotation-container');
+            const quotInput = document.getElementById('quotation-number');
+            const assignedContainer = document.getElementById('assigned-to-container');
+            const assignedInput = document.getElementById('assigned-to');
+
+            quotContainer.classList.add('hidden');
+            quotInput.required = false;
+            quotInput.value = '';
+
+            assignedContainer.classList.add('hidden');
+            assignedInput.required = false;
+            assignedInput.value = '';
+
+            if (status === 'تم إرسال عرض السعر') {
+                quotContainer.classList.remove('hidden');
+                quotInput.required = true;
+            } else if (status === 'تم التحويل') {
+                assignedContainer.classList.remove('hidden');
+                assignedInput.required = true;
+            }
+        }
+
+        function updatePhonePrefix() {
+            const select = document.getElementById('country-code-select');
+            if (select.value === 'other') {
+                let customCode = prompt("أدخل مفتاح الدولة مسبوقاً بـ + (مثلا: +33):", "+");
+                if (customCode) {
+                    let option = document.createElement('option');
+                    option.value = customCode;
+                    option.text = `🌐 ${customCode}`;
+                    option.selected = true;
+                    select.insertBefore(option, select.firstChild);
+                }
+            }
+        }
+
+        function detectCountryFromPaste(val) {
+            if (!val) return;
+            let cleaned = val.trim();
+            const select = document.getElementById('country-code-select');
+            const phoneInput = document.getElementById('client-phone');
+
+            if (cleaned.startsWith('00')) {
+                cleaned = '+' + cleaned.substring(2);
+            }
+
+            if (cleaned.startsWith('+')) {
+                for (let option of select.options) {
+                    if (option.value !== 'other' && cleaned.startsWith(option.value)) {
+                        select.value = option.value;
+                        let remainder = cleaned.substring(option.value.length).trim();
+                        if (remainder.startsWith('0') && option.value === '+966') {
+                            remainder = remainder.substring(1);
+                        }
+                        phoneInput.value = remainder;
+                        break;
+                    }
+                }
+            } else if (cleaned.startsWith('05') && cleaned.length >= 10) {
+                select.value = '+966';
+                if (cleaned.startsWith('0')) {
+                    phoneInput.value = cleaned.substring(1);
+                }
+            }
+        }
+
+        function saveItemToTempCart(e) {
+            e.preventDefault();
+            if (!currentSalesRep) {
+                alert("الرجاء اعتماد اسم المندوب في الأعلى أولاً!");
+                return;
+            }
+
+            const countryCode = document.getElementById('country-code-select').value;
+            let rawPhone = document.getElementById('client-phone').value.replace(/[^0-9]/g, '');
+            
+            if (!rawPhone || rawPhone.length < 6) {
+                alert("الرجاء إدخال رقم جوال صحيح!");
+                return;
+            }
+
+            if (rawPhone.startsWith('0')) {
+                rawPhone = rawPhone.substring(1);
+            }
+
+            const fullPhoneNumber = countryCode + rawPhone;
+            const statusVal = document.getElementById('lead-status').value;
+            
+            const leadItem = {
+                id: editingTempIndex !== -1 ? tempLeads[editingTempIndex].id : Date.now().toString(),
+                salesRep: currentSalesRep,
+                clientName: document.getElementById('client-name').value.trim(),
+                phone: fullPhoneNumber,
+                region: document.getElementById('client-region').value.trim(),
+                clientType: document.getElementById('client-type').value,
+                source: document.getElementById('ad-source').value,
+                product: document.getElementById('product-type').value.trim(),
+                status: statusVal,
+                quotationNumber: statusVal === 'تم إرسال عرض السعر' ? document.getElementById('quotation-number').value.trim() : '',
+                assignedTo: statusVal === 'تم التحويل' ? document.getElementById('assigned-to').value.trim() : '',
+                notes: document.getElementById('client-notes').value.trim()
+            };
+
+            if (editingTempIndex === -1) {
+                tempLeads.push(leadItem);
+            } else {
+                tempLeads[editingTempIndex] = leadItem;
+                editingTempIndex = -1;
+                document.getElementById('submit-cart-btn').innerText = "➕ إضافة الطلب إلى السلة المؤقتة";
+                document.getElementById('submit-cart-btn').className = "w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-xl transition-all shadow";
+                document.getElementById('form-section-title').innerText = "إضافة طلب جديد إلى السلة المؤقتة";
+            }
+
+            renderTempTable();
+            resetFormInputs();
+        }
+
+        function editTempItem(index) {
+            const item = tempLeads[index];
+            document.getElementById('client-name').value = item.clientName;
+            
+            let phoneVal = item.phone || '';
+            const select = document.getElementById('country-code-select');
+            let matchedCode = '+966';
+            let localNumber = phoneVal;
+
+            for (let option of select.options) {
+                if (option.value !== 'other' && phoneVal.startsWith(option.value)) {
+                    matchedCode = option.value;
+                    localNumber = phoneVal.substring(option.value.length);
+                    break;
+                }
+            }
+
+            select.value = matchedCode;
+            document.getElementById('client-phone').value = localNumber;
+            document.getElementById('client-region').value = item.region;
+            document.getElementById('client-type').value = item.clientType;
+            document.getElementById('ad-source').value = item.source;
+            document.getElementById('product-type').value = item.product;
+            document.getElementById('lead-status').value = item.status;
+            
+            toggleStatusFields();
+
+            if (item.status === 'تم إرسال عرض السعر') {
+                document.getElementById('quotation-number').value = item.quotationNumber || '';
+            } else if (item.status === 'تم التحويل') {
+                document.getElementById('assigned-to').value = item.assignedTo || '';
+            }
+            document.getElementById('client-notes').value = item.notes || '';
+
+            editingTempIndex = index;
+            document.getElementById('submit-cart-btn').innerText = "💾 حفظ التعديل في السلة";
+            document.getElementById('submit-cart-btn').className = "w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-3 rounded-xl transition-all shadow";
+            document.getElementById('form-section-title').innerText = `تعديل الطلب الحالي في السلة (العميل: ${item.clientName})`;
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetFormInputs() {
+            document.getElementById('client-name').value = '';
+            document.getElementById('client-phone').value = '';
+            document.getElementById('country-code-select').value = '+966';
+            document.getElementById('client-region').value = '';
+            document.getElementById('product-type').value = '';
+            document.getElementById('client-notes').value = '';
+            document.getElementById('quotation-number').value = '';
+            document.getElementById('assigned-to').value = '';
+            document.getElementById('lead-status').value = 'عميل محتمل';
+            toggleStatusFields();
+            editingTempIndex = -1;
+            document.getElementById('submit-cart-btn').innerText = "➕ إضافة الطلب إلى السلة المؤقتة";
+            document.getElementById('submit-cart-btn').className = "w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-xl transition-all shadow";
+            document.getElementById('form-section-title').innerText = "إضافة طلب جديد إلى السلة المؤقتة";
+        }
+
+        function removeFromTemp(id) {
+            tempLeads = tempLeads.filter(item => item.id !== id);
+            renderTempTable();
+        }
+
+        function renderTempTable() {
+            const tbody = document.getElementById('temp-table-body');
+            const uploadBtn = document.getElementById('upload-all-btn');
+            document.getElementById('temp-leads-count').innerText = tempLeads.length;
+            tbody.innerHTML = '';
+
+            if (tempLeads.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-slate-400 font-bold">السلة المؤقتة فارغة حالياً. أضف طلبات للأعلى.</td></tr>`;
+                uploadBtn.classList.add('hidden');
+                return;
+            }
+
+            uploadBtn.classList.remove('hidden');
+
+            tempLeads.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200 transition-colors">
+                        <td class="p-2.5 text-slate-400 font-bold">${index + 1}</td>
+                        <td class="p-2.5 font-black text-slate-900">${item.clientName}</td>
+                        <td class="p-2.5 font-mono text-slate-700" dir="ltr" style="text-align: right;">${item.phone}</td>
+                        <td class="p-2.5 text-slate-800">${item.region}</td>
+                        <td class="p-2.5"><span class="bg-indigo-50 text-indigo-900 px-2 py-0.5 rounded text-[11px] font-bold">${item.clientType}</span></td>
+                        <td class="p-2.5"><span class="bg-slate-200 text-slate-900 px-2 py-0.5 rounded text-[11px] font-bold">${item.source}</span></td>
+                        <td class="p-2.5 text-slate-800">${item.product}</td>
+                        <td class="p-2.5"><span class="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded text-[11px] font-bold">${item.status}</span></td>
+                        <td class="p-2.5 font-mono text-sky-900 font-extrabold">${item.quotationNumber || '---'}</td>
+                        <td class="p-2.5 text-center flex items-center justify-center gap-1">
+                            <button onclick="editTempItem(${index})" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded-lg text-xs font-black shadow-sm">
+                                ✏️ تعديل
+                            </button>
+                            <button onclick="removeFromTemp('${item.id}')" class="bg-rose-500 hover:bg-rose-600 text-white px-2 py-1 rounded-lg text-xs font-black shadow-sm">
+                                🗑️ حذف
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function submitAllTempLeads() {
+            if (tempLeads.length === 0) return;
+            const uploadBtn = document.getElementById('upload-all-btn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerText = "⏳ جاري ترقيم ورفع الطلبات للسيرفر...";
+
+            try {
+                const counterRef = db.collection('counters').doc('orders_counter');
+                const now = new Date();
+                const isoDate = now.toISOString().split('T')[0];
+                const dateStr = now.toLocaleDateString('ar-SA');
+
+                for (let lead of tempLeads) {
+                    let assignedOrderNum = 1001;
+                    await db.runTransaction(async (transaction) => {
+                        const counterDoc = await transaction.get(counterRef);
+                        if (counterDoc.exists) {
+                            assignedOrderNum = counterDoc.data().current + 1;
+                        }
+                        transaction.set(counterRef, { current: assignedOrderNum });
+                    });
+
+                    delete lead.id;
+                    lead.orderNumber = assignedOrderNum;
+                    lead.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    lead.isoDate = isoDate;
+                    lead.dateStr = dateStr;
+
+                    await db.collection('whatsapp_leads').add(lead);
+                }
+
+                alert("✅ تم حفظ ورفع جميع طلبات السلة المؤقتة بنجاح إلى قاعدة البيانات!");
+                tempLeads = [];
+                renderTempTable();
+                fetchSystemLeads(currentSalesRep);
+                switchTab('followup');
+
+            } catch (err) {
+                alert("حدث خطأ أثناء الرفع: " + err.message);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerText = "🚀 حفظ ورفع كل طلبات السلة إلى قاعدة البيانات";
+            }
+        }
+
+        function fetchSystemLeads(repName) {
+            const tbody = document.getElementById('system-leads-tbody');
+            tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-emerald-700 font-bold">جاري جلب طلباتك المسجلة من السيرفر...</td></tr>`;
+
+            db.collection('whatsapp_leads')
+                .where('salesRep', '==', repName)
+                .orderBy('orderNumber', 'desc')
+                .get()
+                .then((snapshot) => {
+                    systemLeads = [];
+                    snapshot.forEach((doc) => {
+                        systemLeads.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderSystemLeadsTable();
+                })
+                .catch((error) => {
+                    db.collection('whatsapp_leads')
+                        .where('salesRep', '==', repName)
+                        .get()
+                        .then((snapshot) => {
+                            systemLeads = [];
+                            snapshot.forEach((doc) => {
+                                systemLeads.push({ id: doc.id, ...doc.data() });
+                            });
+                            renderSystemLeadsTable();
+                        })
+                        .catch(err => {
+                            tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-rose-600 font-bold">حدث خطأ في جلب بيانات السيرفر</td></tr>`;
+                        });
+                });
+        }
+
+        function filterTable(statusKey) {
+            currentFilter = statusKey;
+            ['all', 'potential', 'negotiating', 'quotation', 'purchased', 'assigned'].forEach(id => {
+                const btn = document.getElementById('filter-' + id);
+                if(btn) btn.className = "px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold transition-all";
+            });
+
+            let activeId = 'filter-all';
+            if(statusKey === 'عميل محتمل') activeId = 'filter-potential';
+            if(statusKey === 'قيد التفاوض') activeId = 'filter-negotiating';
+            if(statusKey === 'تم إرسال عرض السعر') activeId = 'filter-quotation';
+            if(statusKey === 'تم الشراء') activeId = 'filter-purchased';
+            if(statusKey === 'تم التحويل') activeId = 'filter-assigned';
+            
+            const activeBtn = document.getElementById(activeId);
+            if(activeBtn) activeBtn.className = "px-2.5 py-1 rounded-lg bg-emerald-800 text-white font-bold transition-all";
+
+            renderSystemLeadsTable();
+        }
+
+        function renderSystemLeadsTable() {
+            const tbody = document.getElementById('system-leads-tbody');
+            document.getElementById('system-leads-count').innerText = systemLeads.length;
+            tbody.innerHTML = '';
+
+            let filtered = systemLeads;
+            if (currentFilter !== 'all') {
+                filtered = systemLeads.filter(item => item.status === currentFilter);
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-slate-400 font-bold">لا توجد طلبات مطابقة في سجلك المعتمد</td></tr>`;
+                return;
+            }
+
+            filtered.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200 transition-colors">
+                        <td class="p-2.5 text-slate-400 font-bold">${index + 1}</td>
+                        <td class="p-2.5 font-mono text-emerald-800 font-black">#${item.orderNumber || '-'}</td>
+                        <td class="p-2.5 font-black text-slate-900">${item.clientName}</td>
+                        <td class="p-2.5 font-mono text-slate-700" dir="ltr" style="text-align: right;">${item.phone}</td>
+                        <td class="p-2.5 text-slate-800">${item.region}</td>
+                        <td class="p-2.5"><span class="bg-indigo-50 text-indigo-900 px-2 py-0.5 rounded text-[11px] font-bold">${item.clientType || 'عميل فردي'}</span></td>
+                        <td class="p-2.5"><span class="bg-slate-200 text-slate-900 px-2 py-0.5 rounded text-[11px] font-bold">${item.source}</span></td>
+                        <td class="p-2.5 text-slate-800">${item.product}</td>
+                        <td class="p-2.5"><span class="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded text-[11px] font-bold">${item.status}</span></td>
+                        <td class="p-2.5 font-mono text-sky-900 font-extrabold">${item.quotationNumber || '---'}</td>
+                        <td class="p-2.5 text-center">
+                            <button onclick="openUpdateModal('${item.id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-black shadow-sm transition-colors">
+                                ✏️ تعديل ومتابعة الحالة
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openUpdateModal(docId) {
+            const item = systemLeads.find(l => l.id === docId);
+            if (!item) return;
+
+            document.getElementById('modal-doc-id').value = item.id;
+            document.getElementById('modal-order-num').innerText = `#${item.orderNumber}`;
+            document.getElementById('modal-client-name').value = item.clientName;
+            document.getElementById('modal-lead-status').value = item.status;
+            
+            toggleModalStatusFields();
+            if (item.status === 'تم إرسال عرض السعر') {
+                document.getElementById('modal-quotation-number').value = item.quotationNumber || '';
+            } else if (item.status === 'تم التحويل') {
+                document.getElementById('modal-assigned-to').value = item.assignedTo || '';
+            }
+            document.getElementById('modal-client-notes').value = item.notes || '';
+
+            document.getElementById('update-modal').classList.remove('hidden');
+        }
+
+        function closeUpdateModal() {
+            document.getElementById('update-modal').classList.add('hidden');
+        }
+
+        function toggleModalStatusFields() {
+            const status = document.getElementById('modal-lead-status').value;
+            const quotContainer = document.getElementById('modal-quotation-container');
+            const quotInput = document.getElementById('modal-quotation-number');
+            const assignedContainer = document.getElementById('modal-assigned-container');
+            const assignedInput = document.getElementById('modal-assigned-to');
+
+            quotContainer.classList.add('hidden');
+            quotInput.required = false;
+            quotInput.value = '';
+
+            assignedContainer.classList.add('hidden');
+            assignedInput.required = false;
+            assignedInput.value = '';
+
+            if (status === 'تم إرسال عرض السعر') {
+                quotContainer.classList.remove('hidden');
+                quotInput.required = true;
+            } else if (status === 'تم التحويل') {
+                assignedContainer.classList.remove('hidden');
+                assignedInput.required = true;
+            }
+        }
+
+        async function saveLeadStatusUpdate() {
+            const docId = document.getElementById('modal-doc-id').value;
+            const statusVal = document.getElementById('modal-lead-status').value;
+            const notesVal = document.getElementById('modal-client-notes').value.trim();
+            const quotVal = statusVal === 'تم إرسال عرض السعر' ? document.getElementById('modal-quotation-number').value.trim() : '';
+            const assignedVal = statusVal === 'تم التحويل' ? document.getElementById('modal-assigned-to').value.trim() : '';
+
+            try {
+                await db.collection('whatsapp_leads').doc(docId).update({
+                    status: statusVal,
+                    notes: notesVal,
+                    quotationNumber: quotVal,
+                    assignedTo: assignedVal
+                });
+
+                alert("✅ تم تحديث حالة الطلب ومتابعتها بنجاح في السيرفر!");
+                closeUpdateModal();
+                fetchSystemLeads(currentSalesRep);
+
+            } catch (err) {
+                alert("خطأ في التحديث: " + err.message);
+            }
+        }
+
+        function copyWhatsAppSummary() {
+            if (systemLeads.length === 0) {
+                alert("لا توجد طلبات لنسخها!");
+                return;
+            }
+
+            let text = `📋 *تقرير متابعة طلبات المندوب: ${currentSalesRep}*\n`;
+            text += `📅 التاريخ: ${new Date().toLocaleDateString('ar-SA')}\n`;
+            text += `-----------------------------------\n`;
+
+            systemLeads.forEach((item, i) => {
+                text += `${i+1}. *رقم الطلب:* #${item.orderNumber}\n`;
+                text += `   👤 العميل: ${item.clientName}\n`;
+                text += `   📱 الجوال: ${item.phone}\n`;
+                text += `   📍 المنطقة: ${item.region}\n`;
+                text += `   🛍️ المنتج: ${item.product}\n`;
+                text += `   📌 الحالة: ${item.status}\n`;
+                if(item.status === 'تم إرسال عرض السعر') text += `   📄 رقم العرض: ${item.quotationNumber}\n`;
+                if(item.status === 'تم التحويل') text += `   ➡️ محول إلى: ${item.assignedTo}\n`;
+                if(item.notes) text += `   💬 ملاحظات: ${item.notes}\n`;
+                text += `-----------------------------------\n`;
+            });
+            text += `إجمالي طلباتك: ${systemLeads.length} - شركة جار الخليج للصناعة`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert("✅ تم نسخ ملخص طلباتك بنجاح للواتساب!");
+            });
+        }
+
+        function exportPDF() {
+            if (systemLeads.length === 0) {
+                alert("لا توجد طلبات لتصديرها!");
+                return;
+            }
+
+            const printWindow = window.open('', '', 'height=800,width=1100');
+            let rowsHtml = '';
+            
+            systemLeads.forEach((item, index) => {
+                let details = item.notes || '-';
+                if (item.status === 'تم التحويل') details = `محول لـ: ${item.assignedTo} | ${item.notes || ''}`;
+
+                rowsHtml += `
+                    <tr style="border-bottom: 1px solid #cbd5e1;">
+                        <td style="padding: 8px; font-weight: 700;">${index + 1}</td>
+                        <td style="padding: 8px; font-weight: 900; color: #047857; font-family: monospace;">#${item.orderNumber || '-'}</td>
+                        <td style="padding: 8px; font-weight: 900;">${item.clientName}</td>
+                        <td style="padding: 8px; font-weight: 800; direction: ltr; text-align: right;">${item.phone}</td>
+                        <td style="padding: 8px; font-weight: 700;">${item.region}</td>
+                        <td style="padding: 8px; font-weight: 700;">${item.clientType}</td>
+                        <td style="padding: 8px; font-weight: 700;">${item.source}</td>
+                        <td style="padding: 8px; font-weight: 700;">${item.product}</td>
+                        <td style="padding: 8px; font-weight: 800; color: #047857;">${item.status}</td>
+                        <td style="padding: 8px; font-weight: 800; color: #0369a1; font-family: monospace;">${item.quotationNumber || '-'}</td>
+                        <td style="padding: 8px; font-weight: 600;">${details}</td>
+                    </tr>
+                `;
+            });
+
+            printWindow.document.write(`
+                <html dir="rtl" lang="ar">
+                <head>
+                    <title>تقرير متابعة طلبات المندوب - ${currentSalesRep}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+                    <style>
+                        @page { size: landscape; margin: 10mm; }
+                        body { font-family: 'Cairo', sans-serif; padding: 10px; color: #0f172a; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: right; }
+                        th { background-color: #e2e8f0; padding: 10px 8px; font-weight: 900; border-bottom: 2px solid #64748b; }
+                    </style>
+                </head>
+                <body>
+                    <h2>شركة جار الخليج للصناعة - تقرير المندوب: ${currentSalesRep}</h2>
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>رقم الطلب</th><th>العميل</th><th>الجوال</th><th>المنطقة</th><th>نوع العميل</th><th>المصدر</th><th>المنتج</th><th>الحالة</th><th>رقم العرض</th><th>التفاصيل والملاحظات</th></tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        }
+
+        function exportPNG() {
+            if (systemLeads.length === 0) return;
+            const card = document.getElementById('png-export-card');
+            const tbody = document.getElementById('export-table-body');
+
+            document.getElementById('exp-rep-name').innerText = `المندوب: ${currentSalesRep}`;
+            document.getElementById('exp-card-date').innerText = new Date().toLocaleDateString('ar-SA');
+            document.getElementById('exp-total-count').innerText = systemLeads.length;
+
+            tbody.innerHTML = '';
+            systemLeads.forEach((item, index) => {
+                let details = item.notes || '-';
+                if (item.status === 'تم التحويل') details = `محول لـ: ${item.assignedTo} | ${item.notes || ''}`;
+
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-300">
+                        <td class="p-2">${index + 1}</td>
+                        <td class="p-2 font-mono font-black text-emerald-800">#${item.orderNumber || '-'}</td>
+                        <td class="p-2 font-black">${item.clientName}</td>
+                        <td class="p-2 font-mono" dir="ltr" style="text-align: right;">${item.phone}</td>
+                        <td class="p-2">${item.region}</td>
+                        <td class="p-2">${item.clientType}</td>
+                        <td class="p-2">${item.source}</td>
+                        <td class="p-2">${item.product}</td>
+                        <td class="p-2 text-emerald-900 font-extrabold">${item.status}</td>
+                        <td class="p-2 font-mono text-sky-900 font-bold">${item.quotationNumber || '-'}</td>
+                        <td class="p-2">${details}</td>
+                    </tr>
+                `;
+            });
+
+            card.style.position = 'absolute';
+            card.style.left = '0px';
+
+            html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `تقرير_متابعة_${currentSalesRep}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                card.style.position = 'fixed';
+                card.style.left = '-9999px';
+            });
+        }
+    </script>
+</body>
+</html>

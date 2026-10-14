@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شركة جار الخليج للصناعة - تقرير بتواصل عملاء الاعلانات</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- خط Cairo ممتاز وواضح للطباعة -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <!-- html2canvas لتصدير الصور -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="sales-leads"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 p-3 md:p-6">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <div class="text-xs font-black text-emerald-700 mb-1">شركة جار الخليج للصناعة</div>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900">تقرير بتواصل عملاء الاعلانات على مواقع التواصل الاجتماعي</h1>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-center">
+                <span class="text-xs font-bold text-slate-600 block">عدد الطلبات المعروضة</span>
+                <span id="total-count" class="text-2xl font-black text-slate-900">0</span>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Form Card -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-1 h-fit">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h2 id="form-title" class="text-base font-extrabold text-slate-900">إدخال طلب جديد</h2>
+                    <button id="cancel-edit-btn" onclick="resetForm()" class="hidden text-xs text-rose-600 font-bold hover:underline">إلغاء التعديل</button>
+                </div>
+
+                <form id="lead-form" class="space-y-3 text-xs">
+                    <input type="hidden" id="edit-doc-id" value="">
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">اسم المندوب</label>
+                        <input type="text" id="sales-rep" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-900" placeholder="أدخل اسم المندوب">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">اسم العميل</label>
+                        <input type="text" id="client-name" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-900" placeholder="أدخل اسم العميل">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">نوع العميل</label>
+                        <select id="client-type" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-bold text-slate-900">
+                            <option value="عميل فردي">عميل فردي</option>
+                            <option value="شركة">شركة</option>
+                            <option value="موزع">موزع</option>
+                            <option value="مؤسسة">مؤسسة</option>
+                            <option value="مقاولات">مقاولات</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">رقم الجوال</label>
+                        <input type="tel" id="client-phone" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-900" placeholder="05xxxxxxxx">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">المنطقة / المدينة</label>
+                        <input type="text" id="client-region" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-900" placeholder="الرياض، جدة، الدمام...">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">مصدر الإعلان</label>
+                        <select id="ad-source" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-bold text-slate-900">
+                            <option value="واتساب">واتساب</option>
+                            <option value="سناب شات">سناب شات</option>
+                            <option value="تيك توك">تيك توك</option>
+                            <option value="انستقرام">انستقرام</option>
+                            <option value="فيسبوك">فيسبوك</option>
+                            <option value="جوجل">حملات جوجل</option>
+                            <option value="مباشر">تواصل مباشر</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">نوع المنتج المطلوب</label>
+                        <input type="text" id="product-type" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-900" placeholder="تفاصيل المنتج المطلوب">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">حالة الطلب</label>
+                        <select id="lead-status" onchange="toggleConditionalFields()" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-bold text-slate-900">
+                            <option value="عمل محتمل">عمل محتمل</option>
+                            <option value="عميل متفاعل">عميل متفاعل</option>
+                            <option value="قيد التفاوض">قيد التفاوض</option>
+                            <option value="تم إرسال عرض السعر">تم إرسال عرض السعر 📄</option>
+                            <option value="تم الرفض">تم الرفض</option>
+                            <option value="تم الشراء">تم الشراء ✅</option>
+                            <option value="تم تحويله">تم تحويله ➡️</option>
+                        </select>
+                    </div>
+
+                    <!-- حقل رقم عرض السعر -->
+                    <div id="quotation-container" class="hidden bg-sky-50 p-2.5 rounded-lg border border-sky-300 space-y-1">
+                        <label class="block font-bold text-sky-950 mb-1">رقم عرض السعر *</label>
+                        <input type="text" id="quotation-number" class="w-full border border-sky-400 rounded-lg p-2 focus:ring-2 focus:ring-sky-500 outline-none bg-white font-bold text-slate-900" placeholder="أدخل رقم عرض السعر">
+                    </div>
+
+                    <!-- حقل التحويل -->
+                    <div id="assigned-to-container" class="hidden bg-amber-50 p-2.5 rounded-lg border border-amber-300 space-y-1">
+                        <label class="block font-bold text-amber-950 mb-1">اسم المسؤول المحول عليه *</label>
+                        <input type="text" id="assigned-to" class="w-full border border-amber-400 rounded-lg p-2 focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold text-slate-900" placeholder="اسم الشخص أو القسم المحول إليه">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-800 mb-1">ملاحظات</label>
+                        <textarea id="client-notes" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-900" placeholder="أي ملاحظات إضافية..."></textarea>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-black py-3 rounded-xl transition-all shadow-md mt-2">
+                        حفظ البيانات
+                    </button>
+                </form>
+            </div>
+
+            <!-- Table & Statistics Area -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2 space-y-4">
+                
+                <!-- Filter Bar & Export Actions -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h3 class="text-xs font-black text-slate-800">🔍 تصفية التقارير والتصدير</h3>
+                        <div class="flex gap-2">
+                            <button onclick="exportPDF()" class="bg-slate-900 hover:bg-black text-white text-xs px-3.5 py-2 rounded-lg font-extrabold transition-colors flex items-center gap-1 shadow-sm">
+                                🖨️ طباعة أفقیة / PDF
+                            </button>
+                            <button onclick="exportPNG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs px-3.5 py-2 rounded-lg font-extrabold transition-colors flex items-center gap-1 shadow-sm">
+                                🖼️ تصدير صورة (PNG)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- الفلاتر -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">تصفية حسب المندوب</label>
+                            <select id="filter-sales-rep" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                                <option value="الكل">جميع المندوبين</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">المنطقة / المدينة</label>
+                            <select id="filter-region" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                                <option value="الكل">جميع المناطق</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">المصدر</label>
+                            <select id="filter-source" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                                <option value="الكل">جميع المصادر</option>
+                                <option value="واتساب">واتساب</option>
+                                <option value="سناب شات">سناب شات</option>
+                                <option value="تيك توك">تيك توك</option>
+                                <option value="انستقرام">انستقرام</option>
+                                <option value="فيسبوك">فيسبوك</option>
+                                <option value="جوجل">حملات جوجل</option>
+                                <option value="مباشر">تواصل مباشر</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">حالة الطلب</label>
+                            <select id="filter-status" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                                <option value="الكل">جميع الحالات</option>
+                                <option value="عمل محتمل">عمل محتمل</option>
+                                <option value="عميل متفاعل">عميل متفاعل</option>
+                                <option value="قيد التفاوض">قيد التفاوض</option>
+                                <option value="تم إرسال عرض السعر">تم إرسال عرض السعر</option>
+                                <option value="تم الرفض">تم الرفض</option>
+                                <option value="تم الشراء">تم الشراء</option>
+                                <option value="تم تحويله">تم تحويله</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">نوع تصفية التاريخ</label>
+                            <select id="filter-date-type" onchange="toggleDateInputs()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                                <option value="الكل">جميع التواريخ</option>
+                                <option value="تاريخ_محدد">تاريخ محدد</option>
+                                <option value="بين_تاريخين">بين تاريخين</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="date-inputs-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 hidden">
+                        <div id="single-date-box" class="hidden sm:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">التاريخ المطلوب</label>
+                            <input type="date" id="filter-single-date" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                        </div>
+
+                        <div id="range-date-from-box" class="hidden">
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">من تاريخ</label>
+                            <input type="date" id="filter-date-from" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                        </div>
+
+                        <div id="range-date-to-box" class="hidden">
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">إلى تاريخ</label>
+                            <input type="date" id="filter-date-to" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white font-bold outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div class="overflow-x-auto rounded-xl border border-slate-300">
+                    <table class="w-full text-right border-collapse text-xs" id="leads-table">
+                        <thead>
+                            <tr class="bg-slate-200 text-slate-900 font-black border-b-2 border-slate-300">
+                                <th class="p-2.5">رقم الطلب</th>
+                                <th class="p-2.5">التاريخ</th>
+                                <th class="p-2.5">المندوب</th>
+                                <th class="p-2.5">العميل</th>
+                                <th class="p-2.5">نوع العميل</th>
+                                <th class="p-2.5">الجوال</th>
+                                <th class="p-2.5">المنطقة</th>
+                                <th class="p-2.5">المصدر</th>
+                                <th class="p-2.5">المنتج</th>
+                                <th class="p-2.5">الحالة</th>
+                                <th class="p-2.5">رقم عرض السعر</th>
+                                <th class="p-2.5 text-center">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leads-table-body" class="divide-y divide-slate-200 font-bold">
+                            <tr>
+                                <td colspan="12" class="p-4 text-center text-slate-400">جاري تحميل البيانات...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Live Summary Statistics Dashboard -->
+                <div class="bg-slate-900 text-white p-4 rounded-xl space-y-4 shadow-md">
+                    <h4 class="text-xs font-black text-emerald-400 border-b border-slate-700 pb-2">📊 ملخص الإحصائيات العامة</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+                        <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
+                            <span class="block text-[10px] text-emerald-300 font-bold">إجمالي الطلبات</span>
+                            <span id="stat-total-orders" class="font-black text-lg text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
+                            <span class="block text-[10px] text-slate-300 font-bold">إجمالي العملاء</span>
+                            <span id="stat-clients" class="font-black text-lg text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
+                            <span class="block text-[10px] text-slate-300 font-bold">المناطق المغطاة</span>
+                            <span id="stat-regions" class="font-black text-lg text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
+                            <span class="block text-[10px] text-slate-300 font-bold">المصدر الأعلى طلباً</span>
+                            <span id="stat-top-source" class="font-black text-sm text-amber-300">-</span>
+                        </div>
+                    </div>
+
+                    <!-- بطاقات تفصيلية لكل حالة من حالات الطلب -->
+                    <h4 class="text-xs font-black text-emerald-400 border-b border-slate-700 pb-2 pt-2">📌 تفاصيل إحصائيات حالات الطلب</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 text-center text-xs">
+                        <div class="bg-slate-800 p-2 rounded-lg border-l-4 border-purple-500">
+                            <span class="block text-[10px] text-purple-400 font-bold">عمل محتمل</span>
+                            <span id="status-stat-potential" class="font-black text-base text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2 rounded-lg border-l-4 border-teal-500">
+                            <span class="block text-[10px] text-teal-400 font-bold">عميل متفاعل</span>
+                            <span id="status-stat-active" class="font-black text-base text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2 rounded-lg border-l-4 border-cyan-500">
+                            <span class="block text-[10px] text-cyan-400 font-bold">قيد التفاوض</span>
+                            <span id="status-stat-negotiating" class="font-black text-base text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2 rounded-lg border-l-4 border-sky-400">
+                            <span class="block text-[10px] text-sky-300 font-bold">عروض الأسعار المرسلة</span>
+                            <span id="status-stat-quotation" class="font-black text-base text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2 rounded-lg border-l-4 border-rose-500">
+                            <span class="block text-[10px] text-rose-400 font-bold">تم الرفض</span>
+                            <span id="status-stat-rejected" class="font-black text-base text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2 rounded-lg border-l-4 border-blue-500">
+                            <span class="block text-[10px] text-blue-400 font-bold">تم الشراء ✅</span>
+                            <span id="status-stat-purchased" class="font-black text-base text-white">0</span>
+                        </div>
+                        <div class="bg-slate-800 p-2 rounded-lg border-l-4 border-indigo-500 col-span-2">
+                            <span class="block text-[10px] text-indigo-400 font-bold">تم تحويله ➡️</span>
+                            <span id="status-stat-transferred" class="font-black text-base text-white">0</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- حاوية التصدير الفاتحة الأنيقة للبث والصورة (PNG) -->
+    <div id="png-export-card" class="fixed -left-[9999px] top-0 w-[1250px] bg-white text-slate-900 p-8 border-t-8 border-emerald-600 shadow-xl" style="font-family: 'Cairo', sans-serif;">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b-2 border-slate-300 pb-4 mb-4">
+            <div>
+                <div class="text-xs font-black text-emerald-800 mb-1">شركة جار الخليج للصناعة</div>
+                <h2 class="text-xl font-black text-slate-900">تقرير بتواصل عملاء الاعلانات على مواقع التواصل الاجتماعي</h2>
+            </div>
+            <div class="text-left bg-slate-100 px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-bold">
+                <div class="text-[10px] text-slate-600">تاريخ التصدير</div>
+                <div id="export-card-date" class="font-black text-emerald-900"></div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-hidden rounded-lg border-2 border-slate-300 mb-4">
+            <table class="w-full text-right border-collapse text-xs font-bold">
+                <thead>
+                    <tr class="bg-slate-200 text-slate-900 font-black border-b-2 border-slate-300">
+                        <th class="p-2.5">رقم الطلب</th>
+                        <th class="p-2.5">التاريخ</th>
+                        <th class="p-2.5">المندوب</th>
+                        <th class="p-2.5">العميل</th>
+                        <th class="p-2.5">نوع العميل</th>
+                        <th class="p-2.5">الجوال</th>
+                        <th class="p-2.5">المنطقة</th>
+                        <th class="p-2.5">المصدر</th>
+                        <th class="p-2.5">المنتج</th>
+                        <th class="p-2.5">الحالة</th>
+                        <th class="p-2.5">رقم عرض السعر</th>
+                        <th class="p-2.5">الملاحظات / تفاصيل إضافية</th>
+                    </tr>
+                </thead>
+                <tbody id="export-table-body" class="divide-y border-slate-300 text-slate-900 font-bold">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Integrated Analytics Footer (صورة) -->
+        <div class="bg-slate-100 border-2 border-slate-300 rounded-xl p-3 mb-4 text-xs font-extrabold text-slate-900 space-y-3">
+            <div>
+                <div class="text-xs font-black text-slate-900 mb-2 border-b border-slate-300 pb-1">📈 الإحصائيات العامة للتقرير:</div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div>إجمالي الطلبات: <strong id="exp-stat-total-orders" class="text-emerald-800 block font-black text-sm">0</strong></div>
+                    <div>إجمالي العملاء: <strong id="exp-stat-clients" class="text-slate-900 block font-black text-sm">0</strong></div>
+                    <div>المناطق: <strong id="exp-stat-regions" class="text-slate-900 block font-black text-sm">0</strong></div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-300">
+                <div class="text-xs font-black text-slate-900 mb-2">📌 تفاصيل حالات الطلب كاملة:</div>
+                <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div class="bg-white p-1.5 rounded border border-purple-300">عمل محتمل: <strong id="exp-status-potential" class="text-purple-700 block text-sm font-black">0</strong></div>
+                    <div class="bg-white p-1.5 rounded border border-teal-300">عميل متفاعل: <strong id="exp-status-active" class="text-teal-700 block text-sm font-black">0</strong></div>
+                    <div class="bg-white p-1.5 rounded border border-cyan-300">قيد التفاوض: <strong id="exp-status-negotiating" class="text-cyan-700 block text-sm font-black">0</strong></div>
+                    <div class="bg-white p-1.5 rounded border border-sky-300">عروض الأسعار: <strong id="exp-status-quotation" class="text-sky-700 block text-sm font-black">0</strong></div>
+                    <div class="bg-white p-1.5 rounded border border-rose-300">تم الرفض: <strong id="exp-status-rejected" class="text-rose-700 block text-sm font-black">0</strong></div>
+                    <div class="bg-white p-1.5 rounded border border-blue-300">تم الشراء: <strong id="exp-status-purchased" class="text-blue-700 block text-sm font-black">0</strong></div>
+                    <div class="bg-white p-1.5 rounded border border-indigo-300 col-span-2">تم تحويله: <strong id="exp-status-transferred" class="text-indigo-700 block text-sm font-black">0</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 pt-2 border-t border-slate-200">
+            <div>شركة جار الخليج للصناعة - نظام إدارة البلاغات والعملاء</div>
+            <div>تقرير آلي مصدّر - العرض الأفقي</div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAcBNwpOiDOLHoqIdKV1oYHurIGv5ukrDY",
+            authDomain: "whatsapp-leads-db.firebaseapp.com",
+            projectId: "whatsapp-leads-db",
+            storageBucket: "whatsapp-leads-db.firebasestorage.app",
+            messagingSenderId: "384852647986",
+            appId: "1:384852647986:web:46fe4cdcac4e55aa811c2b",
+            measurementId: "G-82FQ6ZSPEC"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let allLeads = [];
+        let filteredLeads = [];
+
+        function toggleConditionalFields() {
+            const status = document.getElementById('lead-status').value;
+            
+            // إدارة حقل التحويل
+            const assignedContainer = document.getElementById('assigned-to-container');
+            const assignedInput = document.getElementById('assigned-to');
+            if (status === 'تم تحويله') {
+                assignedContainer.classList.remove('hidden');
+                assignedInput.required = true;
+            } else {
+                assignedContainer.classList.add('hidden');
+                assignedInput.required = false;
+                assignedInput.value = '';
+            }
+
+            // إدارة حقل رقم عرض السعر
+            const quotationContainer = document.getElementById('quotation-container');
+            const quotationInput = document.getElementById('quotation-number');
+            if (status === 'تم إرسال عرض السعر') {
+                quotationContainer.classList.remove('hidden');
+                quotationInput.required = true;
+            } else {
+                quotationContainer.classList.add('hidden');
+                quotationInput.required = false;
+                quotationInput.value = '';
+            }
+        }
+
+        function toggleDateInputs() {
+            const dateType = document.getElementById('filter-date-type').value;
+            const container = document.getElementById('date-inputs-container');
+            const singleBox = document.getElementById('single-date-box');
+            const rangeFromBox = document.getElementById('range-date-from-box');
+            const rangeToBox = document.getElementById('range-date-to-box');
+
+            if (dateType === 'تاريخ_محدد') {
+                container.classList.remove('hidden');
+                singleBox.classList.remove('hidden');
+                rangeFromBox.classList.add('hidden');
+                rangeToBox.classList.add('hidden');
+            } else if (dateType === 'بين_تاريخين') {
+                container.classList.remove('hidden');
+                singleBox.classList.add('hidden');
+                rangeFromBox.classList.remove('hidden');
+                rangeToBox.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+                singleBox.classList.add('hidden');
+                rangeFromBox.classList.add('hidden');
+                rangeToBox.classList.add('hidden');
+            }
+            applyFilters();
+        }
+
+        async function getNextOrderNumber() {
+            const counterRef = db.collection('counters').doc('orders_counter');
+            return await db.runTransaction(async (transaction) => {
+                const counterDoc = await transaction.get(counterRef);
+                let newOrderNum = 1001; 
+                if (counterDoc.exists) {
+                    newOrderNum = counterDoc.data().current + 1;
+                }
+                transaction.set(counterRef, { current: newOrderNum });
+                return newOrderNum;
+            });
+        }
+
+        document.getElementById('lead-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submit-btn');
+            const docId = document.getElementById('edit-doc-id').value;
+            submitBtn.disabled = true;
+            submitBtn.innerText = "جاري الحفظ...";
+
+            try {
+                const statusValue = document.getElementById('lead-status').value;
+                const now = new Date();
+                const isoDate = now.toISOString().split('T')[0];
+                const dateStr = now.toLocaleDateString('ar-SA');
+
+                const leadData = {
+                    salesRep: document.getElementById('sales-rep').value.trim(),
+                    clientName: document.getElementById('client-name').value.trim(),
+                    clientType: document.getElementById('client-type').value,
+                    phone: document.getElementById('client-phone').value.replace(/[^0-9]/g, ''),
+                    region: document.getElementById('client-region').value.trim(),
+                    source: document.getElementById('ad-source').value,
+                    product: document.getElementById('product-type').value.trim(),
+                    status: statusValue,
+                    assignedTo: statusValue === 'تم تحويله' ? document.getElementById('assigned-to').value.trim() : '',
+                    quotationNumber: statusValue === 'تم إرسال عرض السعر' ? document.getElementById('quotation-number').value.trim() : '',
+                    notes: document.getElementById('client-notes').value.trim(),
+                };
+
+                if (docId) {
+                    await db.collection('whatsapp_leads').doc(docId).update(leadData);
+                } else {
+                    const orderNumber = await getNextOrderNumber();
+                    leadData.orderNumber = orderNumber;
+                    leadData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    leadData.isoDate = isoDate;
+                    leadData.dateStr = dateStr;
+                    
+                    await db.collection('whatsapp_leads').add(leadData);
+                }
+                resetForm();
+            } catch (error) {
+                alert("حدث خطأ في عملية الحفظ: " + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "حفظ البيانات";
+            }
+        });
+
+        function updateFilterDropdowns(leads) {
+            // تحديث فلتر المندوبين
+            const repSelect = document.getElementById('filter-sales-rep');
+            const currentRep = repSelect.value;
+            const salesReps = Array.from(new Set(leads.map(l => l.salesRep).filter(Boolean))).sort();
+            repSelect.innerHTML = '<option value="الكل">جميع المندوبين</option>';
+            salesReps.forEach(rep => {
+                const opt = document.createElement('option');
+                opt.value = rep;
+                opt.textContent = rep;
+                repSelect.appendChild(opt);
+            });
+            if (salesReps.includes(currentRep)) repSelect.value = currentRep;
+
+            // تحديث فلتر المناطق
+            const regionSelect = document.getElementById('filter-region');
+            const currentRegion = regionSelect.value;
+            const regions = Array.from(new Set(leads.map(l => l.region).filter(Boolean))).sort();
+            regionSelect.innerHTML = '<option value="الكل">جميع المناطق</option>';
+            regions.forEach(reg => {
+                const opt = document.createElement('option');
+                opt.value = reg;
+                opt.textContent = reg;
+                regionSelect.appendChild(opt);
+            });
+            if (regions.includes(currentRegion)) regionSelect.value = currentRegion;
+        }
+
+        db.collection('whatsapp_leads').orderBy('orderNumber', 'desc')
+            .onSnapshot((snapshot) => {
+                allLeads = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let isoDate = data.isoDate;
+                    if (!isoDate && data.createdAt) {
+                        try {
+                            isoDate = data.createdAt.toDate().toISOString().split('T')[0];
+                        } catch (e) {}
+                    }
+                    allLeads.push({ id: doc.id, ...data, isoDate: isoDate || '' });
+                });
+                updateFilterDropdowns(allLeads);
+                applyFilters();
+            });
+
+        function applyFilters() {
+            const filterSalesRep = document.getElementById('filter-sales-rep').value;
+            const filterRegion = document.getElementById('filter-region').value;
+            const filterSource = document.getElementById('filter-source').value;
+            const filterStatus = document.getElementById('filter-status').value;
+            const dateType = document.getElementById('filter-date-type').value;
+
+            const singleDate = document.getElementById('filter-single-date').value;
+            const dateFrom = document.getElementById('filter-date-from').value;
+            const dateTo = document.getElementById('filter-date-to').value;
+
+            filteredLeads = allLeads.filter(lead => {
+                const matchSalesRep = (filterSalesRep === 'الكل') || (lead.salesRep === filterSalesRep);
+                const matchRegion = (filterRegion === 'الكل') || (lead.region === filterRegion);
+                const matchSource = (filterSource === 'الكل') || (lead.source === filterSource);
+                const matchStatus = (filterStatus === 'الكل') || (lead.status === filterStatus);
+
+                let matchDate = true;
+
+                if (dateType === 'تاريخ_محدد') {
+                    if (singleDate) {
+                        matchDate = lead.isoDate === singleDate;
+                    }
+                } else if (dateType === 'بين_تاريخين') {
+                    if (dateFrom && dateTo) {
+                        matchDate = lead.isoDate >= dateFrom && lead.isoDate <= dateTo;
+                    } else if (dateFrom) {
+                        matchDate = lead.isoDate >= dateFrom;
+                    } else if (dateTo) {
+                        matchDate = lead.isoDate <= dateTo;
+                    }
+                }
+
+                return matchSalesRep && matchRegion && matchSource && matchStatus && matchDate;
+            });
+
+            renderTable(filteredLeads);
+            calculateStatistics(filteredLeads);
+        }
+
+        function renderTable(leads) {
+            const tableBody = document.getElementById('leads-table-body');
+            document.getElementById('total-count').innerText = leads.length;
+            tableBody.innerHTML = '';
+
+            if (leads.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-slate-400 font-bold">لا توجد طلبات مسجلة تطابق التصفية</td></tr>`;
+                return;
+            }
+
+            leads.forEach((data) => {
+                const waLink = `https://wa.me/${data.phone}`;
+                const quotationDisplay = data.quotationNumber ? `<span class="bg-sky-100 text-sky-900 border border-sky-300 px-2 py-0.5 rounded text-xs font-black">${data.quotationNumber}</span>` : '-';
+                
+                const row = `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200">
+                        <td class="p-2.5 font-black text-emerald-800">#${data.orderNumber || '-'}</td>
+                        <td class="p-2.5 text-xs text-slate-600 font-bold">${data.dateStr || data.isoDate || '-'}</td>
+                        <td class="p-2.5 font-extrabold text-slate-800">${data.salesRep || '-'}</td>
+                        <td class="p-2.5 font-black text-slate-900">${data.clientName || '-'}</td>
+                        <td class="p-2.5 font-bold text-indigo-700">${data.clientType || 'عميل فردي'}</td>
+                        <td class="p-2.5 font-mono font-bold"><a href="${waLink}" target="_blank" class="text-emerald-700 hover:underline">${data.phone || '-'}</a></td>
+                        <td class="p-2.5 font-bold">${data.region || '-'}</td>
+                        <td class="p-2.5"><span class="bg-slate-200 text-slate-900 px-2 py-0.5 rounded text-xs font-bold">${data.source || '-'}</span></td>
+                        <td class="p-2.5 text-slate-800 font-bold">${data.product || '-'}</td>
+                        <td class="p-2.5"><span class="bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded text-xs font-bold">${data.status || '-'}</span></td>
+                        <td class="p-2.5">${quotationDisplay}</td>
+                        <td class="p-2.5 text-center space-x-1 space-x-reverse">
+                            <button onclick="editLead('${data.id}')" class="text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded font-bold text-xs">تعديل</button>
+                            <button onclick="deleteLead('${data.id}')" class="text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded font-bold text-xs">حذف</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        function calculateStatistics(leads) {
+            const totalOrders = leads.length;
+            const uniqueClients = new Set(leads.map(l => l.clientName).filter(Boolean)).size;
+            const uniqueRegions = new Set(leads.map(l => l.region).filter(Boolean)).size;
+
+            // حساب أعداد حالات الطلب بالتفصيل
+            const countPotential = leads.filter(l => l.status === 'عمل محتمل').length;
+            const countActive = leads.filter(l => l.status === 'عميل متفاعل').length;
+            const countNegotiating = leads.filter(l => l.status === 'قيد التفاوض').length;
+            const countQuotation = leads.filter(l => l.status === 'تم إرسال عرض السعر').length;
+            const countRejected = leads.filter(l => l.status === 'تم الرفض').length;
+            const countPurchased = leads.filter(l => l.status === 'تم الشراء').length;
+            const countTransferred = leads.filter(l => l.status === 'تم تحويله').length;
+
+            const sourceCounts = {};
+            leads.forEach(l => {
+                if (l.source) sourceCounts[l.source] = (sourceCounts[l.source] || 0) + 1;
+            });
+            let topSource = '-';
+            let maxCount = 0;
+            for (const [src, count] of Object.entries(sourceCounts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topSource = `${src} (${count})`;
+                }
+            }
+
+            // تحديث الشاشة الرئيسية
+            document.getElementById('stat-total-orders').innerText = totalOrders;
+            document.getElementById('stat-clients').innerText = uniqueClients;
+            document.getElementById('stat-regions').innerText = uniqueRegions;
+            document.getElementById('stat-top-source').innerText = topSource;
+
+            document.getElementById('status-stat-potential').innerText = countPotential;
+            document.getElementById('status-stat-active').innerText = countActive;
+            document.getElementById('status-stat-negotiating').innerText = countNegotiating;
+            document.getElementById('status-stat-quotation').innerText = countQuotation;
+            document.getElementById('status-stat-rejected').innerText = countRejected;
+            document.getElementById('status-stat-purchased').innerText = countPurchased;
+            document.getElementById('status-stat-transferred').innerText = countTransferred;
+
+            // تحديث كرت التصدير PNG
+            document.getElementById('exp-stat-total-orders').innerText = totalOrders;
+            document.getElementById('exp-stat-clients').innerText = uniqueClients;
+            document.getElementById('exp-stat-regions').innerText = uniqueRegions;
+
+            document.getElementById('exp-status-potential').innerText = countPotential;
+            document.getElementById('exp-status-active').innerText = countActive;
+            document.getElementById('exp-status-negotiating').innerText = countNegotiating;
+            document.getElementById('exp-status-quotation').innerText = countQuotation;
+            document.getElementById('exp-status-rejected').innerText = countRejected;
+            document.getElementById('exp-status-purchased').innerText = countPurchased;
+            document.getElementById('exp-status-transferred').innerText = countTransferred;
+        }
+
+        function editLead(id) {
+            const lead = allLeads.find(l => l.id === id);
+            if (!lead) return;
+            document.getElementById('edit-doc-id').value = lead.id;
+            document.getElementById('sales-rep').value = lead.salesRep || '';
+            document.getElementById('client-name').value = lead.clientName || '';
+            document.getElementById('client-type').value = lead.clientType || 'عميل فردي';
+            document.getElementById('client-phone').value = lead.phone || '';
+            document.getElementById('client-region').value = lead.region || '';
+            document.getElementById('ad-source').value = lead.source || 'واتساب';
+            document.getElementById('product-type').value = lead.product || '';
+            document.getElementById('lead-status').value = lead.status || 'عمل محتمل';
+            
+            toggleConditionalFields();
+            
+            if (lead.status === 'تم تحويله') {
+                document.getElementById('assigned-to').value = lead.assignedTo || '';
+            }
+            if (lead.status === 'تم إرسال عرض السعر') {
+                document.getElementById('quotation-number').value = lead.quotationNumber || '';
+            }
+
+            document.getElementById('client-notes').value = lead.notes || '';
+            document.getElementById('form-title').innerText = `تعديل الطلب #${lead.orderNumber}`;
+            document.getElementById('submit-btn').innerText = 'تحديث البيانات';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('lead-form').reset();
+            document.getElementById('edit-doc-id').value = '';
+            toggleConditionalFields();
+            document.getElementById('form-title').innerText = 'إدخال طلب جديد';
+            document.getElementById('submit-btn').innerText = 'حفظ البيانات';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        }
+
+        async function deleteLead(id) {
+            if (confirm("هل أنت تأكد من حذف هذا الطلب؟")) {
+                await db.collection('whatsapp_leads').doc(id).delete();
+            }
+        }
+
+        // طباعة PDF شاملة
+        function exportPDF() {
+            const dateStr = new Date().toLocaleDateString('ar-SA');
+            const printWindow = window.open('', '', 'height=800,width=1100');
+            
+            let rowsHtml = '';
+            filteredLeads.forEach(lead => {
+                let extraInfo = lead.notes || '-';
+                if (lead.status === 'تم تحويله') extraInfo = `محول لـ: ${lead.assignedTo} | ${lead.notes || ''}`;
+
+                rowsHtml += `
+                    <tr style="border-bottom: 1px solid #cbd5e1;">
+                        <td style="padding: 8px; font-weight: 900; color: #047857;">#${lead.orderNumber || '-'}</td>
+                        <td style="padding: 8px; font-weight: 700; color: #334155;">${lead.dateStr || lead.isoDate || '-'}</td>
+                        <td style="padding: 8px; font-weight: 800; color: #0f172a;">${lead.salesRep || '-'}</td>
+                        <td style="padding: 8px; font-weight: 900; color: #0f172a;">${lead.clientName || '-'}</td>
+                        <td style="padding: 8px; font-weight: 800; color: #4338ca;">${lead.clientType || '-'}</td>
+                        <td style="padding: 8px; font-weight: 800; color: #0f172a; direction: ltr; text-align: right;">${lead.phone || '-'}</td>
+                        <td style="padding: 8px; font-weight: 700; color: #1e293b;">${lead.region || '-'}</td>
+                        <td style="padding: 8px; font-weight: 700; color: #1e293b;">${lead.source || '-'}</td>
+                        <td style="padding: 8px; font-weight: 700; color: #1e293b;">${lead.product || '-'}</td>
+                        <td style="padding: 8px; font-weight: 800; color: #047857;">${lead.status || '-'}</td>
+                        <td style="padding: 8px; font-weight: 900; color: #0284c7;">${lead.quotationNumber || '-'}</td>
+                        <td style="padding: 8px; font-weight: 600; color: #334155;">${extraInfo}</td>
+                    </tr>
+                `;
+            });
+
+            printWindow.document.write(`
+                <html dir="rtl" lang="ar">
+                <head>
+                    <title>شركة جار الخليج للصناعة - تقرير الإعلانات</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+                    <style>
+                        @page { size: landscape; margin: 8mm; }
+                        body { font-family: 'Cairo', sans-serif; padding: 10px; color: #0f172a; background: #ffffff; }
+                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #059669; padding-bottom: 10px; margin-bottom: 15px; }
+                        .company { font-size: 13px; font-weight: 900; color: #047857; }
+                        .title { font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 2px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: right; margin-bottom: 15px; }
+                        th { background-color: #e2e8f0; color: #0f172a; padding: 8px; font-weight: 900; border-bottom: 2px solid #64748b; }
+                        .stats-container { background: #f8fafc; border: 2px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px; font-weight: 800; }
+                        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; margin-top: 8px; }
+                        .stat-card { background: #ffffff; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div>
+                            <div class="company">شركة جار الخليج للصناعة</div>
+                            <div class="title">تقرير بتواصل عملاء الاعلانات على مواقع التواصل الاجتماعي</div>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 800; color: #334155; text-align: left;">
+                            <div>التاريخ: ${dateStr}</div>
+                            <div>إجمالي الطلبات المعروضة: <strong style="color: #047857;">${filteredLeads.length}</strong></div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>التاريخ</th>
+                                <th>المندوب</th>
+                                <th>العميل</th>
+                                <th>نوع العميل</th>
+                                <th>الجوال</th>
+                                <th>المنطقة</th>
+                                <th>المصدر</th>
+                                <th>المنتج</th>
+                                <th>الحالة</th>
+                                <th>رقم عرض السعر</th>
+                                <th>الملاحظات / التفاصيل</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                    
+                    <div class="stats-container">
+                        <div style="font-size: 12px; font-weight: 900; margin-bottom: 6px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">📊 تفاصيل إحصائيات حالات الطلب:</div>
+                        <div class="stats-grid">
+                            <div class="stat-card">عمل محتمل: <br><strong style="color: #7c3aed; font-size: 14px;">${document.getElementById('status-stat-potential').innerText}</strong></div>
+                            <div class="stat-card">عميل متفاعل: <br><strong style="color: #0d9488; font-size: 14px;">${document.getElementById('status-stat-active').innerText}</strong></div>
+                            <div class="stat-card">قيد التفاوض: <br><strong style="color: #0891b2; font-size: 14px;">${document.getElementById('status-stat-negotiating').innerText}</strong></div>
+                            <div class="stat-card">عروض الأسعار: <br><strong style="color: #0284c7; font-size: 14px;">${document.getElementById('status-stat-quotation').innerText}</strong></div>
+                            <div class="stat-card">تم الرفض: <br><strong style="color: #dc2626; font-size: 14px;">${document.getElementById('status-stat-rejected').innerText}</strong></div>
+                            <div class="stat-card">تم الشراء: <br><strong style="color: #2563eb; font-size: 14px;">${document.getElementById('status-stat-purchased').innerText}</strong></div>
+                            <div class="stat-card" style="grid-column: span 2;">تم تحويله: <br><strong style="color: #4f46e5; font-size: 14px;">${document.getElementById('status-stat-transferred').innerText}</strong></div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 600);
+        }
+
+        // تصدير PNG
+        function exportPNG() {
+            const card = document.getElementById('png-export-card');
+            const exportTableBody = document.getElementById('export-table-body');
+
+            document.getElementById('export-card-date').innerText = new Date().toLocaleDateString('ar-SA');
+
+            exportTableBody.innerHTML = '';
+            if (filteredLeads.length === 0) {
+                exportTableBody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-slate-500 font-bold">لا توجد بيانات معروضة</td></tr>`;
+            } else {
+                filteredLeads.forEach(lead => {
+                    let extraInfo = lead.notes || '-';
+                    if (lead.status === 'تم تحويله') extraInfo = `محول لـ: ${lead.assignedTo} | ${lead.notes || ''}`;
+
+                    exportTableBody.innerHTML += `
+                        <tr class="border-b border-slate-300">
+                            <td class="p-2 font-black text-emerald-800">#${lead.orderNumber || '-'}</td>
+                            <td class="p-2 text-slate-700">${lead.dateStr || lead.isoDate || '-'}</td>
+                            <td class="p-2 text-slate-900">${lead.salesRep || '-'}</td>
+                            <td class="p-2 font-black text-slate-900">${lead.clientName || '-'}</td>
+                            <td class="p-2 font-bold text-indigo-700">${lead.clientType || '-'}</td>
+                            <td class="p-2 font-mono font-bold" dir="ltr" style="text-align: right;">${lead.phone || '-'}</td>
+                            <td class="p-2">${lead.region || '-'}</td>
+                            <td class="p-2"><span class="bg-slate-200 text-slate-900 px-1.5 py-0.5 rounded text-[11px] font-bold">${lead.source || '-'}</span></td>
+                            <td class="p-2">${lead.product || '-'}</td>
+                            <td class="p-2"><span class="bg-emerald-100 text-emerald-900 border border-emerald-300 px-1.5 py-0.5 rounded text-[11px] font-bold">${lead.status || '-'}</span></td>
+                            <td class="p-2 font-black text-sky-800">${lead.quotationNumber || '-'}</td>
+                            <td class="p-2 text-slate-800">${extraInfo}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            card.style.position = 'absolute';
+            card.style.left = '0px';
+
+            html2canvas(card, { 
+                scale: 2, 
+                backgroundColor: '#ffffff',
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `تقرير_إعلانات_جار_الخليج_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                card.style.position = 'fixed';
+                card.style.left = '-9999px';
+            });
+        }
+    </script>
+</body>
+</html>

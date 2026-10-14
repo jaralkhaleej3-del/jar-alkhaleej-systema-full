@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تقارير المناديب المالية الاحترافي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --box-bg: #1e293b;
+            --text-main: #38bdf8;
+            --border-color: rgba(56, 189, 248, 0.2);
+            --input-bg: #0f172a;
+            --input-text: #f8fafc;
+            --subtext: #94a3b8;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-main); 
+            color: var(--input-text); 
+        }
+        .cyber-box { 
+            background-color: var(--box-bg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); 
+        }
+        .cyber-input { 
+            background-color: var(--input-bg); 
+            border: 1px solid var(--border-color); 
+            color: var(--input-text); 
+        }
+        .cyber-input:focus { outline: none; border-color: var(--text-main); }
+        .cyber-btn { background-color: var(--text-main); color: #0f172a; font-weight: bold; }
+        .cyber-btn-outline { background-color: transparent; border: 1px solid var(--text-main); color: var(--text-main); }
+
+        .a4-card {
+            width: 100%;
+            max-width: 750px;
+            padding: 16px;
+            margin: 0 auto 20px auto;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-sizing: border-box;
+            border-radius: 8px;
+            display: block;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0mm !important;
+            }
+            
+            html, body {
+                width: 210mm !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+            }
+
+            .no-print { 
+                display: none !important; 
+            }
+
+            #reportSection, #tablesContainer { 
+                display: block !important; 
+                width: 100% !important;
+            }
+
+            .a4-card {
+                width: 210mm !important;
+                padding: 12mm 15mm !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                box-sizing: border-box !important;
+                display: block !important;
+            }
+        }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="sales-calc"></script>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="max-w-7xl mx-auto cyber-box p-6 md:p-8 rounded-2xl relative">
+        
+        <div class="text-center border-b border-slate-700 pb-6 mb-8 no-print">
+            <h1 class="text-2xl md:text-3xl font-extrabold uppercase tracking-wider text-sky-400">استوديو إصدار تقارير المناديب المالية الرسمية</h1>
+            <p class="text-xs mt-2 text-slate-400">نظام طباعة مخصص بصفحة A4 متكاملة ومباشرة لكل مندوب</p>
+        </div>
+        
+        <div class="mb-8 cyber-box p-6 rounded-xl no-print">
+            <h2 class="text-lg font-bold mb-4 text-sky-400">>[01] إعدادات النظام والسنة المالية</h2>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">السنة المالية:</label>
+                    <input type="number" id="fiscalYear" value="2026" class="w-full p-2 cyber-input rounded-lg text-sm" onchange="saveAllSettings();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">عدد المناديب:</label>
+                    <input type="number" id="repCount" value="2" min="1" max="100" class="w-full p-2 cyber-input rounded-lg text-sm" onchange="saveAllSettings(); generateRepInputs();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">عدد الأشهر:</label>
+                    <input type="number" id="monthCount" value="2" min="1" max="12" class="w-full p-2 cyber-input rounded-lg text-sm" onchange="saveAllSettings(); generateMonthInputs();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">نسبة الضريبة (%):</label>
+                    <input type="number" id="vatRate" value="15" class="w-full p-2 cyber-input rounded-lg text-sm" step="0.1" onchange="saveAllSettings(); updateAllTaxCalculations();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">نسبة العمولة الصافية (%):</label>
+                    <input type="number" id="commissionRate" value="1.0" class="w-full p-2 cyber-input rounded-lg text-sm" step="0.1" onchange="saveAllSettings();">
+                </div>
+            </div>
+
+            <h3 class="text-xs font-semibold mb-2 text-slate-400">أسماء المناديب:</h3>
+            <div id="repsInputs" class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-40 overflow-y-auto p-2 cyber-input rounded-lg"></div>
+        </div>
+
+        <div class="mb-8 cyber-box p-6 rounded-xl no-print">
+            <h2 class="text-lg font-bold mb-4 text-sky-400">>[02] إجماليات الأشهر (يتم تقاسمها تلقائياً بين المناديب)</h2>
+            <div id="monthsContainer" class="space-y-4 max-h-96 overflow-y-auto p-2"></div>
+        </div>
+
+        <div class="mb-8 cyber-box p-6 rounded-xl border-2 border-sky-500 no-print">
+            <h2 class="text-lg font-bold mb-4 text-sky-400">>[03] بيانات المؤسسة والتوقيعات الرسمية</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">اسم الشركة / المؤسسة:</label>
+                    <input type="text" id="companyName" value="شركة جار الخليج للصناعة" class="w-full p-2 cyber-input rounded-lg text-xs" oninput="saveAllSettings();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">عنوان التقرير:</label>
+                    <input type="text" id="reportTitle" value="تقرير أداء ومستحقات عمولات مبيعات المناديب الشهري" class="w-full p-2 cyber-input rounded-lg text-xs" oninput="saveAllSettings();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">شعار الشركة (Logo):</label>
+                    <input type="file" id="companyLogo" accept="image/*" class="w-full p-1 cyber-input rounded-lg text-xs" onchange="loadLogo(event)">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">لون الترويسة الرئيسي:</label>
+                    <input type="color" id="primaryColor" value="#1e3a8a" class="w-full h-9 p-1 cyber-input rounded-lg cursor-pointer" onchange="saveAllSettings();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">لون صف العمولة الصافية:</label>
+                    <input type="color" id="accentColor" value="#047857" class="w-full h-9 p-1 cyber-input rounded-lg cursor-pointer" onchange="saveAllSettings();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">نوع الخط:</label>
+                    <select id="fontFamilySelect" class="w-full p-2 cyber-input rounded-lg text-xs" onchange="saveAllSettings();">
+                        <option value="Segoe UI, sans-serif" selected>Segoe UI (حديث ونظيف)</option>
+                        <option value="Tahoma, sans-serif">Tahoma (واضح ورسمي)</option>
+                        <option value="Arial, sans-serif">Arial (قياسي)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">اعتماد المسؤول المالي:</label>
+                    <input type="text" id="sig1" value="اعتماد المدير المالي" class="w-full p-2 cyber-input rounded-lg text-xs" oninput="saveAllSettings();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">اعتماد وتوقيع المندوب:</label>
+                    <input type="text" id="sig2" value="توقيع واستلام المندوب" class="w-full p-2 cyber-input rounded-lg text-xs" oninput="saveAllSettings();">
+                </div>
+                <div>
+                    <label class="block text-xs mb-1 text-slate-400">نص التذييل النهائي:</label>
+                    <input type="text" id="footerNote" value="هذا المستند معتمد إلكترونياً ولا يحتاج إلى ختم مادي." class="w-full p-2 cyber-input rounded-lg text-xs" oninput="saveAllSettings();">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4 justify-center mb-8 no-print">
+            <button onclick="calculateAndDisplay()" class="cyber-btn py-3 px-8 rounded-xl text-sm uppercase tracking-wider shadow-lg">⚡ حساب وقسمة العمولات وعرض التقارير</button>
+            <button onclick="triggerPrint()" class="bg-emerald-500 text-slate-950 font-bold py-3 px-8 rounded-xl text-sm shadow-lg hover:bg-emerald-400 transition">🖨️ طباعة التقرير الكامل لكافة الصفحات</button>
+            <button onclick="exportToExcel()" class="cyber-btn-outline py-3 px-8 rounded-xl text-sm font-bold">📊 تصدير Excel مخصص لكل مندوب</button>
+        </div>
+
+        <div id="reportSection" class="hidden">
+            <div id="tablesContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const monthNamesList = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        let base64Logo = localStorage.getItem('companyLogoBase64') || "";
+
+        function loadLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    base64Logo = e.target.result;
+                    localStorage.setItem('companyLogoBase64', base64Logo);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveAllSettings() {
+            localStorage.setItem('fiscalYear', document.getElementById('fiscalYear').value);
+            localStorage.setItem('repCount', document.getElementById('repCount').value);
+            localStorage.setItem('monthCount', document.getElementById('monthCount').value);
+            localStorage.setItem('vatRate', document.getElementById('vatRate').value);
+            localStorage.setItem('commissionRate', document.getElementById('commissionRate').value);
+
+            localStorage.setItem('companyName', document.getElementById('companyName').value);
+            localStorage.setItem('reportTitle', document.getElementById('reportTitle').value);
+            localStorage.setItem('primaryColor', document.getElementById('primaryColor').value);
+            localStorage.setItem('accentColor', document.getElementById('accentColor').value);
+            localStorage.setItem('fontFamilySelect', document.getElementById('fontFamilySelect').value);
+            localStorage.setItem('sig1', document.getElementById('sig1').value);
+            localStorage.setItem('sig2', document.getElementById('sig2').value);
+            localStorage.setItem('footerNote', document.getElementById('footerNote').value);
+        }
+
+        function loadAllSettings() {
+            if (localStorage.getItem('fiscalYear')) document.getElementById('fiscalYear').value = localStorage.getItem('fiscalYear');
+            if (localStorage.getItem('repCount')) document.getElementById('repCount').value = localStorage.getItem('repCount');
+            if (localStorage.getItem('monthCount')) document.getElementById('monthCount').value = localStorage.getItem('monthCount');
+            if (localStorage.getItem('vatRate')) document.getElementById('vatRate').value = localStorage.getItem('vatRate');
+            if (localStorage.getItem('commissionRate')) document.getElementById('commissionRate').value = localStorage.getItem('commissionRate');
+
+            if (localStorage.getItem('companyName')) document.getElementById('companyName').value = localStorage.getItem('companyName');
+            if (localStorage.getItem('reportTitle')) document.getElementById('reportTitle').value = localStorage.getItem('reportTitle');
+            if (localStorage.getItem('primaryColor')) document.getElementById('primaryColor').value = localStorage.getItem('primaryColor');
+            if (localStorage.getItem('accentColor')) document.getElementById('accentColor').value = localStorage.getItem('accentColor');
+            if (localStorage.getItem('fontFamilySelect')) document.getElementById('fontFamilySelect').value = localStorage.getItem('fontFamilySelect');
+            if (localStorage.getItem('sig1')) document.getElementById('sig1').value = localStorage.getItem('sig1');
+            if (localStorage.getItem('sig2')) document.getElementById('sig2').value = localStorage.getItem('sig2');
+            if (localStorage.getItem('footerNote')) document.getElementById('footerNote').value = localStorage.getItem('footerNote');
+        }
+
+        function generateRepInputs() {
+            const count = parseInt(document.getElementById('repCount').value) || 2;
+            const container = document.getElementById('repsInputs');
+            container.innerHTML = '';
+            const defaultReps = ["عز الدين توفيق عبد الرحيم العقيبي", "محمد خالد"];
+            for (let i = 1; i <= count; i++) {
+                let savedName = localStorage.getItem(`rep_${i}`) || defaultReps[i-1] || `مندوب ${i}`;
+                container.innerHTML += `
+                    <div>
+                        <input type="text" id="rep_${i}" value="${savedName}" class="w-full p-2 cyber-input rounded-lg text-xs" oninput="localStorage.setItem('rep_${i}', this.value)">
+                    </div>
+                `;
+            }
+        }
+
+        function generateMonthInputs() {
+            const mCount = parseInt(document.getElementById('monthCount').value) || 2;
+            const year = document.getElementById('fiscalYear').value || "2026";
+            const container = document.getElementById('monthsContainer');
+            container.innerHTML = '';
+
+            for (let m = 1; m <= mCount; m++) {
+                let savedMonthName = localStorage.getItem(`m${m}_name`) || monthNamesList[(m - 1) % 12];
+                let savedFrom = localStorage.getItem(`m${m}_from`) || `${year}-0${m}-01`;
+                let savedTo = localStorage.getItem(`m${m}_to`) || `${year}-0${m}-28`;
+
+                let sNoTax = localStorage.getItem(`m${m}_sales_notax`) || (m === 1 ? "869565.22" : "1000000.00");
+                let sTax = localStorage.getItem(`m${m}_sales_tax`) || (m === 1 ? "1000000.00" : "1150000.00");
+                let cNoTax = localStorage.getItem(`m${m}_coll_notax`) || (m === 1 ? "869565.22" : "1000000.00");
+                let cTax = localStorage.getItem(`m${m}_coll_tax`) || (m === 1 ? "1000000.00" : "1150000.00");
+
+                container.innerHTML += `
+                    <div class="p-4 rounded-lg border border-slate-700 bg-slate-900">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs mb-1 text-slate-400">اسم الشهر:</label>
+                                <select id="m${m}_name" class="w-full p-1.5 cyber-input rounded text-xs font-bold" onchange="saveMonthData(${m});">
+                                    ${monthNamesList.map(name => `<option value="${name}" ${name === savedMonthName ? 'selected' : ''}>${name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs mb-1 text-slate-400">فترة الشهر (من):</label>
+                                <input type="date" id="m${m}_from" value="${savedFrom}" class="w-full p-1.5 cyber-input rounded text-xs" onchange="saveMonthData(${m});">
+                            </div>
+                            <div>
+                                <label class="block text-xs mb-1 text-slate-400">فترة الشهر (إلى):</label>
+                                <input type="date" id="m${m}_to" value="${savedTo}" class="w-full p-1.5 cyber-input rounded text-xs" onchange="saveMonthData(${m});">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                            <div>
+                                <label class="block mb-1 text-slate-400">إجمالي المبيعات (بدون ضريبة):</label>
+                                <input type="number" id="m${m}_sales_notax" value="${sNoTax}" class="w-full p-2 cyber-input rounded text-xs" step="0.01" oninput="onSalesNoTaxInput(${m}); saveMonthData(${m});">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-slate-400">إجمالي المبيعات (شامل الضريبة):</label>
+                                <input type="number" id="m${m}_sales_tax" value="${sTax}" class="w-full p-2 cyber-input rounded text-xs" step="0.01" oninput="onSalesTaxInput(${m}); saveMonthData(${m});">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-slate-400">إجمالي التحصيلات (بدون ضريبة):</label>
+                                <input type="number" id="m${m}_coll_notax" value="${cNoTax}" class="w-full p-2 cyber-input rounded text-xs" step="0.01" oninput="onCollNoTaxInput(${m}); saveMonthData(${m});">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-slate-400">إجمالي التحصيلات (شامل الضريبة):</label>
+                                <input type="number" id="m${m}_coll_tax" value="${cTax}" class="w-full p-2 cyber-input rounded text-xs" step="0.01" oninput="onCollTaxInput(${m}); saveMonthData(${m});">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function saveMonthData(m) {
+            localStorage.setItem(`m${m}_name`, document.getElementById(`m${m}_name`).value);
+            localStorage.setItem(`m${m}_from`, document.getElementById(`m${m}_from`).value);
+            localStorage.setItem(`m${m}_to`, document.getElementById(`m${m}_to`).value);
+            localStorage.setItem(`m${m}_sales_notax`, document.getElementById(`m${m}_sales_notax`).value);
+            localStorage.setItem(`m${m}_sales_tax`, document.getElementById(`m${m}_sales_tax`).value);
+            localStorage.setItem(`m${m}_coll_notax`, document.getElementById(`m${m}_coll_notax`).value);
+            localStorage.setItem(`m${m}_coll_tax`, document.getElementById(`m${m}_coll_tax`).value);
+        }
+
+        function onSalesNoTaxInput(m) {
+            const vat = (parseFloat(document.getElementById('vatRate').value) || 0) / 100;
+            const val = parseFloat(document.getElementById(`m${m}_sales_notax`).value) || 0;
+            document.getElementById(`m${m}_sales_tax`).value = (val * (1 + vat)).toFixed(2);
+        }
+
+        function onSalesTaxInput(m) {
+            const vat = (parseFloat(document.getElementById('vatRate').value) || 0) / 100;
+            const val = parseFloat(document.getElementById(`m${m}_sales_tax`).value) || 0;
+            if (vat > -1) {
+                document.getElementById(`m${m}_sales_notax`).value = (val / (1 + vat)).toFixed(2);
+            }
+        }
+
+        function onCollNoTaxInput(m) {
+            const vat = (parseFloat(document.getElementById('vatRate').value) || 0) / 100;
+            const valNoTax = parseFloat(document.getElementById(`m${m}_coll_notax`).value) || 0;
+            document.getElementById(`m${m}_coll_tax`).value = (valNoTax * (1 + vat)).toFixed(2);
+        }
+
+        function onCollTaxInput(m) {
+            const vat = (parseFloat(document.getElementById('vatRate').value) || 0) / 100;
+            const valTax = parseFloat(document.getElementById(`m${m}_coll_tax`).value) || 0;
+            if (vat > -1) {
+                let valNoTax = valTax / (1 + vat);
+                document.getElementById(`m${m}_coll_notax`).value = valNoTax.toFixed(2);
+            }
+        }
+
+        function updateAllTaxCalculations() {
+            const mCount = parseInt(document.getElementById('monthCount').value) || 2;
+            for (let m = 1; m <= mCount; m++) {
+                onSalesNoTaxInput(m);
+                onCollNoTaxInput(m);
+                saveMonthData(m);
+            }
+        }
+
+        loadAllSettings();
+        generateRepInputs();
+        generateMonthInputs();
+
+        let globalDetailedData = [];
+
+        function calculateAndDisplay() {
+            const repCount = parseInt(document.getElementById('repCount').value) || 2;
+            const monthCount = parseInt(document.getElementById('monthCount').value) || 2;
+            const commRate = (parseFloat(document.getElementById('commissionRate').value) || 0) / 100;
+            const fiscalYear = document.getElementById('fiscalYear').value || "2026";
+            
+            const reps = [];
+            for (let i = 1; i <= repCount; i++) {
+                reps.push(document.getElementById(`rep_${i}`).value);
+            }
+
+            const containers = document.getElementById('tablesContainer');
+            containers.innerHTML = '';
+            globalDetailedData = [];
+
+            const cName = document.getElementById('companyName').value;
+            const rTitle = document.getElementById('reportTitle').value;
+            const primColor = document.getElementById('primaryColor').value;
+            const accColor = document.getElementById('accentColor').value;
+            const selectedFont = document.getElementById('fontFamilySelect').value;
+            const sig1 = document.getElementById('sig1').value;
+            const sig2 = document.getElementById('sig2').value;
+            const fNote = document.getElementById('footerNote').value;
+
+            for (let m = 1; m <= monthCount; m++) {
+                const monthName = document.getElementById(`m${m}_name`).value;
+                const dateFrom = document.getElementById(`m${m}_from`).value;
+                const dateTo = document.getElementById(`m${m}_to`).value;
+
+                const totalSalesTax = parseFloat(document.getElementById(`m${m}_sales_tax`).value) || 0;
+                const totalSalesNoTax = parseFloat(document.getElementById(`m${m}_sales_notax`).value) || 0;
+                const totalCollTax = parseFloat(document.getElementById(`m${m}_coll_tax`).value) || 0;
+                const totalCollNoTax = parseFloat(document.getElementById(`m${m}_coll_notax`).value) || 0;
+
+                let randomWeights = [];
+                let sumWeights = 0;
+                for (let i = 0; i < repCount; i++) {
+                    let w = Math.random() * 10 + 5;
+                    randomWeights.push(w);
+                    sumWeights += w;
+                }
+
+                let runSTax = 0, runSNoTax = 0, runCTax = 0, runCNoTax = 0;
+
+                for (let i = 0; i < repCount; i++) {
+                    let share = randomWeights[i] / sumWeights;
+                    let sTax, sNoTax, cTax, cNoTax;
+
+                    if (i === repCount - 1) {
+                        sTax = totalSalesTax - runSTax;
+                        sNoTax = totalSalesNoTax - runSNoTax;
+                        cTax = totalCollTax - runCTax;
+                        cNoTax = totalCollNoTax - runCNoTax;
+                    } else {
+                        sTax = totalSalesTax * share;
+                        sNoTax = totalSalesNoTax * share;
+                        cTax = totalCollTax * share;
+                        cNoTax = totalCollNoTax * share;
+
+                        runSTax += sTax;
+                        runSNoTax += sNoTax;
+                        runCTax += cTax;
+                        runCNoTax += cNoTax;
+                    }
+
+                    // احتساب العمولة فقط على المبلغ الفائض عن الـ 100,000 ريال بدون ضريبة
+                    let commission = 0;
+                    let excessAmount = 0;
+                    if (cNoTax > 100000) {
+                        excessAmount = cNoTax - 100000;
+                        commission = excessAmount * commRate;
+                    }
+
+                    let rowData = {
+                        fiscalYear: fiscalYear,
+                        monthName: monthName,
+                        dateFrom: dateFrom,
+                        dateTo: dateTo,
+                        rep: reps[i],
+                        salesTax: sTax,
+                        salesNoTax: sNoTax,
+                        collTax: cTax,
+                        collNoTax: cNoTax,
+                        excessAmount: excessAmount,
+                        commission: commission,
+                        commRatePct: (commRate * 100).toFixed(1)
+                    };
+
+                    globalDetailedData.push(rowData);
+
+                    let pageHTML = `
+                        <div class="a4-card border border-slate-300 shadow-xl" style="font-family: ${selectedFont};">
+                            
+                            <div class="flex justify-between items-center border-b-2 pb-2 mb-3" style="border-color: ${primColor};">
+                                <div>
+                                    <h2 class="font-extrabold text-lg" style="color: ${primColor};">${cName}</h2>
+                                    <p class="text-[10px] text-gray-600 font-bold">${rTitle}</p>
+                                </div>
+                                <div>
+                                    ${base64Logo ? `<img src="${base64Logo}" class="h-10 max-w-[110px] object-contain">` : `<div class="border border-dashed border-gray-300 p-1 text-center text-[9px] text-gray-400 rounded">شعار الشركة</div>`}
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs mb-3">
+                                <div>
+                                    <p class="mb-1"><strong>اسم المندوب:</strong> <span class="text-sm font-extrabold text-blue-900">${reps[i]}</span></p>
+                                    <p><strong>السنة المالية:</strong> ${fiscalYear}</p>
+                                </div>
+                                <div class="text-left">
+                                    <p class="mb-1"><strong>الشهر المستهدف:</strong> <span class="font-bold text-xs text-emerald-800">${monthName}</span></p>
+                                    <p><strong>الفترة المالية:</strong> من ${dateFrom || '---'} إلى ${dateTo || '---'}</p>
+                                </div>
+                            </div>
+
+                            <h3 class="font-bold text-xs mb-2" style="color: ${primColor};">>[01] التفاصيل المالية والمستحقات:</h3>
+                            
+                            <table class="w-full border-collapse border text-xs text-right border-gray-300 mb-4">
+                                <thead>
+                                    <tr style="background-color: ${primColor}; color: #ffffff;">
+                                        <th class="border p-1.5 border-gray-300 text-center w-8">م</th>
+                                        <th class="border p-1.5 border-gray-300">البيان المحاسبي والمالي</th>
+                                        <th class="border p-1.5 border-gray-300 text-center w-36">المبلغ المستحق (ريال)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">01</td>
+                                        <td class="border p-1.5 border-gray-300 font-medium">إجمالي المبيعات (بدون ضريبة القيمة المضافة)</td>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">${sNoTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    </tr>
+                                    <tr class="bg-gray-50">
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">02</td>
+                                        <td class="border p-1.5 border-gray-300 font-medium">إجمالي المبيعات شامل ضريبة القيمة المضافة</td>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">${sTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">03</td>
+                                        <td class="border p-1.5 border-gray-300 font-medium">إجمالي التحصيلات النقدية (بدون ضريبة)</td>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">${cNoTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    </tr>
+                                    <tr class="bg-gray-50">
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">04</td>
+                                        <td class="border p-1.5 border-gray-300 font-medium">إجمالي التحصيلات النقدية (شامل الضريبة)</td>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">${cTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold">05</td>
+                                        <td class="border p-1.5 border-gray-300 font-medium text-blue-900">المبلغ الخاضع لاحتساب العمولة </td>
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold text-blue-900">${excessAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    </tr>
+                                    <tr class="bg-emerald-50 text-slate-900 border-t-2" style="border-top-color: ${accColor};">
+                                        <td class="border p-1.5 text-center border-gray-300 font-bold" style="color: ${accColor};">★</td>
+                                        <td class="border p-1.5 border-gray-300 font-bold text-xs" style="color: ${accColor};">
+                                            صافي العمولة المستحقة للصرف (${(commRate * 100).toFixed(1)}% )
+                                            ${cNoTax <= 100000 ? '<span class="text-[10px] text-red-600 block"></span>' : ''}
+                                        </td>
+                                        <td class="border p-1.5 text-center border-gray-300 font-extrabold text-sm" style="color: ${accColor};">${commission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="grid grid-cols-2 gap-8 pt-3 mt-4 border-t-2 border-gray-200 text-xs text-center mb-3">
+                                <div>
+                                    <p class="font-bold mb-4" style="color: ${primColor};">${sig1}</p>
+                                    <p class="text-gray-400">التوقيع والإعتماد: ........................</p>
+                                </div>
+                                <div>
+                                    <p class="font-bold mb-4" style="color: ${primColor};">${sig2}</p>
+                                    <p class="text-gray-400">التوقيع والإعتماد: ........................</p>
+                                </div>
+                            </div>
+
+                            <div class="text-center pt-2 border-t border-dashed border-gray-300 text-[9px] text-gray-500">
+                                ${fNote}
+                            </div>
+
+                        </div>
+                    `;
+                    containers.innerHTML += pageHTML;
+                }
+            }
+
+            document.getElementById('reportSection').classList.remove('hidden');
+        }
+
+        function triggerPrint() {
+            calculateAndDisplay();
+            setTimeout(() => {
+                window.print();
+            }, 300);
+        }
+
+        function exportToExcel() {
+            if (globalDetailedData.length === 0) {
+                alert('الرجاء تشغيل المحرك وحساب البيانات أولاً!');
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const usedSheetNames = new Set();
+            const cName = document.getElementById('companyName').value;
+            const rTitle = document.getElementById('reportTitle').value;
+            const primHex = document.getElementById('primaryColor').value.replace('#', '');
+            const accHex = document.getElementById('accentColor').value.replace('#', '');
+            const selectedFont = document.getElementById('fontFamilySelect').value.split(',')[0];
+
+            const borderThin = {
+                top: { style: "thin", color: { rgb: "D1D5DB" } },
+                bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+                left: { style: "thin", color: { rgb: "D1D5DB" } },
+                right: { style: "thin", color: { rgb: "D1D5DB" } }
+            };
+
+            const styleMainTitle = {
+                font: { name: selectedFont, sz: 14, bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: primHex } },
+                alignment: { horizontal: "center", vertical: "center" }
+            };
+
+            const styleSubTitle = {
+                font: { name: selectedFont, sz: 10, italic: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "374151" } },
+                alignment: { horizontal: "center", vertical: "center" }
+            };
+
+            const styleTableHeader = {
+                font: { name: selectedFont, sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: primHex } },
+                border: borderThin,
+                alignment: { horizontal: "center", vertical: "center" }
+            };
+
+            const styleDataRow = (isEven) => ({
+                font: { name: selectedFont, sz: 10, color: { rgb: "111827" } },
+                fill: { fgColor: { rgb: isEven ? "F9FAFB" : "FFFFFF" } },
+                border: borderThin,
+                alignment: { horizontal: "right", vertical: "center" }
+            });
+
+            const styleDataNum = (isEven) => ({
+                font: { name: selectedFont, sz: 10, color: { rgb: "111827" } },
+                fill: { fgColor: { rgb: isEven ? "F9FAFB" : "FFFFFF" } },
+                border: borderThin,
+                alignment: { horizontal: "center", vertical: "center" },
+                numFmt: "#,##0.00"
+            });
+
+            const styleTotalRowLabel = {
+                font: { name: selectedFont, sz: 10, bold: true, color: { rgb: accHex } },
+                fill: { fgColor: { rgb: "ECFDF5" } },
+                border: borderThin,
+                alignment: { horizontal: "right", vertical: "center" }
+            };
+
+            const styleTotalRowNum = {
+                font: { name: selectedFont, sz: 11, bold: true, color: { rgb: accHex } },
+                fill: { fgColor: { rgb: "ECFDF5" } },
+                border: borderThin,
+                alignment: { horizontal: "center", vertical: "center" },
+                numFmt: "#,##0.00"
+            };
+
+            globalDetailedData.forEach(item => {
+                let rawName = `${item.rep} - ${item.monthName}`.replace(/[\\/?*\[\]:]/g, '');
+                let sheetName = rawName.substring(0, 31);
+                
+                let counter = 1;
+                while (usedSheetNames.has(sheetName)) {
+                    sheetName = `${rawName.substring(0, 26)}_${counter}`;
+                    counter++;
+                }
+                usedSheetNames.add(sheetName);
+
+                const wsData = [
+                    [{ v: cName, s: styleMainTitle }, { v: "", s: styleMainTitle }, { v: "", s: styleMainTitle }],
+                    [{ v: `${rTitle} - شهر ${item.monthName} (${item.fiscalYear})`, s: styleSubTitle }, { v: "", s: styleSubTitle }, { v: "", s: styleSubTitle }],
+                    [],
+                    [{ v: "اسم المندوب:", s: styleTableHeader }, { v: item.rep, s: styleDataRow(false) }, { v: "", s: styleDataRow(false) }],
+                    [{ v: "السنة المالية:", s: styleTableHeader }, { v: item.fiscalYear, s: styleDataRow(false) }, { v: "", s: styleDataRow(false) }],
+                    [{ v: "فترة الشهر:", s: styleTableHeader }, { v: `من ${item.dateFrom} إلى ${item.dateTo}`, s: styleDataRow(false) }, { v: "", s: styleDataRow(false) }],
+                    [],
+                    [{ v: "م", s: styleTableHeader }, { v: "البيان المحاسبي", s: styleTableHeader }, { v: "القيمة (ريال)", s: styleTableHeader }],
+                    [{ v: "01", s: styleDataNum(false) }, { v: "إجمالي المبيعات (بدون ضريبة القيمة المضافة)", s: styleDataRow(false) }, { v: parseFloat(item.salesNoTax.toFixed(2)), s: styleDataNum(false), t: 'n' }],
+                    [{ v: "02", s: styleDataNum(true) }, { v: "إجمالي المبيعات شامل ضريبة القيمة المضافة", s: styleDataRow(true) }, { v: parseFloat(item.salesTax.toFixed(2)), s: styleDataNum(true), t: 'n' }],
+                    [{ v: "03", s: styleDataNum(false) }, { v: "إجمالي التحصيلات النقدية (بدون ضريبة)", s: styleDataRow(false) }, { v: parseFloat(item.collNoTax.toFixed(2)), s: styleDataNum(false), t: 'n' }],
+                    [{ v: "04", s: styleDataNum(true) }, { v: "إجمالي التحصيلات النقدية شامل الضريبة", s: styleDataRow(true) }, { v: parseFloat(item.collTax.toFixed(2)), s: styleDataNum(true), t: 'n' }],
+                    [{ v: "05", s: styleDataNum(false) }, { v: "المبلغ الخاضع لاحتساب العمولة (1%)", s: styleDataRow(false) }, { v: parseFloat(item.excessAmount.toFixed(2)), s: styleDataNum(false), t: 'n' }],
+                    [{ v: "★", s: styleTotalRowNum }, { v: `صافي العمولة المستحقة للصرف (${item.commRatePct}%   1   )`, s: styleTotalRowLabel }, { v: parseFloat(item.commission.toFixed(2)), s: styleTotalRowNum, t: 'n' }]
+                ];
+
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                ws['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }
+                ];
+
+                ws['!cols'] = [{ wch: 8 }, { wch: 45 }, { wch: 22 }];
+                ws['!views'] = [{ rightToLeft: true }];
+
+                if (base64Logo) {
+                    ws['!images'] = [{
+                        name: 'logo.png',
+                        data: base64Logo.split(',')[1],
+                        opts: { base64: true },
+                        position: {
+                            type: 'twoCellAnchor',
+                            from: { col: 2, row: 0 },
+                            to: { col: 3, row: 2 }
+                        }
+                    }];
+                }
+
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            });
+
+            XLSX.writeFile(wb, "تقارير_مستحقات_المناديب_الرسمية.xlsx");
+        }
+    </script>
+</body>
+</html>

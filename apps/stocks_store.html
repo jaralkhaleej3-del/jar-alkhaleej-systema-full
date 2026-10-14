@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة وبيع الاستوكات - شركة جار الخليج للصناعة</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- خط عربي أنيق -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; }
+        @media print {
+            body * { visibility: hidden; }
+            #invoicePreview, #invoicePreview * { visibility: visible; }
+            #invoicePreview { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; }
+        }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="stock-manager"></script>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- شريط التنقل العلوي - الهوية البصرية لجار الخليج -->
+    <header class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 text-white shadow-xl sticky top-0 z-50 border-b border-emerald-600/30">
+        <div class="container mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/20">
+                    <i class="fa-solid fa-industry text-emerald-300 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide text-white">شركة جار الخليج للصناعة</h1>
+                    <p class="text-xs text-emerald-200/80 font-medium">نظام إدارة وبيع الاستوكات والمخزون</p>
+                </div>
+            </div>
+            <nav class="flex flex-wrap gap-1.5 mt-3 md:mt-0 bg-emerald-950/40 p-1.5 rounded-xl border border-emerald-700/40 backdrop-blur-sm">
+                <button onclick="switchTab('add')" class="tab-btn bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-1"><i class="fa-solid fa-circle-plus"></i> إضافة صنف</button>
+                <button onclick="switchTab('manage')" class="tab-btn text-emerald-100 hover:bg-emerald-800/60 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1"><i class="fa-solid fa-sliders"></i> إدارة الأصناف</button>
+                <button onclick="switchTab('store')" class="tab-btn text-emerald-100 hover:bg-emerald-800/60 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1"><i class="fa-solid fa-store"></i> المتجر</button>
+                <button onclick="switchTab('slider')" class="tab-btn text-emerald-100 hover:bg-emerald-800/60 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1"><i class="fa-solid fa-images"></i> التقليب والسحب</button>
+                <button onclick="switchTab('table')" class="tab-btn text-emerald-100 hover:bg-emerald-800/60 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1"><i class="fa-solid fa-table-cells"></i> الجدول</button>
+                <button onclick="switchTab('invoice')" class="tab-btn text-emerald-100 hover:bg-emerald-800/60 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1"><i class="fa-solid fa-file-invoice-dollar"></i> الفواتير</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="container mx-auto px-4 py-8 flex-grow max-w-7xl">
+
+        <!-- 1. واجهة إضافة البيانات -->
+        <section id="tab-add" class="tab-content max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl">
+                    <i class="fa-solid fa-boxes-stacked text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">إضافة صنف استوك جديد</h2>
+                    <p class="text-xs text-slate-500">سيتم ضغط الصورة تلقائياً وتحديث قاعدة البيانات سحابياً بمجرد الحفظ</p>
+                </div>
+            </div>
+            <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">اسم الصنف</label>
+                    <input type="text" id="pName" required placeholder="مثال: الواح أريليك استوك" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">المقاس</label>
+                    <input type="text" id="pSize" placeholder="مثال: 120×200 سم" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">الموديل</label>
+                    <input type="text" id="pModel" placeholder="رقم الموديل أو الكود" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">الكمية المتوفرة</label>
+                    <input type="number" id="pQuantity" required min="0" placeholder="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">السعر (ر.س)</label>
+                    <input type="number" id="pPrice" required step="0.01" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">حالة المنتج</label>
+                    <select id="pStatus" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition">
+                        <option value="جديد بالكرتون">جديد بالكرتون</option>
+                        <option value="استوك ممتاز">استوك ممتاز</option>
+                        <option value="مخلفات مشاريع">مخلفات مشاريع</option>
+                        <option value="يحتاج صيانة بسيطة">يحتاج صيانة بسيطة</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">صورة المنتج (تصوير مباشر بالكاميرا أو اختيار من الاستوديو)</label>
+                    <input type="file" id="pImageFile" accept="image/*" capture="environment" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition cursor-pointer">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">ملاحظات إضافية</label>
+                    <textarea id="pNotes" rows="2" placeholder="أي تفاصيل تخص حالة الاستوك..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"></textarea>
+                </div>
+                <div class="md:col-span-2 pt-2">
+                    <button type="submit" id="saveBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> حفظ الصنف في قاعدة البيانات
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 2. واجهة إدارة وتعديل وحذف الأصناف المتقدمة -->
+        <section id="tab-manage" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900">لوحة إدارة وتحكم الأصناف</h2>
+                    <p class="text-xs text-slate-500">تعديل البيانات، تحديث الكميات، أو حذف الأصناف الفائضة مباشرة</p>
+                </div>
+                <div class="relative w-full sm:w-72">
+                    <i class="fa-solid fa-search absolute right-3.5 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="manageSearch" placeholder="بحث للتحكم بصنف..." oninput="filterManageList()" class="w-full bg-white border border-slate-200 rounded-xl pr-10 pl-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none transition">
+                </div>
+            </div>
+            <div id="manageContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- بطاقات التحكم بالأصناف -->
+            </div>
+        </section>
+
+        <!-- 3. طريقة المتجر الإلكتروني -->
+        <section id="tab-store" class="tab-content hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900">متجر الاستوكات الرقمي</h2>
+                    <p class="text-xs text-slate-500">استعراض المتاح مع إمكانية تحديث المخزون فورياً</p>
+                </div>
+                <div class="relative w-full sm:w-72">
+                    <i class="fa-solid fa-search absolute right-3.5 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="storeSearch" placeholder="ابحث عن اسم صنف..." oninput="filterStore()" class="w-full bg-white border border-slate-200 rounded-xl pr-10 pl-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none transition">
+                </div>
+            </div>
+            <div id="storeGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- المنتجات -->
+            </div>
+        </section>
+
+        <!-- 4. طريقة التقليب والسحب (Slider + Swipe) -->
+        <section id="tab-slider" class="tab-content hidden max-w-lg mx-auto">
+            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+                <div class="bg-gradient-to-r from-emerald-900 to-emerald-800 text-white px-6 py-4 flex justify-between items-center">
+                    <span id="slideCounter" class="text-xs font-bold bg-emerald-950/60 px-3 py-1.5 rounded-full border border-emerald-600/30">صنف 0 من 0</span>
+                    <div class="space-x-1 space-x-reverse">
+                        <button onclick="firstSlide()" class="w-8 h-8 rounded-lg hover:bg-white/10 transition flex items-center justify-center"><i class="fa-solid fa-angles-right text-xs"></i></button>
+                        <button onclick="prevSlide()" class="w-8 h-8 rounded-lg hover:bg-white/10 transition flex items-center justify-center"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                        <button onclick="nextSlide()" class="w-8 h-8 rounded-lg hover:bg-white/10 transition flex items-center justify-center"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                        <button onclick="lastSlide()" class="w-8 h-8 rounded-lg hover:bg-white/10 transition flex items-center justify-center"><i class="fa-solid fa-angles-left text-xs"></i></button>
+                    </div>
+                </div>
+                <div id="swipeContainer" class="relative touch-pan-y select-none p-8 text-center min-h-[380px] flex flex-col justify-center items-center">
+                    <!-- محتوى السلايدر -->
+                </div>
+            </div>
+            <p class="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1.5"><i class="fa-solid fa-hand-pointer text-emerald-600"></i> اسحب يمين ويسار بالشاشة أو بالماوس للتقليب السريع</p>
+        </section>
+
+        <!-- 5. طريقة الجدول -->
+        <section id="tab-table" class="tab-content hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-black text-slate-900">جدول المخزون الشامل</h2>
+                <p class="text-xs text-slate-500">إدارة تفصيلية للكميات والحالة مع خيارات التحكم السريع</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-xl overflow-x-auto border border-slate-100">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-500">
+                            <th class="p-4">الصورة</th>
+                            <th class="p-4">اسم الصنف</th>
+                            <th class="p-4">المقاس / الموديل</th>
+                            <th class="p-4">الكمية</th>
+                            <th class="p-4">السعر</th>
+                            <th class="p-4">الحالة</th>
+                            <th class="p-4">ملاحظات</th>
+                            <th class="p-4 text-center">التحكم بالمخزون</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- صفوف الجدول -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 6. واجهة الفواتير والبيع الفاخرة -->
+        <section id="tab-invoice" class="tab-content hidden max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl">
+                    <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">إصدار فاتورة بيع استوك</h2>
+                    <p class="text-xs text-slate-500">يتم خصم الكمية المباعة تلقائياً من المخزون بعد إصدار الفاتورة</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">اسم العميل</label>
+                    <input type="text" id="invCustomer" placeholder="اسم العميل الكريم" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">المندوب البائع</label>
+                    <input type="text" id="invRep" placeholder="اسم المندوب" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر الصنف</label>
+                    <select id="invProductSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition">
+                        <!-- الخيارات -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">الكمية المباعة</label>
+                    <input type="number" id="invQty" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition">
+                </div>
+            </div>
+            
+            <button onclick="generateInvoice()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-emerald-600/20 mb-8 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-print"></i> إصدار وطباعة الفاتورة الرسمية (PDF)
+            </button>
+
+            <!-- قالب الفاتورة المؤسسية الفاخرة لجار الخليج -->
+            <div id="invoicePreview" class="border border-slate-200 p-8 rounded-2xl bg-white shadow-sm hidden relative overflow-hidden">
+                <div class="absolute top-0 right-0 left-0 h-2 bg-gradient-to-r from-emerald-800 to-emerald-600"></div>
+                
+                <div class="flex justify-between items-start border-b border-slate-100 pb-6 mb-6">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fa-solid fa-industry text-emerald-700 text-lg"></i>
+                            <h3 class="font-black text-lg text-emerald-900 tracking-wide">شركة جار الخليج للصناعة</h3>
+                        </div>
+                        <p class="text-[11px] text-slate-400 font-medium">قسم إدارة الاستوكات والمبيعات المباشرة</p>
+                    </div>
+                    <div class="text-left">
+                        <span class="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">فاتورة بيع استوك</span>
+                        <p class="text-xs text-slate-500 mt-2" id="invDateText"></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl mb-6 text-xs border border-slate-100">
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">العميل الكريم:</span>
+                        <strong class="text-slate-800 text-sm" id="lblCustomer"></strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">المندوب البائع:</span>
+                        <strong class="text-slate-800 text-sm" id="lblRep"></strong>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 mb-6 p-4 border border-slate-100 rounded-xl bg-white">
+                    <img id="lblImg" src="" class="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-slate-800 text-sm mb-1" id="lblItemName"></h4>
+                        <div class="flex gap-4 text-xs text-slate-500">
+                            <span>الكمية المباعة: <strong class="text-slate-800" id="lblQty"></strong></span>
+                            <span>السعر الفردي: <strong class="text-emerald-700" id="lblPrice"></strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-dashed border-slate-200 pt-4 flex justify-between items-center">
+                    <span class="text-slate-600 font-bold text-sm">الإجمالي الصافي:</span>
+                    <span id="lblTotal" class="text-2xl font-black text-emerald-700"></span>
+                </div>
+
+                <div class="mt-8 pt-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
+                    شكراً لتعاملكم مع شركة جار الخليج للصناعة - جميع الحقوق محفوظة
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- نافذة منبثقة (Modal) لتعديل الصنف -->
+    <div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-100">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-lg text-slate-900"><i class="fa-solid fa-pen-to-square text-emerald-600"></i> تعديل بيانات الصنف</h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">اسم الصنف</label>
+                        <input type="text" id="editName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:bg-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">المقاس</label>
+                        <input type="text" id="editSize" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:bg-white outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">الموديل</label>
+                        <input type="text" id="editModel" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:bg-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">حالة المنتج</label>
+                        <select id="editStatus" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:bg-white outline-none">
+                            <option value="جديد بالكرتون">جديد بالكرتون</option>
+                            <option value="استوك ممتاز">استوك ممتاز</option>
+                            <option value="مخلفات مشاريع">مخلفات مشاريع</option>
+                            <option value="يحتاج صيانة بسيطة">يحتاج صيانة بسيطة</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">الكمية</label>
+                        <input type="number" id="editQuantity" required min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:bg-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">السعر (ر.س)</label>
+                        <input type="number" id="editPrice" required step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:bg-white outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات</label>
+                    <textarea id="editNotes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:bg-white outline-none"></textarea>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition">حفظ التعديلات</button>
+                    <button type="button" onclick="closeEditModal()" class="bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-200 transition">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- سكربت الفايربيس والتطبيق -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQIb0H-Hn5yX69Aa5sxne63YmUmKKit6g",
+            authDomain: "stock-management-system-3719d.firebaseapp.com",
+            projectId: "stock-management-system-3719d",
+            storageBucket: "stock-management-system-3719d.firebasestorage.app",
+            messagingSenderId: "606449836439",
+            appId: "1:606449836439:web:b1538eb136527a98f264d2",
+            measurementId: "G-CRQS5XNFRX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let productsList = [];
+        let currentSlideIndex = 0;
+
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
+                btn.classList.add('text-emerald-100');
+            });
+            event.currentTarget.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+            event.currentTarget.classList.remove('text-emerald-100');
+
+            if(tabId === 'manage') renderManageList();
+            if(tabId === 'store') renderStore();
+            if(tabId === 'slider') renderSlider();
+            if(tabId === 'table') renderTable();
+            if(tabId === 'invoice') populateInvoiceDropdown();
+        };
+
+        // دالة ضغط الصور لضمان عدم تجاوز الحد الأقصى لحجم مستند فايربيس (1 ميجابايت)
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 500;
+                        const MAX_HEIGHT = 500;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // ضغط الجودة إلى 70%
+                    };
+                };
+            });
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> جاري ضغط الصورة والحفظ...`;
+            btn.disabled = true;
+
+            try {
+                let imageBase64 = "";
+                const fileInput = document.getElementById('pImageFile');
+                if (fileInput.files.length > 0) {
+                    imageBase64 = await compressImage(fileInput.files[0]);
+                }
+
+                const newProduct = {
+                    name: document.getElementById('pName').value,
+                    size: document.getElementById('pSize').value,
+                    model: document.getElementById('pModel').value,
+                    quantity: Number(document.getElementById('pQuantity').value),
+                    price: Number(document.getElementById('pPrice').value),
+                    status: document.getElementById('pStatus').value,
+                    notes: document.getElementById('pNotes').value,
+                    imageUrl: imageBase64 || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&auto=format&fit=crop&q=60",
+                    createdAt: new Date().toISOString()
+                };
+
+                await addDoc(collection(db, "products"), newProduct);
+                alert("تم إضافة الصنف بنجاح إلى قاعدة البيانات!");
+                document.getElementById('productForm').reset();
+                fetchData();
+            } catch (error) {
+                console.error("خطأ:", error);
+                alert("حدث خطأ أثناء الحفظ، قد يكون حجم الصورة كبيراً جداً، حاول اختيار صورة أخرى.");
+            } finally {
+                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> حفظ الصنف في قاعدة البيانات`;
+                btn.disabled = false;
+            }
+        });
+
+        window.fetchData = async function() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                productsList = [];
+                querySnapshot.forEach((docSnap) => {
+                    productsList.push({ id: docSnap.id, ...docSnap.data() });
+                });
+            } catch (error) {
+                console.error("خطأ في جلب البيانات:", error);
+            }
+        };
+
+        // واجهة إدارة وتحكم الأصناف المتقدمة
+        window.renderManageList = async function() {
+            await fetchData();
+            const container = document.getElementById('manageContainer');
+            container.innerHTML = "";
+            productsList.forEach(item => {
+                container.innerHTML += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-between hover:shadow-md transition">
+                        <div class="flex items-center gap-4 mb-4">
+                            <img src="${item.imageUrl}" class="w-16 h-16 object-cover rounded-xl border border-slate-200">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base">${item.name}</h3>
+                                <p class="text-xs text-slate-400">المقاس: ${item.size || '-'} | الموديل: ${item.model || '-'}</p>
+                                <span class="inline-block mt-1 text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full font-bold">${item.status}</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl mb-4 grid grid-cols-2 gap-2 text-xs border border-slate-100">
+                            <div>الكمية: <strong class="text-slate-900">${item.quantity}</strong></div>
+                            <div>السعر: <strong class="text-emerald-700">${item.price} ر.س</strong></div>
+                        </div>
+                        <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                            <button onclick="quickUpdateQty('${item.id}', 1)" class="bg-emerald-50 text-emerald-700 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition"><i class="fa-solid fa-plus"></i> زيادة</button>
+                            <button onclick="quickUpdateQty('${item.id}', -1)" class="bg-amber-50 text-amber-700 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-100 transition"><i class="fa-solid fa-minus"></i> نقص</button>
+                            <button onclick="openEditModal('${item.id}')" class="flex-1 bg-slate-100 text-slate-700 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200 transition"><i class="fa-solid fa-pen"></i> تعديل</button>
+                            <button onclick="deleteProduct('${item.id}')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg text-xs hover:bg-rose-600 hover:text-white transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.filterManageList = function() {
+            const query = document.getElementById('manageSearch').value.toLowerCase();
+            const cards = document.querySelectorAll('#manageContainer > div');
+            cards.forEach((card, idx) => {
+                const text = productsList[idx].name.toLowerCase();
+                card.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        };
+
+        // نوافذ التعديل (Modal)
+        window.openEditModal = function(id) {
+            const item = productsList.find(p => p.id === id);
+            if(!item) return;
+            document.getElementById('editId').value = item.id;
+            document.getElementById('editName').value = item.name;
+            document.getElementById('editSize').value = item.size || '';
+            document.getElementById('editModel').value = item.model || '';
+            document.getElementById('editStatus').value = item.status || 'جديد بالكرتون';
+            document.getElementById('editQuantity').value = item.quantity;
+            document.getElementById('editPrice').value = item.price;
+            document.getElementById('editNotes').value = item.notes || '';
+            document.getElementById('editModal').classList.remove('hidden');
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById('editModal').classList.add('hidden');
+        };
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const updatedData = {
+                name: document.getElementById('editName').value,
+                size: document.getElementById('editSize').value,
+                model: document.getElementById('editModel').value,
+                status: document.getElementById('editStatus').value,
+                quantity: Number(document.getElementById('editQuantity').value),
+                price: Number(document.getElementById('editPrice').value),
+                notes: document.getElementById('editNotes').value
+            };
+
+            await updateDoc(doc(db, "products", id), updatedData);
+            alert("تم تحديث بيانات الصنف بنجاح!");
+            closeEditModal();
+            renderManageList();
+        });
+
+        window.renderStore = async function() {
+            await fetchData();
+            const grid = document.getElementById('storeGrid');
+            grid.innerHTML = "";
+            productsList.forEach(item => {
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+                        <div class="relative h-44 overflow-hidden bg-slate-100">
+                            <img src="${item.imageUrl}" class="w-full h-full object-cover">
+                            <span class="absolute top-3 right-3 bg-emerald-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full">${item.status}</span>
+                        </div>
+                        <div class="p-4 flex-grow">
+                            <h3 class="font-bold text-slate-900 text-base mb-1">${item.name}</h3>
+                            <p class="text-[11px] text-slate-400 mb-3">المقاس: ${item.size || 'غير محدد'} | الموديل: ${item.model || '-'}</p>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-emerald-700 font-black text-base">${item.price} ر.س</span>
+                                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-lg font-bold">المتوفر: ${item.quantity}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 line-clamp-2">${item.notes || ''}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 border-t border-slate-100 flex gap-2">
+                            <button onclick="quickUpdateQty('${item.id}', 1)" class="flex-1 bg-emerald-50 text-emerald-700 text-xs py-2 rounded-xl font-bold hover:bg-emerald-100 transition"><i class="fa-solid fa-plus"></i> زيادة</button>
+                            <button onclick="quickUpdateQty('${item.id}', -1)" class="flex-1 bg-rose-50 text-rose-700 text-xs py-2 rounded-xl font-bold hover:bg-rose-100 transition"><i class="fa-solid fa-minus"></i> بيع/نقص</button>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.filterStore = function() {
+            const query = document.getElementById('storeSearch').value.toLowerCase();
+            const cards = document.querySelectorAll('#storeGrid > div');
+            cards.forEach((card, idx) => {
+                const text = productsList[idx].name.toLowerCase();
+                card.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        };
+
+        window.renderSlider = async function() {
+            await fetchData();
+            currentSlideIndex = 0;
+            updateSlideView();
+        };
+
+        window.updateSlideView = function() {
+            const container = document.getElementById('swipeContainer');
+            const counter = document.getElementById('slideCounter');
+            if(productsList.length === 0) {
+                container.innerHTML = "<p class='py-12 text-slate-400'>لا توجد أصناف مضافة بعد.</p>";
+                counter.innerText = "0 من 0";
+                return;
+            }
+            const item = productsList[currentSlideIndex];
+            counter.innerText = `صنف ${currentSlideIndex + 1} من ${productsList.length}`;
+            container.innerHTML = `
+                <img src="${item.imageUrl}" class="w-40 h-40 mx-auto object-cover rounded-2xl shadow-md border border-slate-100 mb-4">
+                <h3 class="text-xl font-black text-slate-900 mb-1">${item.name}</h3>
+                <div class="flex justify-center gap-4 text-xs text-slate-400 mb-3">
+                    <span>المقاس: ${item.size || '-'}</span>
+                    <span>الموديل: ${item.model || '-'}</span>
+                </div>
+                <p class="text-xl font-black text-emerald-700 mb-2">${item.price} ر.س</p>
+                <div class="flex gap-2 justify-center mb-2">
+                    <span class="text-xs bg-emerald-50 text-emerald-800 font-bold py-1 px-3 rounded-full">الكمية: ${item.quantity}</span>
+                    <span class="text-xs bg-slate-100 text-slate-700 font-bold py-1 px-3 rounded-full">${item.status}</span>
+                </div>
+                <p class="text-xs text-slate-500">${item.notes || 'لا توجد ملاحظات'}</p>
+            `;
+        };
+
+        window.nextSlide = function() { if(productsList.length === 0) return; currentSlideIndex = (currentSlideIndex + 1) % productsList.length; updateSlideView(); };
+        window.prevSlide = function() { if(productsList.length === 0) return; currentSlideIndex = (currentSlideIndex - 1 + productsList.length) % productsList.length; updateSlideView(); };
+        window.firstSlide = function() { currentSlideIndex = 0; updateSlideView(); };
+        window.lastSlide = function() { currentSlideIndex = productsList.length - 1; updateSlideView(); };
+
+        let touchStartX = 0;
+        const swipeEl = document.getElementById('swipeContainer');
+        swipeEl.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+        swipeEl.addEventListener('touchend', e => {
+            let diff = e.changedTouches[0].screenX - touchStartX;
+            if(diff > 50) prevSlide();
+            if(diff < -50) nextSlide();
+        });
+
+        window.renderTable = async function() {
+            await fetchData();
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+            productsList.forEach(item => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="p-4"><img src="${item.imageUrl}" class="w-10 h-10 object-cover rounded-lg border border-slate-200"></td>
+                        <td class="p-4 font-bold text-slate-900">${item.name}</td>
+                        <td class="p-4 text-slate-500">${item.size || '-'} / ${item.model || '-'}</td>
+                        <td class="p-4"><span class="bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg font-bold">${item.quantity}</span></td>
+                        <td class="p-4 text-emerald-700 font-black">${item.price} ر.س</td>
+                        <td class="p-4"><span class="text-xs bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full font-bold">${item.status}</span></td>
+                        <td class="p-4 text-slate-400 text-xs">${item.notes || ''}</td>
+                        <td class="p-4 text-center space-x-1 space-x-reverse">
+                            <button onclick="quickUpdateQty('${item.id}', 1)" class="bg-emerald-50 text-emerald-700 p-2 rounded-xl text-xs font-bold hover:bg-emerald-100 transition"><i class="fa-solid fa-plus"></i></button>
+                            <button onclick="quickUpdateQty('${item.id}', -1)" class="bg-rose-50 text-rose-700 p-2 rounded-xl text-xs font-bold hover:bg-rose-100 transition"><i class="fa-solid fa-minus"></i></button>
+                            <button onclick="openEditModal('${item.id}')" class="bg-slate-100 text-slate-700 p-2 rounded-xl text-xs hover:bg-slate-200 transition"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteProduct('${item.id}')" class="bg-slate-100 text-slate-400 p-2 rounded-xl text-xs hover:bg-rose-600 hover:text-white transition"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.quickUpdateQty = async function(id, change) {
+            const item = productsList.find(p => p.id === id);
+            if(!item) return;
+            let newQty = item.quantity + change;
+            if(newQty < 0) newQty = 0;
+            
+            await updateDoc(doc(db, "products", id), { quantity: newQty });
+            await fetchData();
+            if(!document.getElementById('tab-manage').classList.contains('hidden')) renderManageList();
+            if(!document.getElementById('tab-store').classList.contains('hidden')) renderStore();
+            if(!document.getElementById('tab-table').classList.contains('hidden')) renderTable();
+            if(!document.getElementById('tab-slider').classList.contains('hidden')) updateSlideView();
+        };
+
+        window.deleteProduct = async function(id) {
+            if(confirm("هل أنت متأكد من حذف هذا الصنف من النظام نهائياً؟")) {
+                await deleteDoc(doc(db, "products", id));
+                if(!document.getElementById('tab-manage').classList.contains('hidden')) renderManageList();
+                if(!document.getElementById('tab-table').classList.contains('hidden')) renderTable();
+            }
+        };
+
+        window.populateInvoiceDropdown = async function() {
+            await fetchData();
+            const select = document.getElementById('invProductSelect');
+            select.innerHTML = "";
+            productsList.forEach(item => {
+                select.innerHTML += `<option value="${item.id}" data-price="${item.price}" data-name="${item.name}" data-img="${item.imageUrl}" data-qty="${item.quantity}">${item.name} (المتوفر: ${item.quantity}) - ${item.price} ر.س</option>`;
+            });
+        };
+
+        window.generateInvoice = async function() {
+            const select = document.getElementById('invProductSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            if(!selectedOption) { alert("اختر صنفاً أولاً"); return; }
+
+            const productId = selectedOption.value;
+            const price = Number(selectedOption.getAttribute('data-price'));
+            const name = selectedOption.getAttribute('data-name');
+            const img = selectedOption.getAttribute('data-img');
+            const maxQty = Number(selectedOption.getAttribute('data-qty'));
+            const soldQty = Number(document.getElementById('invQty').value);
+
+            if(soldQty > maxQty) {
+                alert("الكمية المباعة أكبر من الكمية المتوفرة بالمخزون!");
+                return;
+            }
+
+            document.getElementById('invDateText').innerText = new Date().toLocaleString();
+            document.getElementById('lblCustomer').innerText = document.getElementById('invCustomer').value || 'عميل نقدي';
+            document.getElementById('lblRep').innerText = document.getElementById('invRep').value || 'المندوب العام';
+            document.getElementById('lblItemName').innerText = name;
+            document.getElementById('lblQty').innerText = soldQty;
+            document.getElementById('lblPrice').innerText = price + ' ر.س';
+            document.getElementById('lblTotal').innerText = (price * soldQty) + ' ر.س';
+            document.getElementById('lblImg').src = img;
+
+            document.getElementById('invoicePreview').classList.remove('hidden');
+
+            await quickUpdateQty(productId, -soldQty);
+            window.print();
+        };
+
+        // جلب البيانات الأولية عند تحميل الصفحة مباشرة
+        fetchData();
+    </script>
+</body>
+</html>

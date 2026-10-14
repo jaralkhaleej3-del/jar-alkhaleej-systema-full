@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>شركة جار الخليج للصناعة - متابعة إجماليات المناديب</title>
+  
+  <!-- Bootstrap 5 RTL & Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #1e3a5f;
+      --primary-hover: #162b47;
+      --accent-color: #2563eb;
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Navbar Styling */
+    .custom-navbar {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Modern Card */
+    .card-custom {
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      background: var(--card-bg);
+      transition: all 0.25s ease;
+    }
+
+    /* Tabs Styling */
+    .nav-pills {
+      gap: 6px;
+    }
+    .nav-pills .nav-link {
+      font-weight: 600;
+      color: #cbd5e1;
+      border-radius: 10px;
+      padding: 9px 16px;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+    .nav-pills .nav-link:hover {
+      color: #fff;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+    .nav-pills .nav-link.active {
+      background-color: var(--accent-color);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    /* Stat Cards */
+    .stat-card {
+      border-radius: 14px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    .stat-icon-bg {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      font-size: 4.5rem;
+      opacity: 0.06;
+      pointer-events: none;
+    }
+
+    /* Custom Form Elements */
+    .form-control, .form-select {
+      border-radius: 10px;
+      border: 1.5px solid #cbd5e1;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    .btn {
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 0.55rem 1.15rem;
+      transition: all 0.2s ease;
+    }
+
+    /* Minimal Stat Box */
+    .stat-box {
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      background: #f8fafc;
+      transition: background-color 0.2s;
+    }
+
+    /* Modern Table */
+    .table-responsive {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .table {
+      margin-bottom: 0;
+      vertical-align: middle;
+    }
+    .table thead th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-bottom: 2px solid var(--border-color);
+      padding: 12px 14px;
+      white-space: nowrap;
+    }
+    .table tbody td {
+      padding: 12px 14px;
+      color: #1e293b;
+      font-size: 0.92rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+    .table-hover tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    /* Status badge animation */
+    .spin {
+      animation: spin 1.2s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    #printableReportArea, #printableRepDashboardArea {
+      background-color: #ffffff;
+      border-radius: 14px;
+    }
+
+    /* Print Setup */
+    @page {
+      size: A4 landscape;
+      margin: 10mm 12mm;
+    }
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Cairo', Tahoma, Arial, sans-serif !important;
+      }
+      .no-print, nav, #mainTab, .btn, #reportFilterCard, #repControlsCard, .status-badge {
+        display: none !important;
+      }
+      .card-custom {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+      }
+      .table {
+        border: 1.5px solid #000000 !important;
+        color: #000000 !important;
+        width: 100% !important;
+      }
+      .table th {
+        background-color: #f1f5f9 !important;
+        color: #000000 !important;
+        border: 1px solid #000000 !important;
+        font-weight: bold !important;
+        text-align: center !important;
+      }
+      .table td {
+        border: 1px solid #000000 !important;
+        color: #000000 !important;
+      }
+      .stat-box {
+        border: 1px solid #000000 !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+      }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+      .nav-pills {
+        width: 100%;
+        flex-direction: column;
+      }
+      .nav-pills .nav-link {
+        text-align: center;
+      }
+      .action-btns {
+        flex-direction: column;
+      }
+    }
+  </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="sales-totals"></script>
+</head>
+<body>
+
+  <!-- شريط التنقل العلوي -->
+  <nav class="navbar navbar-expand-lg navbar-dark custom-navbar shadow-sm mb-4 no-print py-3">
+    <div class="container-fluid px-3 px-lg-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="bg-white bg-opacity-10 p-2 rounded-3 text-warning">
+          <i class="bi bi-buildings-fill fs-3"></i>
+        </div>
+        <div>
+          <span class="navbar-brand fs-5 fw-bold m-0 d-block leading-tight">شركة جار الخليج للصناعة</span>
+          <div class="small text-white-50">نظام إدارة ومتابعة إجماليات المناديب</div>
+        </div>
+      </div>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse justify-content-end mt-3 mt-lg-0" id="navContent">
+        <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-3">
+          <span id="connStatus" class="badge bg-secondary status-badge py-2 px-3 align-self-start align-self-lg-center rounded-pill">
+            <i class="bi bi-arrow-repeat spin"></i> جاري الاتصال...
+          </span>
+          <ul class="nav nav-pills" id="mainTab" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active" id="admin-tab" data-bs-toggle="pill" data-bs-target="#admin-view" type="button">
+                <i class="bi bi-pencil-square me-1"></i> تسجيل الإجماليات
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="reports-tab" data-bs-toggle="pill" data-bs-target="#reports-view" type="button">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> التقارير و PDF
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="rep-tab" data-bs-toggle="pill" data-bs-target="#rep-view" type="button">
+                <i class="bi bi-person-badge me-1"></i> استعراض المندوب
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid px-3 px-lg-4 mb-5">
+    
+    <div class="tab-content" id="mainTabContent">
+      
+      <!-- ==================== 1. لوحة تسجيل الفترات ==================== -->
+      <div class="tab-pane fade show active" id="admin-view" role="tabpanel">
+        
+        <!-- الكروت الإحصائية العلوية -->
+        <div class="row g-3 mb-4 no-print">
+          <div class="col-12 col-md-4">
+            <div class="card card-custom stat-card bg-white border-start border-primary border-4">
+              <i class="bi bi-graph-up-arrow stat-icon-bg text-primary"></i>
+              <div class="text-muted small fw-bold">إجمالي مبيعات الشركة (التراكمية)</div>
+              <h3 class="fw-bold mt-2 text-primary m-0" id="overviewSales">0.00 ر.س</h3>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="card card-custom stat-card bg-white border-start border-success border-4">
+              <i class="bi bi-cash-stack stat-icon-bg text-success"></i>
+              <div class="text-muted small fw-bold">إجمالي التحصيلات (المستلمة)</div>
+              <h3 class="fw-bold mt-2 text-success m-0" id="overviewColls">0.00 ر.س</h3>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="card card-custom stat-card bg-white border-start border-warning border-4">
+              <i class="bi bi-wallet2 stat-icon-bg text-warning"></i>
+              <div class="text-muted small fw-bold">الرصيد المتبقي بالسوق</div>
+              <h3 class="fw-bold mt-2 text-dark m-0" id="overviewDiff">0.00 ر.س</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4 no-print">
+          <!-- إدارة المناديب -->
+          <div class="col-12 col-lg-4">
+            <div class="card card-custom h-100">
+              <div class="card-header bg-white border-bottom-0 pt-3 pb-2 fw-bold d-flex justify-content-between align-items-center">
+                <span class="fs-6"><i class="bi bi-people text-primary me-2"></i>قائمة المناديب</span>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1" id="repCount">0</span>
+              </div>
+              <div class="card-body pt-1">
+                <form id="repForm" class="d-flex gap-2 mb-3">
+                  <input type="text" id="repNameInput" class="form-control" placeholder="اسم المندوب الجديد..." required>
+                  <button type="submit" class="btn btn-primary px-3 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-plus-lg"></i>
+                  </button>
+                </form>
+                <div class="list-group list-group-flush border rounded-3 overflow-auto" style="max-height: 280px;" id="repList"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- تسجيل إجمالي الفترة -->
+          <div class="col-12 col-lg-8">
+            <div class="card card-custom">
+              <div class="card-header bg-white border-bottom-0 pt-3 pb-2 fw-bold fs-6">
+                <i class="bi bi-calendar2-plus text-primary me-2"></i>تسجيل إجمالي مبيعات وتحصيلات المندوب للفترة
+              </div>
+              <div class="card-body pt-1">
+                <form id="recordForm" class="row g-3">
+                  <input type="hidden" id="editRecordId">
+                  
+                  <div class="col-12 col-sm-4">
+                    <label class="form-label small fw-bold">المندوب</label>
+                    <select id="recordRep" class="form-select" required>
+                      <option value="">-- اختر المندوب --</option>
+                    </select>
+                  </div>
+
+                  <div class="col-12 col-sm-4">
+                    <label class="form-label small fw-bold">من تاريخ</label>
+                    <input type="date" id="recordStartDate" class="form-control" required>
+                  </div>
+
+                  <div class="col-12 col-sm-4">
+                    <label class="form-label small fw-bold">إلى تاريخ</label>
+                    <input type="date" id="recordEndDate" class="form-control" required>
+                  </div>
+
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label small fw-bold text-primary">إجمالي المبيعات للفترة (ريال)</label>
+                    <div class="input-group">
+                      <input type="number" step="any" id="recordSales" class="form-control fw-bold fs-6" placeholder="0.00" required>
+                      <span class="input-group-text bg-light">ر.س</span>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-sm-6">
+                    <label class="form-label small fw-bold text-success">إجمالي التحصيلات للفترة (ريال)</label>
+                    <div class="input-group">
+                      <input type="number" step="any" id="recordColls" class="form-control fw-bold fs-6" placeholder="0.00" required>
+                      <span class="input-group-text bg-light">ر.س</span>
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label small fw-bold">ملاحظات / توصيف الفترة</label>
+                    <input type="text" id="recordNote" class="form-control" placeholder="مثال: إجمالي النصف الأول من الشهر...">
+                  </div>
+
+                  <div class="col-12 d-flex flex-wrap gap-2 mt-3 pt-2">
+                    <button type="submit" class="btn btn-primary px-4 py-2" id="saveRecordBtn">
+                      <i class="bi bi-check-circle me-1"></i> حفظ إجمالي الفترة
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-none px-4 py-2" id="cancelEditRecordBtn" onclick="resetRecordForm()">
+                      إلغاء التعديل
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- جدول الفترات المدخلة -->
+        <div class="card card-custom">
+          <div class="card-header bg-white border-bottom-0 pt-3 pb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-bold fs-6"><i class="bi bi-table text-primary me-2"></i>سجل الفترات المدخلة</span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="small text-muted d-none d-sm-inline">تصفية:</span>
+              <select id="filterListRep" class="form-select form-select-sm w-auto">
+                <option value="">جميع المناديب</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+              <thead>
+                <tr>
+                  <th>المندوب</th>
+                  <th>من تاريخ</th>
+                  <th>إلى تاريخ</th>
+                  <th>المبيعات</th>
+                  <th>التحصيلات</th>
+                  <th>الفارق</th>
+                  <th>ملاحظات</th>
+                  <th class="no-print">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="recordsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== 2. مركز التقارير العامة وتصدير PDF ==================== -->
+      <div class="tab-pane fade" id="reports-view" role="tabpanel">
+        
+        <div class="card card-custom mb-4 no-print" id="reportFilterCard">
+          <div class="card-header bg-white border-bottom-0 pt-3 pb-2 fw-bold fs-6">
+            <i class="bi bi-sliders text-primary me-2"></i>خيارات استخراج التقرير الإداري وتوليد PDF
+          </div>
+          <div class="card-body">
+            
+            <div class="d-flex flex-wrap gap-3 mb-3 border-bottom pb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="reportMode" id="modeCustomDate" value="custom" checked onchange="toggleReportMode()">
+                <label class="form-check-label fw-bold" for="modeCustomDate">
+                  تقرير إجمالي حسب فترة زمنية (من - إلى)
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="reportMode" id="modeMonthCompare" value="compare" onchange="toggleReportMode()">
+                <label class="form-check-label fw-bold text-primary" for="modeMonthCompare">
+                  <i class="bi bi-arrow-left-right me-1"></i> تقرير مقارنة بين شهرين (الحالي والسابق)
+                </label>
+              </div>
+            </div>
+
+            <div class="row g-3 align-items-end" id="customDateRow">
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small fw-bold">من تاريخ:</label>
+                <input type="date" id="repFilterStart" class="form-control">
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small fw-bold">إلى تاريخ:</label>
+                <input type="date" id="repFilterEnd" class="form-control">
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small fw-bold">المندوب:</label>
+                <select id="reportRepSelect1" class="form-select rep-dropdown-sync">
+                  <option value="">-- جميع المناديب --</option>
+                </select>
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <button class="btn btn-primary w-100" onclick="generateReport()">
+                  <i class="bi bi-search me-1"></i> استخراج التقرير
+                </button>
+              </div>
+            </div>
+
+            <div class="row g-3 align-items-end d-none" id="compareMonthRow">
+              <div class="col-12 col-md-4">
+                <label class="form-label small fw-bold text-primary">الشهر الأساسي للمقارنة:</label>
+                <input type="month" id="compareMonthSelect" class="form-control">
+                <div class="small text-muted mt-1">يُقارن تلقائياً بالشهر السابق له مباشرة.</div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small fw-bold">المندوب:</label>
+                <select id="reportRepSelect2" class="form-select rep-dropdown-sync">
+                  <option value="">-- جميع المناديب --</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <button class="btn btn-primary w-100" onclick="generateReport()">
+                  <i class="bi bi-arrow-repeat me-1"></i> تنفيذ المقارنة
+                </button>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-end gap-2 mt-4 pt-3 border-top action-btns">
+              <button class="btn btn-danger flex-grow-1 flex-md-grow-0" onclick="exportReportToCleanPDF()">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i> تصدير PDF عربي سليم
+              </button>
+              <button class="btn btn-outline-success flex-grow-1 flex-md-grow-0" onclick="exportReportToExcel()">
+                <i class="bi bi-file-earmark-excel me-1"></i> تصدير Excel
+              </button>
+              <button class="btn btn-outline-dark flex-grow-1 flex-md-grow-0" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> طباعة فورية
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="printableReportArea" class="card card-custom p-3 p-md-4">
+          
+          <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom border-2 pb-3 mb-3 gap-2">
+            <div>
+              <h4 class="fw-bold m-0 text-dark">شركة جار الخليج للصناعة</h4>
+              <div class="text-muted small">تقرير إجماليات المبيعات والتحصيلات للمناديب</div>
+            </div>
+            <div class="text-start small">
+              <div id="pdfPrintDate" class="text-muted">تاريخ الاستخراج: --</div>
+              <div id="pdfPrintPeriod" class="fw-bold text-dark">الفترة: --</div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3 text-center">
+            <div class="col-12 col-md-4">
+              <div class="stat-box">
+                <div class="small text-muted" id="sumLabelSales">إجمالي المبيعات:</div>
+                <h5 class="fw-bold m-0 mt-1 text-primary" id="repSumSales">0.00 ر.س</h5>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="stat-box">
+                <div class="small text-muted" id="sumLabelColls">إجمالي التحصيلات:</div>
+                <h5 class="fw-bold m-0 mt-1 text-success" id="repSumColls">0.00 ر.س</h5>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="stat-box">
+                <div class="small text-muted" id="sumLabelDiff">صافي الفارق:</div>
+                <h5 class="fw-bold m-0 mt-1 text-dark" id="repSumDiff">0.00 ر.س</h5>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive border rounded-3">
+            <table class="table table-hover align-middle mb-0 text-center" id="summaryReportTable">
+              <thead id="summaryReportThead"></thead>
+              <tbody id="summaryReportTbody">
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">اضغط على زر (استخراج التقرير) لعرض البيانات وتصديرها.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==================== 3. استعراض المندوب وتصدير PDF ==================== -->
+      <div class="tab-pane fade" id="rep-view" role="tabpanel">
+        
+        <div class="card card-custom mb-4 no-print" id="repControlsCard">
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-bold small text-dark">اختر المندوب:</label>
+                <select id="repSelectDashboard" class="form-select">
+                  <option value="">-- اضغط لاختيار المندوب --</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-bold small text-dark">الشهر المستهدف:</label>
+                <input type="month" id="repMonthPicker" class="form-control">
+              </div>
+              <div class="col-12 col-md-4 d-flex gap-2">
+                <button class="btn btn-danger w-100" onclick="exportRepDashboardToCleanPDF()">
+                  <i class="bi bi-file-earmark-pdf-fill me-1"></i> تقرير PDF للمندوب
+                </button>
+                <button class="btn btn-outline-dark w-100" onclick="window.print()">
+                  <i class="bi bi-printer me-1"></i> طباعة
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="repStatsContainer" style="display: none;">
+          
+          <div id="printableRepDashboardArea" class="card card-custom p-3 p-md-4">
+            
+            <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom border-2 pb-3 mb-3 gap-2">
+              <div>
+                <h4 class="fw-bold m-0 text-dark">شركة جار الخليج للصناعة</h4>
+                <div class="text-muted small">تقرير أداء ومقارنة مبيعات وتحصيلات المندوب</div>
+              </div>
+              <div class="text-start small">
+                <div>المندوب: <strong id="pdfRepName" class="text-primary">--</strong></div>
+                <div>الشهر: <strong id="pdfRepMonth" class="text-dark">--</strong></div>
+                <div id="pdfRepDate" class="text-muted">تاريخ الإصدار: --</div>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-4">
+                <div class="stat-box text-center">
+                  <span class="small text-muted">إجمالي مبيعات الشهر</span>
+                  <h4 class="fw-bold mb-1 mt-1 text-primary" id="curMonthSales">0.00</h4>
+                  <div class="small mt-1 text-muted" id="salesComparisonBadge">--</div>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <div class="stat-box text-center">
+                  <span class="small text-muted">إجمالي تحصيلات الشهر</span>
+                  <h4 class="fw-bold mb-1 mt-1 text-success" id="curMonthColls">0.00</h4>
+                  <div class="small mt-1 text-muted" id="collsComparisonBadge">--</div>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <div class="stat-box text-center">
+                  <span class="small text-muted">المتبقي المطلوب تحصيله</span>
+                  <h4 class="fw-bold mb-1 mt-1 text-dark" id="curMonthDiff">0.00</h4>
+                  <div class="small text-muted mt-1">الفارق بين مبيعات وتحصيلات الشهر</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive border rounded-3">
+              <table class="table table-hover align-middle mb-0 text-center">
+                <thead>
+                  <tr style="background-color: #f8fafc;">
+                    <th>من تاريخ</th>
+                    <th>إلى تاريخ</th>
+                    <th>المبيعات</th>
+                    <th>التحصيلات</th>
+                    <th>الفارق</th>
+                    <th>ملاحظات الفترة</th>
+                  </tr>
+                </thead>
+                <tbody id="repMonthTableBody"></tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div id="repPlaceholder" class="card card-custom text-center py-5 text-muted no-print">
+          <div class="my-4">
+            <i class="bi bi-person-badge fs-1 text-secondary opacity-50"></i>
+            <h5 class="mt-3 fw-bold text-dark">يرجى اختيار المندوب</h5>
+            <p class="small text-muted">اختر مندوباً من القائمة أعلاه لمشاهدة إجمالياته الشهرية وتصدير تقريره الخاص.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuOCcPlnDNh9mwaGrNu9S-nxxR77zXgQg",
+      authDomain: "jar-alkhaleej-system-4ae94.firebaseapp.com",
+      projectId: "jar-alkhaleej-system-4ae94",
+      storageBucket: "jar-alkhaleej-system-4ae94.firebasestorage.app",
+      messagingSenderId: "367052499793",
+      appId: "1:367052499793:web:9199aa3e8eddd8b26b4170",
+      measurementId: "G-XEL69TV4QQ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const statusEl = document.getElementById('connStatus');
+
+    let reps = [];
+    let periodRecords = [];
+    let currentReportMode = 'custom';
+    let currentReportRows = [];
+
+    const today = new Date();
+    const curYear = today.getFullYear();
+    const curMonth = today.getMonth();
+    const curMonthStr = today.toISOString().slice(0, 7);
+
+    document.getElementById('recordStartDate').value = new Date(curYear, curMonth, 1).toISOString().slice(0, 10);
+    document.getElementById('recordEndDate').value = today.toISOString().slice(0, 10);
+    document.getElementById('repFilterStart').value = new Date(curYear, curMonth, 1).toISOString().slice(0, 10);
+    document.getElementById('repFilterEnd').value = today.toISOString().slice(0, 10);
+    document.getElementById('compareMonthSelect').value = curMonthStr;
+    document.getElementById('repMonthPicker').value = curMonthStr;
+
+    function initSync() {
+      onSnapshot(collection(db, "representatives"), (snapshot) => {
+        statusEl.className = 'badge bg-success status-badge py-2 px-3 align-self-start align-self-lg-center rounded-pill';
+        statusEl.innerHTML = '<i class="bi bi-cloud-check me-1"></i> متصل بـ Firebase';
+        reps = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        populateRepSelects();
+      }, (err) => {
+        statusEl.className = 'badge bg-danger status-badge py-2 px-3 align-self-start align-self-lg-center rounded-pill';
+        statusEl.innerHTML = '<i class="bi bi-shield-x me-1"></i> خطأ بالاتصال';
+      });
+
+      onSnapshot(collection(db, "period_summaries"), (snapshot) => {
+        periodRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderRecordsList();
+        updateGeneralCompanyStats();
+        updateRepView();
+      });
+    }
+
+    document.getElementById('repForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('repNameInput');
+      const name = input.value.trim();
+      if (!name) return;
+      await addDoc(collection(db, "representatives"), { name, createdAt: serverTimestamp() });
+      input.value = '';
+    });
+
+    window.deleteRep = async (id) => {
+      if (!confirm("هل أنت متأكد من حذف المندوب؟")) return;
+      await deleteDoc(doc(db, "representatives", id));
+    };
+
+    function populateRepSelects() {
+      const repList = document.getElementById('repList');
+      const recordRep = document.getElementById('recordRep');
+      const filterListRep = document.getElementById('filterListRep');
+      const repSelect1 = document.getElementById('reportRepSelect1');
+      const repSelect2 = document.getElementById('reportRepSelect2');
+      const repSelectDashboard = document.getElementById('repSelectDashboard');
+      const repCount = document.getElementById('repCount');
+
+      repList.innerHTML = '';
+      recordRep.innerHTML = '<option value="">-- اختر المندوب --</option>';
+      filterListRep.innerHTML = '<option value="">جميع المناديب</option>';
+      repSelect1.innerHTML = '<option value="">-- جميع المناديب --</option>';
+      repSelect2.innerHTML = '<option value="">-- جميع المناديب --</option>';
+      repSelectDashboard.innerHTML = '<option value="">-- اضغط لاختيار المندوب --</option>';
+      repCount.innerText = reps.length;
+
+      reps.forEach(rep => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-3';
+        item.innerHTML = `
+          <span class="fw-semibold">${rep.name}</span>
+          <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteRep('${rep.id}')"><i class="bi bi-trash"></i></button>
+        `;
+        repList.appendChild(item);
+
+        recordRep.appendChild(new Option(rep.name, rep.id));
+        filterListRep.appendChild(new Option(rep.name, rep.id));
+        repSelect1.appendChild(new Option(rep.name, rep.id));
+        repSelect2.appendChild(new Option(rep.name, rep.id));
+        repSelectDashboard.appendChild(new Option(rep.name, rep.id));
+      });
+    }
+
+    document.getElementById('recordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editRecordId').value;
+      const repId = document.getElementById('recordRep').value;
+      const rep = reps.find(r => r.id === repId);
+      const start = document.getElementById('recordStartDate').value;
+      const end = document.getElementById('recordEndDate').value;
+
+      const payload = {
+        repId: repId,
+        repName: rep ? rep.name : '',
+        startDate: start,
+        endDate: end,
+        monthKey: end.slice(0, 7),
+        sales: parseFloat(document.getElementById('recordSales').value) || 0,
+        collections: parseFloat(document.getElementById('recordColls').value) || 0,
+        note: document.getElementById('recordNote').value.trim()
+      };
+
+      if (id) {
+        await updateDoc(doc(db, "period_summaries", id), payload);
+      } else {
+        await addDoc(collection(db, "period_summaries"), { ...payload, createdAt: serverTimestamp() });
+      }
+      resetRecordForm();
+    });
+
+    window.editRecord = (id) => {
+      const rec = periodRecords.find(r => r.id === id);
+      if (!rec) return;
+      document.getElementById('editRecordId').value = rec.id;
+      document.getElementById('recordRep').value = rec.repId;
+      document.getElementById('recordStartDate').value = rec.startDate;
+      document.getElementById('recordEndDate').value = rec.endDate;
+      document.getElementById('recordSales').value = rec.sales;
+      document.getElementById('recordColls').value = rec.collections;
+      document.getElementById('recordNote').value = rec.note || '';
+
+      document.getElementById('saveRecordBtn').innerHTML = '<i class="bi bi-check2 me-1"></i> حفظ التعديل';
+      document.getElementById('cancelEditRecordBtn').classList.remove('d-none');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.resetRecordForm = () => {
+      document.getElementById('recordForm').reset();
+      document.getElementById('editRecordId').value = '';
+      document.getElementById('saveRecordBtn').innerHTML = '<i class="bi bi-check-circle me-1"></i> حفظ إجمالي الفترة';
+      document.getElementById('cancelEditRecordBtn').classList.add('d-none');
+    };
+
+    window.deleteRecord = async (id) => {
+      if (!confirm("هل أنت متأكد من حذف هذه الفترة؟")) return;
+      await deleteDoc(doc(db, "period_summaries", id));
+    };
+
+    function renderRecordsList() {
+      const tbody = document.getElementById('recordsTableBody');
+      const selectedRep = document.getElementById('filterListRep').value;
+      tbody.innerHTML = '';
+
+      const filtered = periodRecords.filter(r => !selectedRep || r.repId === selectedRep)
+                                    .sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">لا توجد فترات مسجلة</td></tr>';
+        return;
+      }
+
+      filtered.forEach(r => {
+        const diff = (r.sales || 0) - (r.collections || 0);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-bold">${r.repName || '-'}</td>
+          <td>${r.startDate}</td>
+          <td>${r.endDate}</td>
+          <td class="fw-bold text-primary">${Number(r.sales).toLocaleString('ar-SA')} ر.س</td>
+          <td class="fw-bold text-success">${Number(r.collections).toLocaleString('ar-SA')} ر.س</td>
+          <td class="fw-bold">${diff.toLocaleString('ar-SA')} ر.س</td>
+          <td><small class="text-muted">${r.note || '-'}</small></td>
+          <td class="text-center no-print">
+            <button class="btn btn-sm btn-outline-primary me-1 px-2 py-1" onclick="editRecord('${r.id}')"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger px-2 py-1" onclick="deleteRecord('${r.id}')"><i class="bi bi-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('filterListRep').addEventListener('change', renderRecordsList);
+
+    function updateGeneralCompanyStats() {
+      let sales = 0, colls = 0;
+      periodRecords.forEach(r => {
+        sales += Number(r.sales) || 0;
+        colls += Number(r.collections) || 0;
+      });
+      document.getElementById('overviewSales').innerText = sales.toLocaleString('ar-SA') + ' ر.س';
+      document.getElementById('overviewColls').innerText = colls.toLocaleString('ar-SA') + ' ر.س';
+      document.getElementById('overviewDiff').innerText = (sales - colls).toLocaleString('ar-SA') + ' ر.س';
+    }
+
+    window.toggleReportMode = () => {
+      const isCompare = document.getElementById('modeMonthCompare').checked;
+      currentReportMode = isCompare ? 'compare' : 'custom';
+
+      if (isCompare) {
+        document.getElementById('customDateRow').classList.add('d-none');
+        document.getElementById('compareMonthRow').classList.remove('d-none');
+      } else {
+        document.getElementById('customDateRow').classList.remove('d-none');
+        document.getElementById('compareMonthRow').classList.add('d-none');
+      }
+    };
+
+    function getPreviousMonthString(yearMonthStr) {
+      const [y, m] = yearMonthStr.split('-').map(Number);
+      let py = y, pm = m - 1;
+      if (pm === 0) { pm = 12; py -= 1; }
+      return `${py}-${String(pm).padStart(2, '0')}`;
+    }
+
+    window.generateReport = () => {
+      const thead = document.getElementById('summaryReportThead');
+      const tbody = document.getElementById('summaryReportTbody');
+      tbody.innerHTML = '';
+      currentReportRows = [];
+
+      document.getElementById('pdfPrintDate').innerText = 'تاريخ الاستخراج: ' + new Date().toLocaleDateString('ar-SA');
+
+      if (currentReportMode === 'custom') {
+        const start = document.getElementById('repFilterStart').value;
+        const end = document.getElementById('repFilterEnd').value;
+        const repId = document.getElementById('reportRepSelect1').value;
+
+        document.getElementById('pdfPrintPeriod').innerText = `الفترة: من ${start || 'البداية'} إلى ${end || 'اليوم'}`;
+
+        thead.innerHTML = `
+          <tr style="background-color: #f8fafc;">
+            <th>#</th>
+            <th>اسم المندوب</th>
+            <th>إجمالي المبيعات</th>
+            <th>إجمالي التحصيلات</th>
+            <th>نسبة التحصيل %</th>
+            <th>المتبقي بالسوق</th>
+            <th>عدد الفترات</th>
+          </tr>
+        `;
+
+        const filtered = periodRecords.filter(r => {
+          const matchDate = (!start || r.startDate >= start) && (!end || r.endDate <= end);
+          const matchRep = !repId || r.repId === repId;
+          return matchDate && matchRep;
+        });
+
+        const map = {};
+        filtered.forEach(r => {
+          if (!map[r.repId]) {
+            map[r.repId] = { repName: r.repName || 'غير محدد', sales: 0, colls: 0, count: 0 };
+          }
+          map[r.repId].sales += Number(r.sales) || 0;
+          map[r.repId].colls += Number(r.collections) || 0;
+          map[r.repId].count += 1;
+        });
+
+        let totSales = 0, totColls = 0;
+        const rows = Object.values(map);
+
+        if (rows.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-muted">لا توجد بيانات مسجلة في هذا النطاق الزمني.</td></tr>';
+        } else {
+          rows.forEach((row, i) => {
+            totSales += row.sales;
+            totColls += row.colls;
+            const diff = row.sales - row.colls;
+            const pct = row.sales > 0 ? ((row.colls / row.sales) * 100).toFixed(1) : '0';
+
+            currentReportRows.push({
+              index: i + 1,
+              name: row.repName,
+              sales: row.sales,
+              colls: row.colls,
+              pct: pct + '%',
+              diff: diff,
+              count: row.count
+            });
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${i + 1}</td>
+              <td class="fw-bold">${row.repName}</td>
+              <td class="fw-bold text-primary">${row.sales.toLocaleString('ar-SA')} ر.س</td>
+              <td class="fw-bold text-success">${row.colls.toLocaleString('ar-SA')} ر.س</td>
+              <td><span class="badge bg-light text-dark border">${pct}%</span></td>
+              <td class="fw-bold">${diff.toLocaleString('ar-SA')} ر.س</td>
+              <td>${row.count}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+
+        document.getElementById('sumLabelSales').innerText = 'إجمالي مبيعات الفترة:';
+        document.getElementById('sumLabelColls').innerText = 'إجمالي تحصيلات الفترة:';
+        document.getElementById('sumLabelDiff').innerText = 'صافي الفارق:';
+        document.getElementById('repSumSales').innerText = totSales.toLocaleString('ar-SA') + ' ر.س';
+        document.getElementById('repSumColls').innerText = totColls.toLocaleString('ar-SA') + ' ر.س';
+        document.getElementById('repSumDiff').innerText = (totSales - totColls).toLocaleString('ar-SA') + ' ر.س';
+
+      } else {
+        const curMonth = document.getElementById('compareMonthSelect').value;
+        const prevMonth = getPreviousMonthString(curMonth);
+        const repId = document.getElementById('reportRepSelect2').value;
+
+        document.getElementById('pdfPrintPeriod').innerText = `مقارنة أداء: شهر (${curMonth}) مقابل (${prevMonth})`;
+
+        thead.innerHTML = `
+          <tr style="background-color: #f8fafc;">
+            <th rowspan="2" class="align-middle">#</th>
+            <th rowspan="2" class="align-middle">اسم المندوب</th>
+            <th colspan="3">المبيعات</th>
+            <th colspan="3">التحصيلات</th>
+            <th rowspan="2" class="align-middle">متبقي الشهر الحالي</th>
+          </tr>
+          <tr style="background-color: #f1f5f9;">
+            <th>الشهر الحالي (${curMonth})</th>
+            <th>الشهر السابق (${prevMonth})</th>
+            <th>النمو %</th>
+            <th>الشهر الحالي (${curMonth})</th>
+            <th>الشهر السابق (${prevMonth})</th>
+            <th>النمو %</th>
+          </tr>
+        `;
+
+        const targetReps = repId ? reps.filter(r => r.id === repId) : reps;
+        let totCurSales = 0, totPrevSales = 0;
+        let totCurColls = 0, totPrevColls = 0;
+
+        if (targetReps.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" class="py-4 text-muted">لا يوجد مناديب مسجلين بالنظام.</td></tr>';
+        } else {
+          targetReps.forEach((rep, index) => {
+            const repRecords = periodRecords.filter(r => r.repId === rep.id);
+            let curSales = 0, prevSales = 0;
+            let curColls = 0, prevColls = 0;
+
+            repRecords.forEach(r => {
+              const mKey = r.monthKey || r.endDate.slice(0, 7);
+              if (mKey === curMonth) {
+                curSales += Number(r.sales) || 0;
+                curColls += Number(r.collections) || 0;
+              }
+              if (mKey === prevMonth) {
+                prevSales += Number(r.sales) || 0;
+                prevColls += Number(r.collections) || 0;
+              }
+            });
+
+            totCurSales += curSales;
+            totPrevSales += prevSales;
+            totCurColls += curColls;
+            totPrevColls += prevColls;
+
+            const salesDiff = curSales - prevSales;
+            const salesGrowth = prevSales > 0 ? ((salesDiff / prevSales) * 100).toFixed(1) + '%' : (curSales > 0 ? '+100%' : '0%');
+
+            const collsDiff = curColls - prevColls;
+            const collsGrowth = prevColls > 0 ? ((collsDiff / prevColls) * 100).toFixed(1) + '%' : (curColls > 0 ? '+100%' : '0%');
+
+            const curRemaining = curSales - curColls;
+
+            currentReportRows.push({
+              index: index + 1,
+              name: rep.name,
+              curSales, prevSales, salesGrowth,
+              curColls, prevColls, collsGrowth,
+              curRemaining
+            });
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${index + 1}</td>
+              <td class="fw-bold">${rep.name}</td>
+              <td class="text-primary">${curSales.toLocaleString('ar-SA')} ر.س</td>
+              <td>${prevSales.toLocaleString('ar-SA')} ر.س</td>
+              <td class="fw-bold">${salesGrowth}</td>
+              <td class="text-success">${curColls.toLocaleString('ar-SA')} ر.س</td>
+              <td>${prevColls.toLocaleString('ar-SA')} ر.س</td>
+              <td class="fw-bold">${collsGrowth}</td>
+              <td class="fw-bold">${curRemaining.toLocaleString('ar-SA')} ر.س</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+
+        document.getElementById('sumLabelSales').innerText = `إجمالي مبيعات الشهر الحالي (${curMonth}):`;
+        document.getElementById('sumLabelColls').innerText = `إجمالي تحصيلات الشهر الحالي (${curMonth}):`;
+        document.getElementById('sumLabelDiff').innerText = 'المتبقي لتحصيله بالشهر الحالي:';
+        document.getElementById('repSumSales').innerText = totCurSales.toLocaleString('ar-SA') + ' ر.س';
+        document.getElementById('repSumColls').innerText = totCurColls.toLocaleString('ar-SA') + ' ر.س';
+        document.getElementById('repSumDiff').innerText = (totCurSales - totCurColls).toLocaleString('ar-SA') + ' ر.س';
+      }
+    };
+
+    // طباعة وتوليد PDF عربي سليم
+    function printCleanArabicPDF(elementId, title) {
+      const content = document.getElementById(elementId).innerHTML;
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>${title}</title>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+          <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&display=swap" rel="stylesheet">
+          <style>
+            @page {
+              size: A4 landscape;
+              margin: 10mm 12mm;
+            }
+            body {
+              font-family: 'Cairo', Tahoma, Arial, sans-serif !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
+              padding: 10px;
+            }
+            .table {
+              border: 1.5px solid #000000 !important;
+              color: #000000 !important;
+              width: 100% !important;
+            }
+            .table th {
+              background-color: #f1f5f9 !important;
+              color: #000000 !important;
+              border: 1px solid #000000 !important;
+              font-weight: bold !important;
+              text-align: center !important;
+            }
+            .table td {
+              border: 1px solid #000000 !important;
+              color: #000000 !important;
+            }
+            .stat-box {
+              border: 1px solid #000000 !important;
+              padding: 8px;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          ${content}
+        </body>
+        </html>
+      `);
+      doc.close();
+
+      iframe.contentWindow.focus();
+      setTimeout(() => {
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 500);
+    }
+
+    window.exportReportToCleanPDF = () => {
+      if (currentReportRows.length === 0) {
+        alert("يرجى استخراج التقرير أولاً قبل التصدير!");
+        return;
+      }
+      printCleanArabicPDF('printableReportArea', `تقرير_مبيعات_جار_الخليج_${new Date().toISOString().slice(0, 10)}`);
+    };
+
+    window.exportRepDashboardToCleanPDF = () => {
+      const repId = document.getElementById('repSelectDashboard').value;
+      if (!repId) {
+        alert("يرجى اختيار المندوب أولاً!");
+        return;
+      }
+      const repObj = reps.find(r => r.id === repId);
+      const repName = repObj ? repObj.name : 'مندوب';
+      const monthVal = document.getElementById('repMonthPicker').value;
+
+      printCleanArabicPDF('printableRepDashboardArea', `تقرير_المندوب_${repName}_${monthVal}`);
+    };
+
+    window.exportReportToExcel = () => {
+      if (currentReportRows.length === 0) {
+        alert("يرجى استخراج التقرير أولاً لتحميل البيانات!");
+        return;
+      }
+      let csv = "\uFEFF";
+      
+      if (currentReportMode === 'custom') {
+        csv += "م,اسم المندوب,إجمالي المبيعات,إجمالي التحصيلات,نسبة التحصيل %,المتبقي بالسوق,عدد الفترات\n";
+        currentReportRows.forEach(r => {
+          csv += `${r.index},"${r.name}",${r.sales},${r.colls},"${r.pct}",${r.diff},${r.count}\n`;
+        });
+      } else {
+        const curM = document.getElementById('compareMonthSelect').value;
+        const prevM = getPreviousMonthString(curM);
+        csv += `م,اسم المندوب,مبيعات (${curM}),مبيعات (${prevM}),نمو المبيعات,تحصيلات (${curM}),تحصيلات (${prevM}),نمو التحصيلات,متبقي الشهر الحالي\n`;
+        currentReportRows.forEach(r => {
+          csv += `${r.index},"${r.name}",${r.curSales},${r.prevSales},"${r.salesGrowth}",${r.curColls},${r.prevColls},"${r.collsGrowth}",${r.curRemaining}\n`;
+        });
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `تقرير_مقارنة_جار_الخليج_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    };
+
+    // استعراض المندوب وتحديث الواجهة
+    document.getElementById('repSelectDashboard').addEventListener('change', updateRepView);
+    document.getElementById('repMonthPicker').addEventListener('change', updateRepView);
+
+    function updateRepView() {
+      const repId = document.getElementById('repSelectDashboard').value;
+      const monthVal = document.getElementById('repMonthPicker').value;
+      const stats = document.getElementById('repStatsContainer');
+      const placeholder = document.getElementById('repPlaceholder');
+
+      if (!repId) {
+        stats.style.display = 'none';
+        placeholder.style.display = 'block';
+        return;
+      }
+
+      stats.style.display = 'block';
+      placeholder.style.display = 'none';
+
+      const repObj = reps.find(r => r.id === repId);
+      const repName = repObj ? repObj.name : 'غير محدد';
+
+      document.getElementById('pdfRepName').innerText = repName;
+      document.getElementById('pdfRepMonth').innerText = monthVal;
+      document.getElementById('pdfRepDate').innerText = 'تاريخ الإصدار: ' + new Date().toLocaleDateString('ar-SA');
+
+      const prevMonthVal = getPreviousMonthString(monthVal);
+      const repRecords = periodRecords.filter(r => r.repId === repId);
+
+      let curSales = 0, prevSales = 0;
+      let curColls = 0, prevColls = 0;
+
+      repRecords.forEach(r => {
+        const mKey = r.monthKey || r.endDate.slice(0, 7);
+        if (mKey === monthVal) {
+          curSales += Number(r.sales) || 0;
+          curColls += Number(r.collections) || 0;
+        }
+        if (mKey === prevMonthVal) {
+          prevSales += Number(r.sales) || 0;
+          prevColls += Number(r.collections) || 0;
+        }
+      });
+
+      document.getElementById('curMonthSales').innerText = curSales.toLocaleString('ar-SA') + ' ر.س';
+      document.getElementById('curMonthColls').innerText = curColls.toLocaleString('ar-SA') + ' ر.س';
+      document.getElementById('curMonthDiff').innerText = (curSales - curColls).toLocaleString('ar-SA') + ' ر.س';
+
+      renderComparisonNote('salesComparisonBadge', curSales, prevSales);
+      renderComparisonNote('collsComparisonBadge', curColls, prevColls);
+
+      const tbody = document.getElementById('repMonthTableBody');
+      tbody.innerHTML = '';
+
+      const monthList = repRecords.filter(r => (r.monthKey || r.endDate.slice(0, 7)) === monthVal)
+                                  .sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
+
+      if (monthList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">لا توجد فترات مسجلة لهذا المندوب في هذا الشهر.</td></tr>';
+      } else {
+        monthList.forEach(r => {
+          const diff = (r.sales || 0) - (r.collections || 0);
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${r.startDate}</td>
+            <td>${r.endDate}</td>
+            <td class="fw-bold text-primary">${Number(r.sales).toLocaleString('ar-SA')} ر.س</td>
+            <td class="fw-bold text-success">${Number(r.collections).toLocaleString('ar-SA')} ر.س</td>
+            <td class="fw-bold">${diff.toLocaleString('ar-SA')} ر.س</td>
+            <td><small class="text-muted">${r.note || '-'}</small></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function renderComparisonNote(elId, cur, prev) {
+      const el = document.getElementById(elId);
+      const diff = cur - prev;
+      if (prev === 0) {
+        el.innerHTML = cur === 0 ? 'لا توجد بيانات بالشهر السابق' : `السابق: 0 ر.س (+${cur.toLocaleString('ar-SA')})`;
+        return;
+      }
+      const pct = ((diff / prev) * 100).toFixed(1);
+      const sign = diff >= 0 ? '+' : '';
+      el.innerHTML = `السابق: ${prev.toLocaleString('ar-SA')} ر.س | النمو: <strong>${sign}${pct}%</strong> (${sign}${diff.toLocaleString('ar-SA')})`;
+    }
+
+    initSync();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

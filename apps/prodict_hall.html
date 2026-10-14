@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جار الخليج - نظام دفتر الخلطة وتقارير الإنتاج والتكاليف</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --bg-color: #f4f6f9;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color); 
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        .card { 
+            border: none; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            margin-bottom: 15px; 
+        }
+
+        .card-header { 
+            background-color: #1e293b; 
+            color: #fff; 
+            font-weight: bold; 
+            border-radius: 12px 12px 0 0 !important; 
+        }
+
+        .calc-box { 
+            background-color: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 10px; 
+            padding: 12px; 
+        }
+
+        .nav-tabs .nav-link { 
+            font-weight: bold; 
+            color: #475569; 
+            white-space: nowrap;
+            padding: 10px 15px;
+        }
+
+        .nav-tabs .nav-link.active { 
+            color: var(--primary-color); 
+            border-bottom: 3px solid var(--primary-color); 
+        }
+
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-responsive thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background-color: #212529 !important;
+            color: #fff;
+        }
+
+        .print-only-report, .print-only-production { display: none; }
+
+        @media (max-width: 767.98px) {
+            .container-fluid { padding-left: 10px !important; padding-right: 10px !important; }
+            .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+            .nav-tabs .nav-item { flex: 0 0 auto; }
+            .fs-5 { font-size: 1rem !important; }
+            .fs-3 { font-size: 1.4rem !important; }
+            .btn-lg { padding: 8px 12px; font-size: 0.95rem; }
+        }
+
+        @media print {
+            .no-print, nav, .card, form, button, .nav-tabs, .tab-content, .input-group-text, .form-control, .form-select { display: none !important; }
+            body { background: #fff !important; color: #000 !important; font-size: 11pt; padding: 0; margin: 0; }
+            
+            body.print-mode-full .print-only-report { display: block !important; padding: 10px; }
+            body.print-mode-prod .print-only-production { display: block !important; padding: 10px; }
+            
+            .excel-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
+            .excel-table th, .excel-table td { border: 1px solid #000 !important; padding: 6px 10px; text-align: center; vertical-align: middle; }
+            .excel-header-bg { background-color: #212529 !important; color: #fff !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            .excel-sub-bg { background-color: #f1f5f9 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            .excel-total-bg { background-color: #d1e7dd !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            .excel-wip-bg { background-color: #fff3cd !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+
+            @page { size: A4 portrait; margin: 10mm; }
+        }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="mixing-ledger"></script>
+</head>
+<body class="print-mode-full">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm no-print">
+        <div class="container-fluid px-3">
+            <a class="navbar-brand fw-bold fs-6 fs-md-5" href="#"><i class="fa-solid fa-industry me-2 text-warning"></i> شركة جار الخليج للصناعة</a>
+            <span class="navbar-text text-light small d-none d-md-block" id="current-date"></span>
+        </div>
+    </nav>
+
+    <div class="container-fluid my-3 px-2 px-md-4 no-print">
+        
+        <ul class="nav nav-tabs mb-3" id="mainTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="entry-tab" data-bs-toggle="tab" data-bs-target="#entry-panel" type="button"><i class="fa-solid fa-pen-to-square me-1"></i> إدخال اليومية والتقليب</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link text-primary" id="item-master-tab" data-bs-toggle="tab" data-bs-target="#item-master-panel" type="button"><i class="fa-solid fa-boxes-stacked me-1"></i> إدارة الأصناف والمنتجات</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link text-warning" id="costs-tab" data-bs-toggle="tab" data-bs-target="#costs-panel" type="button" onclick="calculateCostsTab()"><i class="fa-solid fa-calculator me-1"></i> تكاليف الخلطة والأصناف</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-panel" type="button" onclick="loadHistoryLogs()"><i class="fa-solid fa-clock-rotate-left me-1"></i> أرشيف السجلات</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link text-success" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials-panel" type="button" onclick="loadMaterialsReport()"><i class="fa-solid fa-chart-pie me-1"></i> مراقبة وتقارير المواد</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainTabContent">
+            
+            <!-- TAB 1: اليومية والتقليب -->
+            <div class="tab-pane fade show active" id="entry-panel">
+                
+                <div class="card p-2 bg-light border-primary mb-3">
+                    <div class="row align-items-center g-2">
+                        <div class="col-12 col-md-4 d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="navigateLog(-1)" title="السجل السابق"><i class="fa-solid fa-arrow-right me-1"></i> السابق</button>
+                            <span class="badge bg-dark px-2 py-2 small" id="record-nav-indicator">سجل جديد</span>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="navigateLog(1)" title="السجل التالي">التالي <i class="fa-solid fa-arrow-left ms-1"></i></button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEditMode()"><i class="fa-solid fa-plus me-1"></i> جديد</button>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="date" class="form-control" id="search-date-input">
+                                <button class="btn btn-primary" type="button" onclick="searchLogByDate()">بحث بالتاريخ</button>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3 text-end">
+                            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" onclick="calculateDepartmentConsumption()"><i class="fa-solid fa-chart-line me-1"></i> توزيع استهلاك الأقسام</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-3">
+                    <div class="row align-items-center g-2 g-md-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small"><i class="fa-solid fa-calendar-day text-primary me-1"></i> تاريخ اليومية:</label>
+                            <input type="date" class="form-control form-control-sm" id="entry-date">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small"><i class="fa-solid fa-layer-group text-primary me-1"></i> القسم التشغيلي:</label>
+                            <select class="form-select form-select-sm" id="section-select" onchange="loadDepartmentData()">
+                                <option value="section_spray">قسم الرش (خلطات الشاور والبانيوهات)</option>
+                                <option value="section_classic">قسم انتاج / تركيب الكلاسيكيات</option>
+                                <option value="section_special">قسم الأعمال الخاصة (خزانات ولوحات)</option>
+                                <option value="section_colors">قسم الألوان</option>
+                                <option value="section_molds">قسم النحت والقوالب</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-danger"><i class="fa-solid fa-rotate-left me-1"></i> الخلطة المرحّلة من الأمس (WIP):</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.01" class="form-control fw-bold text-danger border-danger" id="carried-over-input" value="0" oninput="calculateTotals()">
+                                <span class="input-group-text bg-danger text-white">كجم</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="form-daily-sheet">
+                    <input type="hidden" id="editing-doc-id" value="">
+                    
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-5">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white py-2">
+                                    <i class="fa-solid fa-flask me-2"></i> 1. مكونات الخلطة المضافة اليوم (كجم)
+                                </div>
+                                <div class="card-body p-2 p-md-3">
+                                    <div class="row g-2" id="materials-inputs-container"></div>
+                                    <hr class="my-3">
+                                    <div class="calc-box">
+                                        <div class="row text-center fw-bold g-1">
+                                            <div class="col-6">
+                                                <div class="text-muted small">مجموع المضاف</div>
+                                                <div class="fs-5 text-primary" id="added-sum">0.00 كجم</div>
+                                            </div>
+                                            <div class="col-6 border-start">
+                                                <div class="text-muted small">إجمالي المتاح</div>
+                                                <div class="fs-5 text-dark" id="total-available">0.00 كجم</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <label class="form-label fw-bold small text-danger">الخلطة المتبقية بالحوض (تُرَحّل للغد)</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" step="0.01" class="form-control border-danger fw-bold" id="remaining-today" value="0" oninput="calculateTotals()">
+                                            <span class="input-group-text">كجم</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3 p-2 border rounded bg-light">
+                                        <h6 class="fw-bold small text-secondary mb-2"><i class="fa-solid fa-diagram-project me-1"></i> استهلاك الأقسام التفصيلي من الخلطة (كجم)</h6>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="small text-muted">قسم الرش</label>
+                                                <input type="number" step="0.01" class="form-control form-control-sm dept-consumed" id="dept-cons-spray" value="0">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="small text-muted">قسم الكلاسيكيات</label>
+                                                <input type="number" step="0.01" class="form-control form-control-sm dept-consumed" id="dept-cons-classic" value="0">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="small text-muted">الأعمال الخاصة</label>
+                                                <input type="number" step="0.01" class="form-control form-control-sm dept-consumed" id="dept-cons-special" value="0">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="small text-muted">الألوان والقوالب</label>
+                                                <input type="number" step="0.01" class="form-control form-control-sm dept-consumed" id="dept-cons-molds" value="0">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="calc-box mt-3 bg-light">
+                                        <div class="text-center fw-bold">
+                                            <div class="text-muted small">الصافي المستهلك الفعلي بالإنتاج اليوم</div>
+                                            <div class="fs-4 text-danger" id="actual-consumed">0.00 كجم</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-7">
+                            <div class="card h-100">
+                                <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
+                                    <span><i class="fa-solid fa-receipt me-2"></i> 2. الأصناف المنتجة وتكاليفها</span>
+                                    <span class="badge bg-warning text-dark" id="prod-items-count">0 صنف</span>
+                                </div>
+                                <div class="card-body p-2 p-md-3">
+                                    
+                                    <div class="p-2 bg-light rounded border mb-3">
+                                        <div class="row g-2">
+                                            <div class="col-12 col-sm-6 col-md-4">
+                                                <input type="text" class="form-control form-control-sm" id="p-item-name" placeholder="اسم الصنف (شاور/بانيو)">
+                                            </div>
+                                            <div class="col-6 col-sm-3 col-md-2">
+                                                <input type="text" class="form-control form-control-sm" id="p-item-size" placeholder="المقاس">
+                                            </div>
+                                            <div class="col-6 col-sm-3 col-md-2">
+                                                <input type="text" class="form-control form-control-sm" id="p-item-model" placeholder="الموديل">
+                                            </div>
+                                            <div class="col-4 col-sm-3 col-md-2">
+                                                <input type="number" class="form-control form-control-sm" id="p-item-qty" placeholder="الكمية" min="1" value="1">
+                                            </div>
+                                            <div class="col-4 col-sm-3 col-md-2">
+                                                <input type="number" step="0.01" class="form-control form-control-sm" id="p-item-unit-cost" placeholder="تكلفة القطعة">
+                                            </div>
+                                            <div class="col-8 col-sm-9 col-md-10">
+                                                <input type="text" class="form-control form-control-sm" id="p-item-notes" placeholder="ملاحظات الجودة أو اللون">
+                                            </div>
+                                            <div class="col-4 col-sm-3 col-md-2">
+                                                <button type="button" class="btn btn-primary btn-sm w-100 fw-bold" onclick="addProductionRow()"><i class="fa-solid fa-plus me-1"></i> إضافة</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive mb-3">
+                                        <table class="table table-bordered table-striped text-center align-middle small mb-0">
+                                            <thead class="table-secondary">
+                                                <tr>
+                                                    <th>م</th>
+                                                    <th>الصنف</th>
+                                                    <th>المقاس</th>
+                                                    <th>الموديل</th>
+                                                    <th>الكمية</th>
+                                                    <th>ت. القطعة</th>
+                                                    <th>الإجمالي</th>
+                                                    <th>حذف</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="production-items-body">
+                                                <tr id="empty-row"><td colspan="8" class="text-muted small">لم يتم إضافة أي منتجات حتى الآن</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">ملاحظات عامة / انحراف الأوزان الفعلي</label>
+                                        <input type="text" class="form-control form-control-sm" id="variance-notes" placeholder="مثال: زيادة وزن في البانيو 150">
+                                    </div>
+
+                                    <div class="row g-2">
+                                        <div class="col-12 col-md-6">
+                                            <button type="submit" id="btn-save-sheet" class="btn btn-success w-100 btn-md shadow fw-bold">
+                                                <i class="fa-solid fa-floppy-disk me-1"></i> حفظ واعتماد اليومية
+                                            </button>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <button type="button" class="btn btn-danger w-100 btn-md shadow fw-bold" onclick="printExcelReport('full')">
+                                                <i class="fa-solid fa-print me-1"></i> التقرير الكامل
+                                            </button>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <button type="button" class="btn btn-info w-100 btn-md text-white shadow fw-bold" onclick="printExcelReport('prod')">
+                                                <i class="fa-solid fa-file-invoice me-1"></i> فاتورة الإنتاج
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 2: إدارة الأصناف والمنتجات Master Data & BOM -->
+            <div class="tab-pane fade" id="item-master-panel">
+                <div class="card p-3 p-md-4">
+                    <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-boxes-stacked me-2"></i> إدارة الأصناف والمنتجات (Master Data)</h5>
+                    
+                    <form id="itemMasterForm" class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">نوع الصنف</label>
+                                <select id="masterItemType" class="form-select form-select-sm" onchange="toggleMasterItemFields()" required>
+                                    <option value="raw_material">مادة خام</option>
+                                    <option value="finished_good">منتج نهائي</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">كود الصنف (Code)</label>
+                                <input type="text" id="masterItemCode" class="form-control form-control-sm" placeholder="مثال: RM-001" required>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">اسم الصنف</label>
+                                <input type="text" id="masterItemName" class="form-control form-control-sm" placeholder="اسم المادة أو المنتج" required>
+                            </div>
+                            <div class="col-12 col-md-3" id="masterUnitContainer">
+                                <label class="form-label fw-bold small">الوحدة</label>
+                                <select id="masterItemUnit" class="form-select form-select-sm">
+                                    <option value="كجم">كجم</option>
+                                    <option value="لتر">لتر</option>
+                                    <option value="حبة">حبة</option>
+                                    <option value="برميل">برميل</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">سعر التكلفة (ر.س)</label>
+                                <input type="number" step="any" id="masterCostPrice" class="form-control form-control-sm" value="0">
+                            </div>
+                            <div class="col-12 col-md-3 d-none" id="masterSellingPriceContainer">
+                                <label class="form-label fw-bold small">سعر البيع (ر.س)</label>
+                                <input type="number" step="any" id="masterSellingPrice" class="form-control form-control-sm" value="0">
+                            </div>
+                        </div>
+
+                        <!-- قسم شجرة المكونات BOM للمنتجات النهائية -->
+                        <div id="masterBomSection" class="mt-3 p-3 border rounded bg-light d-none">
+                            <h6 class="text-primary fw-bold mb-2"><i class="fa-solid fa-sitemap me-2"></i> مكونات التصنيع من المواد الخام (شجرة المنتج BOM)</h6>
+                            <div class="table-responsive mb-2">
+                                <table class="table table-bordered table-sm align-middle bg-white text-center mb-0">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>المادة الخام</th>
+                                            <th style="width: 200px;">الكمية المطلوب استهلاكها</th>
+                                            <th>الوحدة</th>
+                                            <th style="width: 50px;">إجراء</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="masterBomTableBody"></tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-outline-success btn-sm fw-bold" onclick="addMasterBomRow()">
+                                <i class="fa-solid fa-plus me-1"></i> إضافة مادة خام للخلطة
+                            </button>
+                        </div>
+
+                        <div class="mt-3 text-end">
+                            <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> حفظ الصنف بقاعدة البيانات
+                            </button>
+                        </div>
+                    </form>
+
+                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-list me-1"></i> دليل الأصناف والمنتجات المسجلة</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped text-center align-middle small mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>الكود</th>
+                                    <th>الاسم</th>
+                                    <th>النوع</th>
+                                    <th>الوحدة</th>
+                                    <th>التكلفة</th>
+                                    <th>سعر البيع</th>
+                                    <th>حذف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="masterItemsListBody">
+                                <tr><td colspan="7" class="text-muted">جاري تحميل الأصناف...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: التحليل المالي والتكاليف -->
+            <div class="tab-pane fade" id="costs-panel">
+                <div class="card p-3 p-md-4">
+                    <h5 class="fw-bold mb-3 text-warning"><i class="fa-solid fa-coins me-2"></i> التحليل المالي وتكاليف الخلطة والأصناف</h5>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 bg-light border rounded text-center">
+                                <span class="text-muted small fw-bold">إجمالي تكلفة مواد الخلطة اليوم</span>
+                                <h3 class="fw-bold text-primary mt-2" id="cost-total-materials">0.00 ر.س</h3>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 bg-light border rounded text-center">
+                                <span class="text-muted small fw-bold">متوسط تكلفة كجم خلطة</span>
+                                <h3 class="fw-bold text-success mt-2" id="cost-per-kg">0.00 ر.س</h3>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 bg-light border rounded text-center">
+                                <span class="text-muted small fw-bold">إجمالي تكلفة الأصناف المنتجة</span>
+                                <h3 class="fw-bold text-dark mt-2" id="cost-total-products">0.00 ر.س</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-tags me-1"></i> أسعار المواد الخام المعتمدة للخلطة</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-striped text-center align-middle small mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>م</th>
+                                    <th>اسم المادة الخام</th>
+                                    <th>الكمية بالخلطة (كجم)</th>
+                                    <th>سعر الكيلو (ر.س)</th>
+                                    <th>إجمالي تكلفة المادة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cost-materials-table-body">
+                                <tr><td colspan="5" class="text-muted">قم بإدخال الكميات باليومية لرؤية التكاليف</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: أرشيف السجلات -->
+            <div class="tab-pane fade" id="history-panel">
+                <div class="card p-3">
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col-12 col-md-5">
+                            <label class="form-label fw-bold small">تصفية حسب القسم:</label>
+                            <select class="form-select form-select-sm" id="filter-section" onchange="loadHistoryLogs()">
+                                <option value="ALL">جميع الأقسام</option>
+                                <option value="section_spray">قسم الرش</option>
+                                <option value="section_classic">قسم الكلاسيكيات</option>
+                                <option value="section_special">قسم الأعمال الخاصة</option>
+                                <option value="section_colors">قسم الألوان</option>
+                                <option value="section_molds">قسم النحت والقوالب</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-7 text-end">
+                            <button class="btn btn-sm btn-outline-primary w-100 w-md-auto" onclick="loadHistoryLogs()"><i class="fa-solid fa-arrows-rotate me-1"></i> تحديث السجلات</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered align-middle text-center small mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>القسم</th>
+                                    <th>المرحّل</th>
+                                    <th>المضاف</th>
+                                    <th>المستهلك</th>
+                                    <th>المتبقي</th>
+                                    <th>القطع</th>
+                                    <th style="min-width: 140px;">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                <tr><td colspan="8" class="text-muted">جاري تحميل السجلات...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: مراقبة المواد -->
+            <div class="tab-pane fade" id="materials-panel">
+                <div class="card p-3 p-md-4">
+                    <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-sliders me-2"></i> مراقبة استهلاك وتحركات المواد الخام</h5>
+                    
+                    <div class="row g-2 bg-light p-2 p-md-3 rounded border mb-3 align-items-end">
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="form-label fw-bold small">نطاق التاريخ:</label>
+                            <select class="form-select form-select-sm" id="mat-date-range" onchange="toggleCustomDates()">
+                                <option value="ALL">كل الفترات السابقة</option>
+                                <option value="TODAY">اليوم فقط</option>
+                                <option value="THIS_MONTH">خلال هذا الشهر</option>
+                                <option value="CUSTOM">بين تاريخين محددين</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2 d-none" id="custom-date-start-box">
+                            <label class="form-label fw-bold small">من تاريخ:</label>
+                            <input type="date" class="form-control form-control-sm" id="mat-date-start">
+                        </div>
+                        <div class="col-6 col-md-2 d-none" id="custom-date-end-box">
+                            <label class="form-label fw-bold small">إلى تاريخ:</label>
+                            <input type="date" class="form-control form-control-sm" id="mat-date-end">
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="form-label fw-bold small">تحديد المادة الخام:</label>
+                            <select class="form-select form-select-sm" id="mat-filter-select">
+                                <option value="ALL">جميع المواد الخام</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <button class="btn btn-primary btn-sm w-100 fw-bold" onclick="loadMaterialsReport()"><i class="fa-solid fa-filter me-1"></i> تصفية</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3 text-center">
+                        <div class="col-12 col-sm-4">
+                            <div class="p-2 bg-primary text-white rounded shadow-sm">
+                                <small>إجمالي المواد المضافة</small>
+                                <h4 class="fw-bold mb-0" id="stats-total-added">0.00 كجم</h4>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <div class="p-2 bg-danger text-white rounded shadow-sm">
+                                <small>الصافي المستهلك الفعلي</small>
+                                <h4 class="fw-bold mb-0" id="stats-total-consumed">0.00 كجم</h4>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <div class="p-2 bg-warning text-dark rounded shadow-sm">
+                                <small>إجمالي الخلطات المرحّلة (WIP)</small>
+                                <h4 class="fw-bold mb-0" id="stats-total-carried">0.00 كجم</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-list-check me-1"></i> تفاصيل حركة المواد بالوحدات</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped text-center align-middle small mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>م</th>
+                                    <th>اسم المادة الخام</th>
+                                    <th>الوحدة</th>
+                                    <th>إجمالي المضاف</th>
+                                    <th>نسبة المشاركة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="materials-report-table-body">
+                                <tr><td colspan="5" class="text-muted">اضغط على تصفية التقرير لعرض البيانات...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- طباعة تقرير اليومية الكامل -->
+    <div class="print-only-report">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-2 border-dark">
+            <div>
+                <h3 class="fw-bold mb-1" style="color: #0d6efd;">شركة جار الخليج للصناعة</h3>
+                <h6 class="fw-bold text-muted mb-0">مصنع منتجات الفايبر جلاس والأكريليك</h6>
+            </div>
+            <div>
+                <span class="border border-dark px-3 py-2 fw-bold bg-light">تقرير يومية خلطة الإنتاج والتكاليف</span>
+            </div>
+        </div>
+
+        <table class="excel-table">
+            <tr>
+                <td class="excel-sub-bg" style="width: 15%;">التاريخ:</td>
+                <td id="p-date" class="fw-bold" style="width: 35%;"></td>
+                <td class="excel-sub-bg" style="width: 15%;">القسم التشغيلي:</td>
+                <td id="p-section" class="fw-bold text-primary" style="width: 35%;"></td>
+            </tr>
+        </table>
+
+        <h6 class="fw-bold mb-2"><i class="fa-solid fa-flask me-1"></i> أولاً: بيان الخلطة والمنصرف من المواد الخام (كجم)</h6>
+        <table class="excel-table">
+            <thead>
+                <tr class="excel-header-bg">
+                    <th style="width: 10%;">م</th>
+                    <th style="width: 50%;">اسم المادة الخام</th>
+                    <th style="width: 20%;">وحدة القياس</th>
+                    <th style="width: 20%;">الكمية المضافة اليوم</th>
+                </tr>
+            </thead>
+            <tbody id="p-materials-body"></tbody>
+            <tfoot>
+                <tr class="excel-sub-bg">
+                    <td colspan="3" class="text-end pe-3">مجموع المضاف للخلطة اليوم:</td>
+                    <td id="p-added-sum" class="text-primary fw-bold">0.00 كجم</td>
+                </tr>
+                <tr class="excel-wip-bg">
+                    <td colspan="3" class="text-end pe-3">(+) الخلطة المرحّلة من الأمس (WIP):</td>
+                    <td id="p-carried-over">0.00 كجم</td>
+                </tr>
+                <tr class="excel-total-bg">
+                    <td colspan="3" class="text-end pe-3">(=) إجمالي الخلطة المتاحة للعمل:</td>
+                    <td id="p-total-available">0.00 كجم</td>
+                </tr>
+                <tr class="excel-wip-bg">
+                    <td colspan="3" class="text-end pe-3">(-) الخلطة المتبقية بالحوض نهاية اليوم (تُرَحّل للغد):</td>
+                    <td id="p-remaining">0.00 كجم</td>
+                </tr>
+                <tr class="excel-header-bg">
+                    <td colspan="3" class="text-end pe-3 fs-6">صافي الاستهلاك الفعلي بالإنتاج اليوم:</td>
+                    <td id="p-actual-consumed" class="fs-6 text-warning">0.00 كجم</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <h6 class="fw-bold mb-2 mt-4"><i class="fa-solid fa-industry me-1"></i> ثانياً: فاتورة الإنتاج الفعلي وتكلفة القطع</h6>
+        <table class="excel-table">
+            <thead>
+                <tr class="excel-header-bg">
+                    <th>م</th>
+                    <th>اسم الصنف</th>
+                    <th>المقاس</th>
+                    <th>الموديل</th>
+                    <th>الكمية</th>
+                    <th>تكلفة القطعة</th>
+                    <th>ملاحظات</th>
+                </tr>
+            </thead>
+            <tbody id="p-production-table-body"></tbody>
+        </table>
+
+        <p class="mt-2 fw-bold text-danger">ملاحظات انحراف الأوزان: <span id="p-notes-text" class="fw-normal text-dark"></span></p>
+
+        <div class="row text-center mt-5 pt-3">
+            <div class="col-4">
+                <p class="fw-bold mb-4">فني الخلط والرش</p>
+                <p class="text-muted">..............................</p>
+            </div>
+            <div class="col-4">
+                <p class="fw-bold mb-4">مراقب الإنتاج</p>
+                <p class="text-muted">..............................</p>
+            </div>
+            <div class="col-4">
+                <p class="fw-bold mb-4">اعتماد إدارة المصنع</p>
+                <p class="text-muted">..............................</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- طباعة سند تسليم الإنتاج -->
+    <div class="print-only-production">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-2 border-dark">
+            <div>
+                <h3 class="fw-bold mb-1" style="color: #0d6efd;">شركة جار الخليج للصناعة</h3>
+                <h6 class="fw-bold text-muted mb-0">مصنع منتجات الفايبر جلاس والأكريليك</h6>
+            </div>
+            <div>
+                <span class="border border-dark px-3 py-2 fw-bold bg-info text-white">فاتورة / سند تسليم الإنتاج الجاهز</span>
+            </div>
+        </div>
+
+        <table class="excel-table mb-4">
+            <tr>
+                <td class="excel-sub-bg" style="width: 15%;">تاريخ الإنجاز:</td>
+                <td id="p2-date" class="fw-bold" style="width: 35%;"></td>
+                <td class="excel-sub-bg" style="width: 15%;">القسم المنتِج:</td>
+                <td id="p2-section" class="fw-bold text-primary" style="width: 35%;"></td>
+            </tr>
+        </table>
+
+        <h5 class="fw-bold mb-3"><i class="fa-solid fa-boxes-stacked me-2"></i> تفاصيل أصناف الإنتاج الجاهزة للتسليم للمستودع</h5>
+        <table class="excel-table">
+            <thead>
+                <tr class="excel-header-bg">
+                    <th>م</th>
+                    <th>اسم الصنف المنتَج</th>
+                    <th>المقاس</th>
+                    <th>الموديل</th>
+                    <th>الكمية المنتجة</th>
+                    <th>ملاحظات الجودة والحالة</th>
+                </tr>
+            </thead>
+            <tbody id="p2-production-table-body"></tbody>
+        </table>
+
+        <p class="mt-2 text-muted">ملاحظات التشغيل: <span id="p2-notes-text" class="fw-bold text-dark"></span></p>
+
+        <div class="row text-center mt-5 pt-4">
+            <div class="col-4">
+                <p class="fw-bold mb-4">المشرف/المُسلم</p>
+                <p class="text-muted">..............................</p>
+            </div>
+            <div class="col-4">
+                <p class="fw-bold mb-4">مستلم الإنتاج (المستودع)</p>
+                <p class="text-muted">..............................</p>
+            </div>
+            <div class="col-4">
+                <p class="fw-bold mb-4">اعتماد الجودة</p>
+                <p class="text-muted">..............................</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXvM71s8BrNbL_S9SEXw22bB1jnmM1Nls",
+            authDomain: "jar-alkhaleej-factory.firebaseapp.com",
+            projectId: "jar-alkhaleej-factory",
+            storageBucket: "jar-alkhaleej-factory.firebasestorage.app",
+            messagingSenderId: "638319513488",
+            appId: "1:638319513488:web:a012d1e44bcb296a1a2d15"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let rawMaterialsList = [];
+        let fetchedLogs = [];
+        let productionItemList = [];
+        let currentLogIndex = -1;
+
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+
+        async function initPage() {
+            listenToMasterItems();
+            await fetchAllLogsForNavigation();
+            loadDepartmentData();
+        }
+
+        /* الربط المباشر وقراءة الأصناف والمواد الخام تلقائياً من Firestore */
+        function listenToMasterItems() {
+            const container = document.getElementById('materials-inputs-container');
+            const selectFilter = document.getElementById('mat-filter-select');
+            const masterBody = document.getElementById('masterItemsListBody');
+
+            db.collection("items").onSnapshot(snapshot => {
+                rawMaterialsList = [];
+                container.innerHTML = '';
+                selectFilter.innerHTML = '<option value="ALL">جميع المواد الخام</option>';
+                masterBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    let mat = { id: doc.id, ...doc.data() };
+                    
+                    // استبدال مسمى بودرة السباك ببودرة الكالسيوم
+                    if (mat.itemName && mat.itemName.includes("بودرة السباك")) {
+                        mat.itemName = mat.itemName.replace("بودرة السباك", "بودرة الكالسيوم");
+                    }
+
+                    if (mat.itemType === "raw_material" || !mat.itemType) {
+                        mat.name = mat.itemName || mat.name; // لضمان التوافقية
+                        rawMaterialsList.push(mat);
+
+                        container.innerHTML += `
+                            <div class="col-6 col-sm-6 col-md-6">
+                                <label class="form-label small fw-bold mb-1">${mat.name}</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" step="0.01" class="form-control mat-input" id="mat-${mat.id}" value="0" oninput="calculateTotals()">
+                                    <span class="input-group-text p-1">${mat.unit || 'كجم'}</span>
+                                </div>
+                            </div>
+                        `;
+
+                        selectFilter.innerHTML += `<option value="${mat.id}">${mat.name}</option>`;
+                    }
+
+                    masterBody.innerHTML += `
+                        <tr>
+                            <td>${mat.itemCode || '-'}</td>
+                            <td class="fw-bold">${mat.itemName || mat.name}</td>
+                            <td><span class="badge ${mat.itemType === 'finished_good' ? 'bg-success' : 'bg-info'}">${mat.itemType === 'finished_good' ? 'منتج نهائي' : 'مادة خام'}</span></td>
+                            <td>${mat.unit || '-'}</td>
+                            <td>${(mat.costPrice || mat.pricePerKg || 0).toFixed(2)} ر.س</td>
+                            <td>${mat.sellingPrice ? mat.sellingPrice.toFixed(2) + ' ر.س' : '-'}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteMasterItem('${mat.id}')"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        /* وظائف إدارة الأصناف والـ BOM */
+        function toggleMasterItemFields() {
+            const type = document.getElementById("masterItemType").value;
+            const unitContainer = document.getElementById("masterUnitContainer");
+            const sellingPriceContainer = document.getElementById("masterSellingPriceContainer");
+            const bomSection = document.getElementById("masterBomSection");
+
+            if (type === "finished_good") {
+                unitContainer.classList.add("d-none");
+                sellingPriceContainer.classList.remove("d-none");
+                bomSection.classList.remove("d-none");
+            } else {
+                unitContainer.classList.remove("d-none");
+                sellingPriceContainer.classList.add("d-none");
+                bomSection.classList.add("d-none");
+            }
+        }
+
+        function addMasterBomRow() {
+            const tbody = document.getElementById("masterBomTableBody");
+            const rowId = Date.now();
+            
+            let optionsHtml = '<option value="">اختر المادة الخام...</option>';
+            rawMaterialsList.forEach(item => {
+                optionsHtml += `<option value="${item.id}" data-unit="${item.unit || 'كجم'}">${item.name} (${item.itemCode || 'RM'})</option>`;
+            });
+
+            const rowHtml = `
+                <tr id="bom_row_${rowId}">
+                    <td>
+                        <select class="form-select form-select-sm bom-raw-id" onchange="updateMasterBomUnit(this)" required>
+                            ${optionsHtml}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" step="any" class="form-control form-control-sm bom-qty" placeholder="0.00" required>
+                    </td>
+                    <td class="bom-unit-text text-muted">-</td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm py-0 px-2" onclick="removeMasterBomRow('${rowId}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', rowHtml);
+        }
+
+        function updateMasterBomUnit(selectElem) {
+            const selectedOption = selectElem.options[selectElem.selectedIndex];
+            const unit = selectedOption.getAttribute("data-unit") || "-";
+            selectElem.closest("tr").querySelector(".bom-unit-text").innerText = unit;
+        }
+
+        function removeMasterBomRow(rowId) {
+            document.getElementById(`bom_row_${rowId}`).remove();
+        }
+
+        document.getElementById("itemMasterForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const itemType = document.getElementById("masterItemType").value;
+            const itemCode = document.getElementById("masterItemCode").value.trim();
+            const itemName = document.getElementById("masterItemName").value.trim();
+            const costPrice = parseFloat(document.getElementById("masterCostPrice").value) || 0;
+
+            let itemData = {
+                itemType,
+                itemCode,
+                itemName,
+                costPrice,
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (itemType === "raw_material") {
+                itemData.unit = document.getElementById("masterItemUnit").value;
+            } else {
+                itemData.sellingPrice = parseFloat(document.getElementById("masterSellingPrice").value) || 0;
+                itemData.recipe = [];
+
+                const bomRows = document.querySelectorAll("#masterBomTableBody tr");
+                bomRows.forEach(row => {
+                    const rawId = row.querySelector(".bom-raw-id").value;
+                    const qty = parseFloat(row.querySelector(".bom-qty").value) || 0;
+                    if (rawId && qty > 0) {
+                        itemData.recipe.push({ rawItemId: rawId, qtyRequired: qty });
+                    }
+                });
+            }
+
+            try {
+                await db.collection("items").add(itemData);
+                alert("✅ تم حفظ الصنف بنجاح في قاعدة البيانات!");
+                document.getElementById("itemMasterForm").reset();
+                document.getElementById("masterBomTableBody").innerHTML = "";
+                toggleMasterItemFields();
+            } catch (error) {
+                alert("❌ خطأ أثناء حفظ الصنف: " + error.message);
+            }
+        });
+
+        async function deleteMasterItem(id) {
+            if (confirm("⚠️ هل أنت تأكد من رغبتك في حذف هذا الصنف نهائياً؟")) {
+                await db.collection("items").doc(id).delete();
+            }
+        }
+
+        async function fetchAllLogsForNavigation() {
+            try {
+                const snapshot = await db.collection("daily_batches").orderBy("date", "desc").get();
+                fetchedLogs = [];
+                snapshot.forEach(doc => {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    fetchedLogs.push(data);
+                });
+            } catch (err) {
+                console.error("خطأ جلب السجلات للتقليب:", err);
+            }
+        }
+
+        function navigateLog(direction) {
+            if (fetchedLogs.length === 0) return;
+
+            currentLogIndex += direction;
+            if (currentLogIndex < 0) currentLogIndex = 0;
+            if (currentLogIndex >= fetchedLogs.length) currentLogIndex = fetchedLogs.length - 1;
+
+            const log = fetchedLogs[currentLogIndex];
+            prepareEditLog(log.id);
+            document.getElementById('record-nav-indicator').innerText = `سجل ${currentLogIndex + 1} من ${fetchedLogs.length}`;
+        }
+
+        function searchLogByDate() {
+            const dateVal = document.getElementById('search-date-input').value;
+            if (!dateVal) return;
+
+            const idx = fetchedLogs.findIndex(l => l.date === dateVal);
+            if (idx !== -1) {
+                currentLogIndex = idx;
+                prepareEditLog(fetchedLogs[idx].id);
+                document.getElementById('record-nav-indicator').innerText = `سجل ${currentLogIndex + 1} من ${fetchedLogs.length}`;
+            } else {
+                alert("لم يتم العثور على سجل بهذا التاريخ");
+            }
+        }
+
+        function calculateDepartmentConsumption() {
+            let totalConsumed = parseFloat(document.getElementById('actual-consumed').innerText) || 0;
+            let parts = 4;
+            let share = (totalConsumed / parts).toFixed(2);
+
+            document.getElementById('dept-cons-spray').value = share;
+            document.getElementById('dept-cons-classic').value = share;
+            document.getElementById('dept-cons-special').value = share;
+            document.getElementById('dept-cons-molds').value = share;
+
+            alert("تم توزيع كمية الخلطة المستهلكة تلقائياً على الأقسام بالتساوي!");
+        }
+
+        /* إدارة جدول فاتورة أصناف الإنتاج والتكاليف */
+        function addProductionRow() {
+            const name = document.getElementById('p-item-name').value.trim();
+            const size = document.getElementById('p-item-size').value.trim();
+            const model = document.getElementById('p-item-model').value.trim();
+            const qty = parseInt(document.getElementById('p-item-qty').value) || 0;
+            const unitCost = parseFloat(document.getElementById('p-item-unit-cost').value) || 0;
+            const notes = document.getElementById('p-item-notes').value.trim();
+
+            if (!name || qty <= 0) {
+                alert("⚠️ يرجى أدخال اسم الصنف والكمية بشكل صحيح");
+                return;
+            }
+
+            productionItemList.push({ name, size, model, qty, unitCost, notes });
+            
+            document.getElementById('p-item-name').value = '';
+            document.getElementById('p-item-size').value = '';
+            document.getElementById('p-item-model').value = '';
+            document.getElementById('p-item-qty').value = '1';
+            document.getElementById('p-item-unit-cost').value = '';
+            document.getElementById('p-item-notes').value = '';
+
+            renderProductionTable();
+        }
+
+        function removeProductionRow(index) {
+            productionItemList.splice(index, 1);
+            renderProductionTable();
+        }
+
+        function renderProductionTable() {
+            const tbody = document.getElementById('production-items-body');
+            tbody.innerHTML = '';
+            let totalQty = 0;
+
+            if (productionItemList.length === 0) {
+                tbody.innerHTML = '<tr id="empty-row"><td colspan="8" class="text-muted small">لم يتم إضافة أي منتجات حتى الآن</td></tr>';
+                document.getElementById('prod-items-count').innerText = '0 صنف';
+                return;
+            }
+
+            productionItemList.forEach((item, index) => {
+                totalQty += item.qty;
+                let itemTotalCost = item.qty * (item.unitCost || 0);
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="fw-bold">${item.name}</td>
+                        <td>${item.size || '-'}</td>
+                        <td>${item.model || '-'}</td>
+                        <td><span class="badge bg-primary fs-6">${item.qty}</span></td>
+                        <td>${(item.unitCost || 0).toFixed(2)} ر.س</td>
+                        <td class="fw-bold text-success">${itemTotalCost.toFixed(2)} ر.س</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="removeProductionRow(${index})"><i class="fa-solid fa-xmark"></i></button></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('prod-items-count').innerText = `${productionItemList.length} أصناف (${totalQty} قطعة)`;
+        }
+
+        async function loadDepartmentData() {
+            if (document.getElementById('editing-doc-id').value !== "") return;
+            const sectionId = document.getElementById('section-select').value;
+            const doc = await db.collection("department_wip").doc(sectionId).get();
+            let carriedVal = doc.exists ? (doc.data().wip_stock || 0) : 0;
+
+            document.getElementById('carried-over-input').value = carriedVal;
+            calculateTotals();
+        }
+
+        function calculateTotals() {
+            let addedSum = 0;
+            rawMaterialsList.forEach(mat => {
+                const el = document.getElementById(`mat-${mat.id}`);
+                if (el) {
+                    const val = parseFloat(el.value) || 0;
+                    addedSum += val;
+                }
+            });
+
+            const carriedOver = parseFloat(document.getElementById('carried-over-input').value) || 0;
+            const totalAvailable = carriedOver + addedSum;
+            const remaining = parseFloat(document.getElementById('remaining-today').value) || 0;
+            const actualConsumed = totalAvailable - remaining;
+
+            document.getElementById('added-sum').innerText = addedSum.toFixed(2) + ' كجم';
+            document.getElementById('total-available').innerText = totalAvailable.toFixed(2) + ' كجم';
+            document.getElementById('actual-consumed').innerText = (actualConsumed > 0 ? actualConsumed : 0).toFixed(2) + ' كجم';
+        }
+
+        /* حساب التكاليف التلقائي في تبويب التكاليف */
+        function calculateCostsTab() {
+            let totalMaterialCost = 0;
+            let totalAddedKg = 0;
+            const tbody = document.getElementById('cost-materials-table-body');
+            tbody.innerHTML = '';
+
+            let count = 1;
+            rawMaterialsList.forEach(mat => {
+                const el = document.getElementById(`mat-${mat.id}`);
+                const val = el ? (parseFloat(el.value) || 0) : 0;
+                const pricePerKg = mat.costPrice || mat.pricePerKg || mat.cost_per_kg || 5.5; 
+                const matCost = val * pricePerKg;
+
+                totalAddedKg += val;
+                totalMaterialCost += matCost;
+
+                if (val > 0) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${count++}</td>
+                            <td class="fw-bold">${mat.name}</td>
+                            <td>${val.toFixed(2)} كجم</td>
+                            <td>${pricePerKg.toFixed(2)} ر.س</td>
+                            <td class="fw-bold text-success">${matCost.toFixed(2)} ر.س</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if (count === 1) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-muted">لم تم إدخال مواد بالخلطة اليوم بعد</td></tr>';
+            }
+
+            let avgCostPerKg = totalAddedKg > 0 ? (totalMaterialCost / totalAddedKg) : 0;
+            let totalProductsCost = 0;
+            productionItemList.forEach(item => {
+                totalProductsCost += (item.qty * (item.unitCost || 0));
+            });
+
+            document.getElementById('cost-total-materials').innerText = totalMaterialCost.toFixed(2) + ' ر.س';
+            document.getElementById('cost-per-kg').innerText = avgCostPerKg.toFixed(2) + ' ر.س';
+            document.getElementById('cost-total-products').innerText = totalProductsCost.toFixed(2) + ' ر.س';
+        }
+
+        document.getElementById('form-daily-sheet').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (productionItemList.length === 0) {
+                if (!confirm("⚠️ لم تقم بإضافة أصناف لجدول الإنتاج. هل تريد الحفظ بدون أصناف؟")) return;
+            }
+
+            const editingId = document.getElementById('editing-doc-id').value;
+            const sectionSelect = document.getElementById('section-select');
+            const sectionId = sectionSelect.value;
+            const sectionName = sectionSelect.options[sectionSelect.selectedIndex].text;
+            const entryDate = document.getElementById('entry-date').value;
+            const carriedOver = parseFloat(document.getElementById('carried-over-input').value) || 0;
+            const remainingToday = parseFloat(document.getElementById('remaining-today').value) || 0;
+            const varianceNotes = document.getElementById('variance-notes').value;
+
+            const deptConsumptions = {
+                spray: parseFloat(document.getElementById('dept-cons-spray').value) || 0,
+                classic: parseFloat(document.getElementById('dept-cons-classic').value) || 0,
+                special: parseFloat(document.getElementById('dept-cons-special').value) || 0,
+                molds: parseFloat(document.getElementById('dept-cons-molds').value) || 0
+            };
+
+            let addedMaterials = {};
+            let addedSum = 0;
+
+            rawMaterialsList.forEach(mat => {
+                const el = document.getElementById(`mat-${mat.id}`);
+                const val = el ? (parseFloat(el.value) || 0) : 0;
+                if (val > 0) {
+                    addedMaterials[mat.id] = val;
+                    addedSum += val;
+                }
+            });
+
+            const totalAvailable = carriedOver + addedSum;
+            const consumedActual = totalAvailable - remainingToday;
+
+            try {
+                const batch = db.batch();
+
+                const logData = {
+                    date: entryDate,
+                    sectionId: sectionId,
+                    sectionName: sectionName,
+                    carried_over: carriedOver,
+                    added_materials: addedMaterials,
+                    total_available: totalAvailable,
+                    remaining_today: remainingToday,
+                    consumed_actual: consumedActual,
+                    dept_consumptions: deptConsumptions,
+                    production_items: productionItemList,
+                    variance_notes: varianceNotes,
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (editingId === "") {
+                    logData.created_at = firebase.firestore.FieldValue.serverTimestamp();
+                    const newRef = db.collection("daily_batches").doc();
+                    batch.set(newRef, logData);
+                } else {
+                    const editRef = db.collection("daily_batches").doc(editingId);
+                    batch.update(editRef, logData);
+                }
+
+                const wipRef = db.collection("department_wip").doc(sectionId);
+                batch.update(wipRef, {
+                    wip_stock: remainingToday,
+                    last_updated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await batch.commit();
+
+                alert(editingId === "" ? "✅ تم حفظ سجل اليومية وبنود الإنتاج والتكاليف بنجاح!" : "✅ تم تحديث بيانات السجل بنجاح!");
+                await fetchAllLogsForNavigation();
+                cancelEditMode();
+
+            } catch (err) {
+                alert("❌ حدث خطأ: " + err.message);
+            }
+        });
+
+        async function loadHistoryLogs() {
+            const filterSec = document.getElementById('filter-section').value;
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center"><span class="spinner-border spinner-border-sm"></span> جاري التحميل...</td></tr>';
+
+            try {
+                let query = db.collection("daily_batches").orderBy("date", "desc");
+                if (filterSec !== "ALL") {
+                    query = db.collection("daily_batches").where("sectionId", "==", filterSec);
+                }
+
+                const snapshot = await query.get();
+                tbody.innerHTML = '';
+                fetchedLogs = [];
+
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-muted">لا يوجد سجلات مدخلة حتى الآن.</td></tr>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    data.id = doc.id;
+                    fetchedLogs.push(data);
+
+                    let addedSum = 0;
+                    for (const w of Object.values(data.added_materials || {})) addedSum += w;
+
+                    let totalItemsCount = 0;
+                    (data.production_items || []).forEach(item => totalItemsCount += item.qty);
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><span class="badge bg-secondary">${data.date}</span></td>
+                            <td class="fw-bold">${data.sectionName}</td>
+                            <td class="text-danger">${(data.carried_over || 0).toFixed(2)}</td>
+                            <td class="text-primary">${addedSum.toFixed(2)}</td>
+                            <td class="fw-bold text-dark">${(data.consumed_actual || 0).toFixed(2)}</td>
+                            <td class="text-success">${(data.remaining_today || 0).toFixed(2)}</td>
+                            <td><span class="badge bg-info text-dark">${totalItemsCount} قطعة</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="prepareEditLog('${data.id}')" title="تعديل"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteLog('${data.id}')" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                <button class="btn btn-sm btn-outline-dark py-0 px-1" onclick="printSpecificLog('${data.id}', 'full')" title="طباعة"><i class="fa-solid fa-print"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-danger">خطأ أثناء التحميل: ${err.message}</td></tr>`;
+            }
+        }
+
+        function prepareEditLog(id) {
+            const log = fetchedLogs.find(l => l.id === id);
+            if (!log) return;
+
+            document.getElementById('editing-doc-id').value = log.id;
+            document.getElementById('entry-date').value = log.date;
+            document.getElementById('section-select').value = log.sectionId;
+            document.getElementById('carried-over-input').value = log.carried_over || 0;
+            document.getElementById('remaining-today').value = log.remaining_today || 0;
+            document.getElementById('variance-notes').value = log.variance_notes || '';
+
+            if (log.dept_consumptions) {
+                document.getElementById('dept-cons-spray').value = log.dept_consumptions.spray || 0;
+                document.getElementById('dept-cons-classic').value = log.dept_consumptions.classic || 0;
+                document.getElementById('dept-cons-special').value = log.dept_consumptions.special || 0;
+                document.getElementById('dept-cons-molds').value = log.dept_consumptions.molds || 0;
+            }
+
+            rawMaterialsList.forEach(mat => {
+                const val = log.added_materials ? (log.added_materials[mat.id] || 0) : 0;
+                const el = document.getElementById(`mat-${mat.id}`);
+                if (el) el.value = val;
+            });
+
+            productionItemList = log.production_items || [];
+            renderProductionTable();
+            calculateTotals();
+
+            document.getElementById('record-nav-indicator').innerText = `تعديل السجل الحالي`;
+            document.getElementById('btn-save-sheet').className = "btn btn-warning w-100 btn-md shadow fw-bold";
+            document.getElementById('btn-save-sheet').innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i> حفظ التعديلات على السجل';
+
+            const triggerTab = new bootstrap.Tab(document.getElementById('entry-tab'));
+            triggerTab.show();
+        }
+
+        function cancelEditMode() {
+            document.getElementById('editing-doc-id').value = '';
+            document.getElementById('variance-notes').value = '';
+            document.getElementById('remaining-today').value = '0';
+            document.getElementById('dept-cons-spray').value = '0';
+            document.getElementById('dept-cons-classic').value = '0';
+            document.getElementById('dept-cons-special').value = '0';
+            document.getElementById('dept-cons-molds').value = '0';
+
+            rawMaterialsList.forEach(mat => {
+                const el = document.getElementById(`mat-${mat.id}`);
+                if (el) el.value = '0';
+            });
+
+            productionItemList = [];
+            renderProductionTable();
+
+            document.getElementById('record-nav-indicator').innerText = `سجل جديد`;
+            document.getElementById('btn-save-sheet').className = "btn btn-success w-100 btn-md shadow fw-bold";
+            document.getElementById('btn-save-sheet').innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> حفظ واعتماد اليومية';
+            
+            currentLogIndex = -1;
+            loadDepartmentData();
+        }
+
+        async function deleteLog(id) {
+            if (!confirm("⚠️ هل أنت تأكد من رغبتك في حذف هذا السجل نهائياً؟")) return;
+
+            try {
+                await db.collection("daily_batches").doc(id).delete();
+                alert("🗑️ تم حذف السجل بنجاح!");
+                await fetchAllLogsForNavigation();
+                loadHistoryLogs();
+            } catch (err) {
+                alert("❌ حدث خطأ أثناء الحذف: " + err.message);
+            }
+        }
+
+        function toggleCustomDates() {
+            const val = document.getElementById('mat-date-range').value;
+            const startBox = document.getElementById('custom-date-start-box');
+            const endBox = document.getElementById('custom-date-end-box');
+
+            if (val === 'CUSTOM') {
+                startBox.classList.remove('d-none');
+                endBox.classList.remove('d-none');
+            } else {
+                startBox.classList.add('d-none');
+                endBox.classList.add('d-none');
+            }
+        }
+
+        async function loadMaterialsReport() {
+            const range = document.getElementById('mat-date-range').value;
+            const selectedMatId = document.getElementById('mat-filter-select').value;
+            const tbody = document.getElementById('materials-report-table-body');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><span class="spinner-border spinner-border-sm"></span> جاري التحميل...</td></tr>';
+
+            try {
+                const snapshot = await db.collection("daily_batches").get();
+                const todayStr = new Date().toISOString().split('T')[0];
+                const currentMonthStr = todayStr.substring(0, 7);
+
+                let filteredDocs = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    let match = false;
+
+                    if (range === 'ALL') match = true;
+                    else if (range === 'TODAY' && data.date === todayStr) match = true;
+                    else if (range === 'THIS_MONTH' && data.date && data.date.startsWith(currentMonthStr)) match = true;
+                    else if (range === 'CUSTOM') {
+                        const start = document.getElementById('mat-date-start').value;
+                        const end = document.getElementById('mat-date-end').value;
+                        if (start && end && data.date >= start && data.date <= end) match = true;
+                    }
+
+                    if (match) filteredDocs.push(data);
+                });
+
+                let grandAdded = 0;
+                let grandConsumed = 0;
+                let grandCarried = 0;
+                let materialTotals = {};
+
+                rawMaterialsList.forEach(m => materialTotals[m.id] = 0);
+
+                filteredDocs.forEach(d => {
+                    grandConsumed += d.consumed_actual || 0;
+                    grandCarried += d.carried_over || 0;
+
+                    const addedMat = d.added_materials || {};
+                    for (const [mId, qty] of Object.entries(addedMat)) {
+                        if (materialTotals[mId] !== undefined) {
+                            materialTotals[mId] += qty;
+                            grandAdded += qty;
+                        }
+                    }
+                });
+
+                document.getElementById('stats-total-added').innerText = grandAdded.toFixed(2) + ' كجم';
+                document.getElementById('stats-total-consumed').innerText = grandConsumed.toFixed(2) + ' كجم';
+                document.getElementById('stats-total-carried').innerText = grandCarried.toFixed(2) + ' كجم';
+
+                tbody.innerHTML = '';
+                let count = 1;
+
+                rawMaterialsList.forEach(mat => {
+                    if (selectedMatId !== 'ALL' && mat.id !== selectedMatId) return;
+
+                    const totalMatQty = materialTotals[mat.id] || 0;
+                    const percentage = grandAdded > 0 ? ((totalMatQty / grandAdded) * 100).toFixed(1) : 0;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${count++}</td>
+                            <td class="fw-bold">${mat.name}</td>
+                            <td>${mat.unit || 'كجم'}</td>
+                            <td class="fw-bold text-primary">${totalMatQty.toFixed(2)} كجم</td>
+                            <td>
+                                <div class="progress" style="height: 16px;">
+                                    <div class="progress-bar bg-info text-dark fw-bold" role="progressbar" style="width: ${percentage}%;">${percentage}%</div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger">خطأ أثناء التحميل: ${err.message}</td></tr>`;
+            }
+        }
+
+        /* الطباعة والفواتير */
+        function printExcelReport(mode = 'full') {
+            document.body.className = (mode === 'prod') ? 'print-mode-prod' : 'print-mode-full';
+            
+            const sectionSelect = document.getElementById('section-select');
+            const sectionName = sectionSelect.options[sectionSelect.selectedIndex].text;
+            const entryDate = document.getElementById('entry-date').value;
+
+            if (mode === 'full') {
+                document.getElementById('p-date').innerText = entryDate;
+                document.getElementById('p-section').innerText = sectionName;
+
+                const tbody = document.getElementById('p-materials-body');
+                tbody.innerHTML = '';
+                let count = 1;
+                let addedSum = 0;
+
+                rawMaterialsList.forEach(mat => {
+                    const el = document.getElementById(`mat-${mat.id}`);
+                    const val = el ? (parseFloat(el.value) || 0) : 0;
+                    if (val > 0) {
+                        addedSum += val;
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${count++}</td>
+                                <td>${mat.name}</td>
+                                <td>${mat.unit || 'كيلو'}</td>
+                                <td>${val.toFixed(2)} كجم</td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                const carriedOver = parseFloat(document.getElementById('carried-over-input').value) || 0;
+                const totalAvailable = carriedOver + addedSum;
+                const remaining = parseFloat(document.getElementById('remaining-today').value) || 0;
+                const actualConsumed = totalAvailable - remaining;
+
+                document.getElementById('p-added-sum').innerText = addedSum.toFixed(2) + ' كجم';
+                document.getElementById('p-carried-over').innerText = carriedOver.toFixed(2) + ' كجم';
+                document.getElementById('p-total-available').innerText = totalAvailable.toFixed(2) + ' كجم';
+                document.getElementById('p-remaining').innerText = remaining.toFixed(2) + ' كجم';
+                document.getElementById('p-actual-consumed').innerText = (actualConsumed > 0 ? actualConsumed : 0).toFixed(2) + ' كجم';
+
+                const prodTbody = document.getElementById('p-production-table-body');
+                prodTbody.innerHTML = '';
+                productionItemList.forEach((item, idx) => {
+                    prodTbody.innerHTML += `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td>${item.name}</td>
+                            <td>${item.size || '-'}</td>
+                            <td>${item.model || '-'}</td>
+                            <td>${item.qty}</td>
+                            <td>${(item.unitCost || 0).toFixed(2)} ر.س</td>
+                            <td>${item.notes || '-'}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('p-notes-text').innerText = document.getElementById('variance-notes').value || 'لا يوجد ملاحظات';
+            } else {
+                document.getElementById('p2-date').innerText = entryDate;
+                document.getElementById('p2-section').innerText = sectionName;
+                
+                const prodTbody2 = document.getElementById('p2-production-table-body');
+                prodTbody2.innerHTML = '';
+                productionItemList.forEach((item, idx) => {
+                    prodTbody2.innerHTML += `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td class="fw-bold">${item.name}</td>
+                            <td>${item.size || '-'}</td>
+                            <td>${item.model || '-'}</td>
+                            <td class="fw-bold fs-6">${item.qty}</td>
+                            <td>${item.notes || 'مطابق للمواصفات'}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('p2-notes-text').innerText = document.getElementById('variance-notes').value || 'لا يوجد ملاحظات خاصة بالجودة';
+            }
+
+            window.print();
+        }
+
+        function printSpecificLog(id, mode = 'full') {
+            prepareEditLog(id);
+            setTimeout(() => {
+                printExcelReport(mode);
+            }, 300);
+        }
+
+        window.onload = initPage;
+    </script>
+</body>
+</html>

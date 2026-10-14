@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة مسؤول الإنتاج - شركة جار الخليج</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        :root { --primary: #19352d; --accent: #b68d59; --bg: #f4f7f6; --success: #27ae60; --danger: #c0392b; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg); padding: 5px; color: #222; margin: 0; font-size: 13px; font-weight: 600; }
+        
+        .container { width: 100%; max-width: 100%; margin: 0; padding: 0; }
+        .dashboard-card { background: #fff; padding: 10px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); width: 100%; }
+        
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #eee; padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+        h2 { color: var(--primary); border-right: 4px solid var(--accent); padding-right: 8px; font-size: 16px; font-weight: 800; margin: 0; }
+
+        .controls-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+        input[type="text"], select { padding: 8px 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Cairo', sans-serif; outline: none; background: #fff; color: #111; width: 100%; }
+        .search-box { flex: 1; min-width: 160px; }
+
+        .actions-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+        /* الجدول واحتضان الكلمات لمنع تقطيعها على الجوال */
+        .table-responsive { width: 100%; overflow-x: auto; max-height: 75vh; border-radius: 6px; border: 1px solid #ddd; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; text-align: center; table-layout: auto; }
+        th { background: var(--primary); color: #fff; padding: 8px 6px; font-size: 12px; font-weight: 700; position: sticky; top: 0; z-index: 10; border: 1px solid #22483d; white-space: nowrap; }
+        
+        td { 
+            padding: 8px 6px; 
+            border: 1px solid #ddd; 
+            font-size: 12px; 
+            font-weight: 700; 
+            color: #222; 
+            white-space: normal; 
+            word-break: normal; 
+            overflow-wrap: break-word; 
+            max-width: 160px; 
+            min-width: 80px;
+        }
+        td.no-wrap { white-space: nowrap; max-width: none; min-width: auto; }
+
+        tr:hover { background-color: #f1f7f5; }
+
+        .btn-ready { background: var(--success); color: white; padding: 5px 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: 800; font-size: 11px; transition: 0.3s; white-space: nowrap; }
+        .btn-ready.done { background: #7f8c8d; cursor: not-allowed; }
+        
+        .btn-refresh { background: var(--accent); color: white; border: none; padding: 7px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; white-space: nowrap; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 5px 8px; border-radius: 5px; font-weight: 700; cursor: pointer; font-size: 11px; white-space: nowrap; }
+        .btn-action-group { background: #2980b9; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; white-space: nowrap; }
+        .btn-delete-selected { background: var(--danger); color: white; border: none; padding: 7px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; white-space: nowrap; }
+        
+        .btn-back { background: var(--primary); color: white; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+
+        .loading-overlay { text-align: center; padding: 30px; font-weight: 700; color: var(--accent); font-size: 14px; }
+        #toast { position: fixed; bottom: 15px; right: 15px; background: #222; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; z-index: 2000; display: none; }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBH4FMgOWQOr5XsgzHJojB_l4nI8is42OQ",
+            authDomain: "jaralkhaleej-production.firebaseapp.com",
+            projectId: "jaralkhaleej-production",
+            storageBucket: "jaralkhaleej-production.firebasestorage.app",
+            messagingSenderId: "1083279469158",
+            appId: "1:1083279469158:web:67aa79d28403b4db609ba7",
+            measurementId: "G-NZT603FWK7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let productionOrders = [];
+
+        window.loadProductionData = async function() {
+            const tbody = document.getElementById('prodTableBody');
+            tbody.innerHTML = `<tr><td colspan="15" class="loading-overlay" style="max-width:none;">جاري جلب مهام الإنتاج...</td></tr>`;
+
+            try {
+                const q = query(collection(db, "orders"), orderBy("order", "asc"));
+                const querySnapshot = await getDocs(q);
+
+                let data = [];
+                querySnapshot.forEach((document) => {
+                    data.push({ id: document.id, ...document.data() });
+                });
+
+                productionOrders = data;
+                filterProdTable();
+                showToast("🔄 تم تحديث البيانات بنجاح");
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="15" style="color:red; font-weight:700; max-width:none;">تعذر تحميل البيانات. تأكد من الاتصال.</td></tr>`;
+            }
+        };
+
+        window.markAsReady = async function(docId, btnElement) {
+            try {
+                let docRef = doc(db, "orders", docId);
+                await updateDoc(docRef, { isReady: true });
+                if(btnElement) {
+                    btnElement.innerText = "✓ تم";
+                    btnElement.classList.add('done');
+                    btnElement.disabled = true;
+                }
+                showToast("✅ تم تحديث الطلب وإرساله لقسم الفواتير!");
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء تحديث الحالة.");
+            }
+        };
+
+        // تجهيز متعدد
+        window.markSelectedAsReady = async function() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert("الرجاء تحديد طلب واحد على الأقل لتجهيزه.");
+                return;
+            }
+            if (!confirm(`هل أنت متأكد من تحويل حالة عدد (${checkboxes.length}) من الطلبات إلى (جاهز)؟`)) return;
+
+            try {
+                let updatePromises = [];
+                checkboxes.forEach(cb => {
+                    let docId = cb.getAttribute('data-id');
+                    updatePromises.push(updateDoc(doc(db, "orders", docId), { isReady: true }));
+                });
+
+                await Promise.all(updatePromises);
+                showToast("✅ تم تجهيز الطلبات المحددة بنجاح");
+                loadProductionData();
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء التجهيز المتعدد.");
+            }
+        };
+
+        // حذف فردي
+        window.deleteOrder = async function(docId) {
+            if (!confirm("هل أنت متأكد من حذف هذا الطلب نهائياً؟")) return;
+            try {
+                await deleteDoc(doc(db, "orders", docId));
+                showToast("🗑️ تم حذف الطلب بنجاح");
+                loadProductionData();
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء الحذف.");
+            }
+        };
+
+        // حذف متعدد
+        window.deleteSelectedOrders = async function() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert("الرجاء تحديد طلب واحد على الأقل للحذف.");
+                return;
+            }
+            if (!confirm(`هل أنت متأكد من حذف عدد (${checkboxes.length}) من الطلبات المحددة؟`)) return;
+
+            try {
+                let deletePromises = [];
+                checkboxes.forEach(cb => {
+                    let docId = cb.getAttribute('data-id');
+                    deletePromises.push(deleteDoc(doc(db, "orders", docId)));
+                });
+
+                await Promise.all(deletePromises);
+                showToast("🗑️ تم حذف الطلبات المحددة بنجاح");
+                loadProductionData();
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء عملية الحذف المتعدد.");
+            }
+        };
+
+        window.toggleSelectAll = function(master) {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+        };
+
+        window.getProdData = () => productionOrders;
+
+        window.onload = function() {
+            loadProductionData(); // بدون تحديث تلقائي مزعج
+        };
+    </script>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="production-board"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="dashboard-card">
+        <div class="dash-header">
+            <h2>لوحة مسؤول الإنتاج</h2>
+            <div class="actions-group">
+                <button class="btn-refresh" onclick="loadProductionData()">🔄 تحديث</button>
+                <button class="btn-action-group" onclick="markSelectedAsReady()">✅ تجهيز المحدد</button>
+                <button class="btn-delete-selected" onclick="deleteSelectedOrders()">🗑️ حذف المحدد</button>
+                <a href="dashboard.html" class="btn-back">⬅ الرئيسية</a>
+            </div>
+        </div>
+
+        <div class="controls-bar">
+            <input type="text" id="prodSearch" class="search-box" placeholder="بحث برقم الطلب، العميل، أو الصنف..." onkeyup="filterProdTable()">
+            <select id="prodStatusFilter" onchange="filterProdTable()" style="max-width: 160px;">
+                <option value="all">كل الطلبات</option>
+                <option value="not_ready">تحت الإنتاج ⏳</option>
+                <option value="ready">الجاهزة ✅</option>
+            </select>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="no-wrap"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                        <th>م</th>
+                        <th>رقم الطلب</th>
+                        <th>العميل</th>
+                        <th>الفرع</th>
+                        <th>المنسق</th>
+                        <th>الصنف</th>
+                        <th>المقاس</th>
+                        <th>الكمية</th>
+                        <th>الجوانب</th>
+                        <th>اللون</th>
+                        <th>الهرابات</th>
+                        <th>ملاحظات</th>
+                        <th>التاريخ</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="prodTableBody">
+                    <tr><td colspan="15" class="loading-overlay" style="max-width:none;">جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="toast">تم بنجاح</div>
+
+<script>
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 2000);
+    }
+
+    function buildProdTable(data) {
+        const tbody = document.getElementById('prodTableBody');
+        tbody.innerHTML = "";
+        document.getElementById('selectAll').checked = false;
+
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="15" style="padding:15px; font-weight:700; max-width:none;">لا توجد طلبات مطابقة</td></tr>`;
+            return;
+        }
+
+        data.forEach((order, index) => {
+            let items = order.items && order.items.length > 0 ? order.items : [order];
+
+            items.forEach((item) => {
+                let tr = document.createElement('tr');
+                let docId = order.id;
+                let isReady = order.isReady === true || order.isReady === 'TRUE';
+
+                let orderNumVal = order.order || '';
+                let clientName  = order.name || '';
+                let branchVal   = order.branch || '';
+                let coordVal    = order.coordinator || '';
+                let itemVal     = item.name || '';
+                let sizeVal     = item.size || '';
+                let qtyVal      = item.qty || '';
+                let gnbVal      = item.gnb || '';
+                let clorVal     = item.clor || '';
+                let hrbqVal     = item.hrbq || '';
+                let noteVal     = item.note || '';
+                let timestampVal= order.timestamp || '';
+
+                if (typeof timestampVal === 'string' && timestampVal.includes('T')) {
+                    timestampVal = timestampVal.replace('T', ' ').substring(0, 16);
+                }
+
+                let actionButton = isReady 
+                    ? `<button class="btn-ready done" disabled>✓ جاهز</button>`
+                    : `<button class="btn-ready" onclick="markAsReady('${docId}', this)">جاهز 🟢</button>`;
+
+                let deleteButton = `<button class="btn-delete" onclick="deleteOrder('${docId}')">حذف ❌</button>`;
+
+                tr.innerHTML = `
+                    <td class="no-wrap"><input type="checkbox" class="row-checkbox" data-id="${docId}"></td>
+                    <td class="no-wrap">${index + 1}</td>
+                    <td class="no-wrap"><b style="color:var(--primary);">${orderNumVal}</b></td>
+                    <td>${clientName}</td>
+                    <td>${branchVal}</td>
+                    <td>${coordVal}</td>
+                    <td>${itemVal}</td>
+                    <td>${sizeVal}</td>
+                    <td class="no-wrap">${qtyVal}</td>
+                    <td>${gnbVal}</td>
+                    <td>${clorVal}</td>
+                    <td>${hrbqVal}</td>
+                    <td>${noteVal}</td>
+                    <td class="no-wrap">${timestampVal}</td>
+                    <td class="no-wrap" style="display:flex; gap:4px; justify-content:center; align-items:center;">
+                        ${actionButton}
+                        ${deleteButton}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    function filterProdTable() {
+        const queryVal = document.getElementById('prodSearch').value.toLowerCase();
+        const statusFilter = document.getElementById('prodStatusFilter').value;
+        const allData = window.getProdData() || [];
+
+        const filtered = allData.filter(order => {
+            let matchesQuery = Object.values(order).some(val => {
+                if (typeof val === 'string' || typeof val === 'number') {
+                    return String(val).toLowerCase().includes(queryVal);
+                }
+                return false;
+            });
+            let isReady = order.isReady === true || order.isReady === 'TRUE';
+            
+            if (statusFilter === 'ready') return matchesQuery && isReady;
+            if (statusFilter === 'not_ready') return matchesQuery && !isReady;
+            return matchesQuery;
+        });
+
+        buildProdTable(filtered);
+    }
+</script>
+</body>
+</html>

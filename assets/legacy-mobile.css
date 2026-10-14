@@ -1,0 +1,34 @@
+/* Jar Al Khaleej responsive compatibility layer.
+   Screen-only: original document print layouts remain untouched. */
+@media screen and (max-width: 900px) {
+  html { width:100%; max-width:100%; -webkit-text-size-adjust:100%; }
+  body { max-width:100%; overflow-x:hidden; }
+  main, section, .container, .container-fluid, .dashboard-card, .card, .app-container,
+  .modal-content, .control-panel, .invoices-grid-container { min-width:0; max-width:100%; }
+  .wrapper { grid-template-columns:minmax(0,1fr) !important; width:100%; gap:12px !important; }
+  .form-row { grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)) !important; }
+  .header-meta { grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)) !important; }
+  .dash-header, .header-actions, .actions-group { flex-wrap:wrap; }
+  .table-responsive, .invoice-wrapper, .card-table-scroll, .note-editor-wrap,
+  .preview-shell, .table-h-scroll { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  input, textarea, select { max-width:100%; }
+  button, a, input, select, textarea { touch-action:manipulation; }
+  img, svg, canvas { max-width:100%; }
+  iframe { max-width:100%; }
+  .modal { padding:8px 0 !important; }
+  .modal-content { margin-inline:auto !important; width:98% !important; }
+}
+@media screen and (max-width: 560px) {
+  body { padding-inline:8px !important; }
+  .dashboard-card, .card, .control-panel { padding:12px !important; }
+  .header-actions { width:100%; }
+  .header-actions .btn-action { flex:1 1 128px; min-height:42px; }
+  .controls-bar, .sub-controls { grid-template-columns:minmax(0,1fr) !important; }
+  .search-container { flex-wrap:wrap; }
+  .search-field { min-width:0 !important; flex:1 1 170px; }
+  .report-summary { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  .invoice-box { max-width:100%; }
+  /* Preserve detailed reports as scrollable worksheets on narrow screens. */
+  .invoice-wrapper > .invoice-box { min-width:670px; }
+  .a5-sheet { max-width:none; }
+}

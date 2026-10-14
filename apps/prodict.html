@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير بيانات الإنتاج - شركة جار الخليج للصناعة</title>
+    <!-- تضمين مكتبة jsPDF و html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tahoma', Arial, sans-serif;
+        }
+        body {
+            background-color: #e2e8f0;
+            color: #1e293b;
+            padding: 20px;
+        }
+        .app-container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        /* واجهة الإدخال المريحة */
+        .control-panel {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .control-panel h3 {
+            margin-bottom: 15px;
+            color: #1b365d;
+            font-size: 16px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #475569;
+        }
+        .input-group input, .input-group select {
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .btn-add {
+            background-color: #0d9488;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .btn-add:hover { background-color: #0f766e; }
+
+        .items-preview-list {
+            margin-bottom: 15px;
+        }
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .btn-del {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .action-bar {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .btn-print-pdf {
+            background-color: #1b365d;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(27, 54, 93, 0.3);
+        }
+        .btn-print-pdf:hover { background-color: #142845; }
+
+        /* تصميم ورقة التقرير النهائية (التي سيتم طباعتها وتصديرها كـ PDF) */
+        .report-page {
+            background: #ffffff;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm 20mm;
+            margin: 0 auto;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px double #1b365d;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .report-header .company-title h1 {
+            font-size: 20px;
+            color: #1b365d;
+            font-weight: bold;
+        }
+        .report-header .company-title p {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .report-header .report-meta {
+            text-align: left;
+            font-size: 11px;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .report-title-box {
+            text-align: center;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #1b365d;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .report-section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1b365d;
+            background: #e2e8f0;
+            padding: 5px 10px;
+            margin: 15px 0 8px 0;
+            border-right: 4px solid #1b365d;
+        }
+
+        table.report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+        table.report-table th, table.report-table td {
+            border: 1px solid #94a3b8;
+            padding: 6px 8px;
+            text-align: center;
+        }
+        table.report-table th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        .notes-box {
+            border: 1px solid #94a3b8;
+            padding: 10px;
+            min-height: 50px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 15px;
+            background: #fafafa;
+        }
+
+        .signatures-grid {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .signature-box {
+            width: 30%;
+        }
+        .signature-line {
+            border-bottom: 1px solid #1e293b;
+            margin-top: 35px;
+            margin-bottom: 5px;
+        }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="production-report"></script>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- لوحة التحكم للإدخال المريح -->
+    <div class="control-panel">
+        <h3>1. إدخال معلومات الوردية</h3>
+        <div class="form-row">
+            <div class="input-group">
+                <label>القسم المُرسِل:</label>
+                <select id="inpDep">
+                    <option value="قسم الفايبر">قسم الفايبر</option>
+                    <option value="قسم الأكريليك">قسم الأكريليك</option>
+                    <option value="قسم التشكيل">قسم التشكيل</option>
+                    <option value="قسم التجميع والتغليف">قسم التجميع والتغليف</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>التاريخ:</label>
+                <input type="date" id="inpDate">
+            </div>
+            <div class="input-group">
+                <label>رقم الوردية / المسؤول:</label>
+                <input type="text" id="inpSupervisor" placeholder="اسم المشرف أو الوردية">
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <h3>2. إضافة بنود الإنتاج</h3>
+        <div class="form-row">
+            <div class="input-group">
+                <label>القسم / التصنيف:</label>
+                <select id="itemCategory" onchange="toggleCategoryFields()">
+                    <option value="بانيو عادي">بانيو عادي</option>
+                    <option value="بانيو كلاسيك">بانيو كلاسيك</option>
+                    <option value="شاور">شاور (أحواض قدم)</option>
+                     <option value="اعمال خاصة">اعمال خاصة (مجسمات / لوحات اعلانية)</option>
+                         <option value="حمامات متنقلة">اعمال خاصة (حمامات متنقلة)</option>
+
+                </select>
+            </div>
+            <div class="input-group" id="groupSession">
+                <label>نوع الجلسة:</label>
+                <select id="itemSession">
+                    <option value="جلسة">جلسة</option>
+                    <option value="بدون جلسة">بدون جلسة</option>
+                </select>
+            </div>
+            <div class="input-group" id="groupSide">
+                <label>الجوانب:</label>
+                <select id="itemSide">
+                    <option value="فايبر">فايبر</option>
+                    <option value="اكريليك">اكريليك</option>
+                </select>
+            </div>
+            <div class="input-group" id="groupModel">
+                <label>الموديل / الاسم:</label>
+                <input type="text" id="itemModel" placeholder="الموديل أو الوصف">
+            </div>
+            <div class="input-group">
+                <label>المقاس (سم):</label>
+                <input type="text" id="itemSize" placeholder="مثال: 70×140">
+            </div>
+            <div class="input-group">
+                <label>الكمية (حبة):</label>
+                <input type="number" id="itemQty" value="1" min="1">
+            </div>
+        </div>
+        <button type="button" class="btn-add" onclick="addItem()">+ إضافة للتقرير</button>
+        
+        <div class="items-preview-list" id="itemsPreviewList" style="margin-top: 15px;">
+            <!-- البنود المضافة تظهر هنا -->
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <h3>3. ملاحظات إضافية</h3>
+        <div class="input-group">
+            <textarea id="inpNotes" rows="2" placeholder="ملاحظات حول التالف، التعديلات الخاصة، أو التعليمات..."></textarea>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <button type="button" class="btn-print-pdf" onclick="generatePDFReport()">🖨️ طباعة وتصدير التقرير الرسمي PDF</button>
+    </div>
+</div>
+
+<!-- هيكل التقرير الرسمي المصمم (مخفي أثناء الإدخال، ويُستخدم لإنتاج الـ PDF) -->
+<div style="display:none;">
+    <div id="officialReport" class="report-page">
+        <div class="report-header">
+            <div class="company-title">
+                <h1>شركة جار الخليج للصناعة</h1>
+                <p>قسم إدارة الإنتاج والمستودعات</p>
+            </div>
+            <div class="report-meta">
+                <div><strong>التاريخ:</strong> <span id="repDateVal"></span></div>
+                <div><strong>القسم:</strong> <span id="repDepVal"></span></div>
+                <div><strong>المسؤول / الوردية:</strong> <span id="repSupVal"></span></div>
+            </div>
+        </div>
+
+        <div class="report-title-box">
+            تقرير استلام وتسجيل بيانات الإنتاج اليومي
+        </div>
+
+        <!-- جدول البانيوهات العادية -->
+        <div id="sectionNormalWrap">
+            <div class="report-section-title">أولاً: البانيوهات العادية</div>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">م</th>
+                        <th style="width: 25%;">نوع الجلسة</th>
+                        <th style="width: 20%;">الجوانب</th>
+                        <th style="width: 22%;">المقاس (سم)</th>
+                        <th style="width: 15%;">الموديل</th>
+                        <th style="width: 10%;">الكمية</th>
+                    </tr>
+                </thead>
+                <tbody id="repNormalBody">
+                    <!-- تعبئة تلقائية -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- جدول البانيوهات الكلاسيك -->
+        <div id="sectionClassicWrap" style="margin-top: 15px;">
+            <div class="report-section-title">ثانياً: البانيوهات الكلاسيك</div>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">م</th>
+                        <th style="width: 52%;">الموديل الكلاسيك</th>
+                        <th style="width: 30%;">المقاس (سم)</th>
+                        <th style="width: 10%;">الكمية</th>
+                    </tr>
+                </thead>
+                <tbody id="repClassicBody">
+                    <!-- تعبئة تلقائية -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- جدول الشاورات -->
+        <div id="sectionShowerWrap" style="margin-top: 15px;">
+            <div class="report-section-title">ثالثاً: الشاورات (أحواض وكبائن الاستحمام)</div>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">م</th>
+                        <th style="width: 52%;">نوع الشاور / الوصف</th>
+                        <th style="width: 30%;">المقاس (سم)</th>
+                        <th style="width: 10%;">الكمية</th>
+                    </tr>
+                </thead>
+                <tbody id="repShowerBody">
+                    <!-- تعبئة تلقائية -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ملاحظات -->
+        <div style="margin-top: 15px;">
+            <strong style="font-size: 11px; color: #1b365d;">ملاحظات الإنتاج:</strong>
+            <div class="notes-box" id="repNotesVal">لا توجد ملاحظات إضافية.</div>
+        </div>
+
+        <!-- التوقيعات -->
+        <div class="signatures-grid">
+            <div class="signature-box">
+                <strong>مسؤول الإنتاج / المُسجِّل</strong>
+                <div class="signature-line"></div>
+            </div>
+            <div class="signature-box">
+                <strong>فحص الجودة</strong>
+                <div class="signature-line"></div>
+            </div>
+            <div class="signature-box">
+                <strong>المستلم / المخازن</strong>
+                <div class="signature-line"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('inpDate').valueAsDate = new Date();
+
+    let allItems = [];
+
+    function toggleCategoryFields() {
+        const cat = document.getElementById('itemCategory').value;
+        const gSession = document.getElementById('groupSession');
+        const gSide = document.getElementById('groupSide');
+        const gModel = document.getElementById('groupModel');
+
+        if (cat === 'بانيو عادي') {
+            gSession.style.display = 'flex';
+            gSide.style.display = 'flex';
+            gModel.style.display = 'flex';
+        } else if (cat === 'بانيو كلاسيك') {
+            gSession.style.display = 'none';
+            gSide.style.display = 'none';
+            gModel.style.display = 'flex';
+        } else if (cat === 'شاور') {
+            gSession.style.display = 'none';
+            gSide.style.display = 'none';
+            gModel.style.display = 'flex';
+        }
+    }
+
+    function addItem() {
+        const cat = document.getElementById('itemCategory').value;
+        const session = document.getElementById('itemSession').value;
+        const side = document.getElementById('itemSide').value;
+        const model = document.getElementById('itemModel').value.trim();
+        const size = document.getElementById('itemSize').value.trim();
+        const qty = parseInt(document.getElementById('itemQty').value) || 1;
+
+        if (!size) {
+            alert('الرجاء إدخال المقاس على الأقل');
+            return;
+        }
+
+        const item = {
+            category: cat,
+            session: session,
+            side: side,
+            model: model || (cat === 'بانيو عادي' ? 'بانيو عادي' : cat === 'بانيو كلاسيك' ? 'كلاسيك' : 'شاور'),
+            size: size,
+            qty: qty
+        };
+
+        allItems.push(item);
+        renderPreview();
+        
+        document.getElementById('itemModel').value = '';
+        document.getElementById('itemSize').value = '';
+        document.getElementById('itemQty').value = '1';
+    }
+
+    function deleteItem(index) {
+        allItems.splice(index, 1);
+        renderPreview();
+    }
+
+    function renderPreview() {
+        const list = document.getElementById('itemsPreviewList');
+        if (allItems.length === 0) {
+            list.innerHTML = '<div style="color: #64748b; font-size: 12px; text-align: center; padding: 5px;">لا توجد بنود مضافة حتى الآن</div>';
+            return;
+        }
+        let html = '';
+        allItems.forEach((it, idx) => {
+            html += `<div class="preview-item">
+                <span><b>${idx+1}. [${it.category}]</b> - ${it.model} | ${it.size} | كمية: ${it.qty} ${it.category === 'بانيو عادي' ? '('+it.session+' / '+it.side+')' : ''}</span>
+                <button type="button" class="btn-del" onclick="deleteItem(${idx})">حذف</button>
+            </div>`;
+        });
+        list.innerHTML = html;
+    }
+
+    renderPreview();
+
+    function generatePDFReport() {
+        if (allItems.length === 0) {
+            alert('الرجاء إضافة بند إنتاج واحد على الأقل قبل إصدار التقرير.');
+            return;
+        }
+
+        document.getElementById('repDateVal').innerText = document.getElementById('inpDate').value;
+        document.getElementById('repDepVal').innerText = document.getElementById('inpDep').value;
+        document.getElementById('repSupVal').innerText = document.getElementById('inpSupervisor').value || '-';
+        document.getElementById('repNotesVal').innerText = document.getElementById('inpNotes').value || 'لا توجد ملاحظات إضافية.';
+
+        const normals = allItems.filter(i => i.category === 'بانيو عادي');
+        const classics = allItems.filter(i => i.category === 'بانيو كلاسيك');
+        const showers = allItems.filter(i => i.category === 'شاور');
+
+        const normalBody = document.getElementById('repNormalBody');
+        const normalWrap = document.getElementById('sectionNormalWrap');
+        if (normals.length > 0) {
+            normalWrap.style.display = 'block';
+            let html = '';
+            normals.forEach((it, idx) => {
+                html += `<tr>
+                    <td>${idx+1}</td>
+                    <td>${it.session}</td>
+                    <td>${it.side}</td>
+                    <td>${it.size}</td>
+                    <td>${it.model}</td>
+                    <td><b>${it.qty}</b></td>
+                </tr>`;
+            });
+            normalBody.innerHTML = html;
+        } else {
+            normalWrap.style.display = 'none';
+        }
+
+        const classicBody = document.getElementById('repClassicBody');
+        const classicWrap = document.getElementById('sectionClassicWrap');
+        if (classics.length > 0) {
+            classicWrap.style.display = 'block';
+            let html = '';
+            classics.forEach((it, idx) => {
+                html += `<tr>
+                    <td>${idx+1}</td>
+                    <td>${it.model}</td>
+                    <td>${it.size}</td>
+                    <td><b>${it.qty}</b></td>
+                </tr>`;
+            });
+            classicBody.innerHTML = html;
+        } else {
+            classicWrap.style.display = 'none';
+        }
+
+        const showerBody = document.getElementById('repShowerBody');
+        const showerWrap = document.getElementById('sectionShowerWrap');
+        if (showers.length > 0) {
+            showerWrap.style.display = 'block';
+            let html = '';
+            showers.forEach((it, idx) => {
+                html += `<tr>
+                    <td>${idx+1}</td>
+                    <td>${it.model}</td>
+                    <td>${it.size}</td>
+                    <td><b>${it.qty}</b></td>
+                </tr>`;
+            });
+            showerBody.innerHTML = html;
+        } else {
+            showerWrap.style.display = 'none';
+        }
+
+        const reportElement = document.getElementById('officialReport');
+        reportElement.parentElement.style.display = 'block';
+
+        const { jsPDF } = window.jspdf;
+
+        html2canvas(reportElement, { scale: 2, useCORS: true }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            
+            let imgHeight = (canvas.height * pageWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            reportElement.parentElement.style.display = 'none';
+
+            const dateStr = document.getElementById('inpDate').value || 'production';
+            pdf.save(`Production-Report-${dateStr}.pdf`);
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "جار الخليج - إدارة الطلبات",
+  "short_name": "طلبات جار الخليج",
+  "start_url": "../index.html",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#f6f8f6",
+  "theme_color": "#12372d"
+}

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#002D62">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استعراض وطباعة الفواتير السابقة - شركة جار الخليج</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;800&display=swap');
+        :root { --primary: #19352d; --accent: #b68d59; --bg: #f0f2f0; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg); padding: 15px; color: #333; margin: 0; }
+        
+        .wrapper { max-width: 1500px; margin: auto; display: grid; grid-template-columns: 400px 1fr; gap: 20px; }
+        .card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); width: 100%; overflow: hidden; }
+        h2 { color: var(--primary); border-right: 4px solid var(--accent); padding-right: 15px; font-size: 17px; margin-bottom: 20px; font-weight: 800; }
+        
+        .search-container { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; }
+        .search-field { flex: 1; min-width: 200px; }
+        label { display: block; font-weight: 700; font-size: 12px; margin-bottom: 5px; color: #555; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'Cairo', sans-serif; transition: 0.3s; }
+        input:focus { border-color: var(--accent); outline: none; }
+        
+        .btn-search { background: var(--accent); color: #fff; height: 43px; padding: 0 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; white-space: nowrap; }
+        .btn-search:hover { background: #967246; }
+
+        .invoice-wrapper { width: 100%; overflow-x: auto; }
+        .invoice-box { background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 10px; min-width: 700px; }
+        .header-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #ddd; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { background: var(--primary); color: #fff; padding: 8px; font-size: 11px; border: 1px solid #fff; white-space: nowrap; }
+        td { padding: 8px; border: 1px solid #eee; text-align: center; font-size: 11px; color: #444; font-weight: 700; }
+        
+        .btn-export { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 14px; transition: 0.3s; }
+        .btn-export:disabled { background: #ccc !important; cursor: not-allowed; }
+        
+        .invoice-footer { margin-top: 20px; padding-top: 12px; border-top: 1px dashed #ccc; font-size: 11px; color: #555; }
+        .invoice-footer-notes { white-space: pre-wrap; line-height: 1.6; }
+        .invoice-timestamp { font-weight: bold; color: var(--primary); font-size: 10px; text-align: left; }
+        .loading-text { text-align: center; color: var(--accent); font-weight: bold; margin-top: 15px; display: none; }
+
+        @media (max-width: 1024px) {
+            .wrapper { grid-template-columns: 1fr; }
+        }
+
+        @media print { 
+            body * { visibility: hidden; } 
+            #printArea, #printArea * { visibility: visible; } 
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; direction: rtl; border: none; padding: 0; } 
+        }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBH4FMgOWQOr5XsgzHJojB_l4nI8is42OQ",
+            authDomain: "jaralkhaleej-production.firebaseapp.com",
+            projectId: "jaralkhaleej-production",
+            storageBucket: "jaralkhaleej-production.firebasestorage.app",
+            messagingSenderId: "1083279469158",
+            appId: "1:1083279469158:web:67aa79d28403b4db609ba7",
+            measurementId: "G-NZT603FWK7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.fetchOrderDataFromFirebase = async function() {
+            const orderIdInput = document.getElementById('search_ord_id').value.trim();
+            if (!orderIdInput) {
+                alert("الرجاء إدخال رقم الطلب أولاً!");
+                return;
+            }
+
+            const loading = document.getElementById('loadingStatus');
+            loading.style.display = "block";
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "orders"));
+                loading.style.display = "none";
+
+                let matchedItems = [];
+                let orderHeader = null;
+
+                // تجميع كل الأصناف التي تنتمي لنفس رقم الطلب (سواء كانت مخزنة كمصفوفة items داخل مستند واحد أو كعدة مستندات منفصلة)
+                querySnapshot.forEach((docSnap) => {
+                    const docData = docSnap.data();
+                    const targetOrder = String(docData.order || docData.orderId || docData.id || "").trim();
+                    
+                    if (targetOrder === orderIdInput) {
+                        if (!orderHeader) {
+                            orderHeader = docData;
+                        }
+                        if (docData.items && Array.isArray(docData.items)) {
+                            matchedItems.push(...docData.items);
+                        } else {
+                            matchedItems.push(docData);
+                        }
+                    }
+                });
+
+                if (!orderHeader || matchedItems.length === 0) {
+                    alert("لم يتم العثور على الطلب في قاعدة البيانات");
+                    return;
+                }
+
+                document.getElementById('v_name').innerText = orderHeader.name || "-";
+                document.getElementById('v_ord').innerText = orderHeader.order || orderHeader.orderId || orderIdInput;
+                document.getElementById('v_br').innerText = orderHeader.branch || "-";
+                document.getElementById('v_co').innerText = orderHeader.coordinator || "-";
+                document.getElementById('v_ty').innerText = orderHeader.type || "-";
+                document.getElementById('v_me').innerText = orderHeader.method || "-";
+                
+                if (orderHeader.maintenance === "نعم" || orderHeader.maintenance === true) {
+                    document.getElementById('v_maint_text').style.display = 'block';
+                } else {
+                    document.getElementById('v_maint_text').style.display = 'none';
+                }
+
+                if (orderHeader.timestamp) {
+                    let cleanTimestamp = String(orderHeader.timestamp).replace('T', ' ').substring(0, 16);
+                    document.getElementById('v_timestamp_display').innerText = "تاريخ الاصدار: " + cleanTimestamp;
+                }
+
+                updateFooterText();
+
+                let tbody = document.getElementById('tableBody');
+                tbody.innerHTML = "";
+                
+                // إدراج كافة الأصناف الخاصة بالطلب داخل الجدول
+                matchedItems.forEach(item => {
+                    let cleanDelivery = item.delivery ? String(item.delivery).replace('T', ' ').substring(0, 10) : '';
+
+                    let row = `<tr>
+                        <td>${item.name || item.itemName || ''}</td>
+                        <td>${item.size || ''}</td>
+                        <td>${item.qty || ''}</td>
+                        <td>${item.gnb || ''}</td>
+                        <td>${item.clor || ''}</td>
+                        <td>${item.hrbq || ''}</td>
+                        <td>${item.side || ''}</td>
+                        <td>${item.discnt || ''}</td>
+                        <td>${cleanDelivery}</td>
+                        <td>${item.acses || ''}</td>
+                        <td>${item.note || ''}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                document.getElementById('btnPDF').disabled = false;
+                document.getElementById('btnPNG').disabled = false;
+
+            } catch (error) {
+                console.error("خطأ أثناء جلب البيانات:", error);
+                loading.style.display = "none";
+                alert("لم يتم العثور على الطلب في قاعدة البيانات");
+            }
+        };
+    </script>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="order-print"></script>
+</head>
+<body>
+<div class="wrapper">
+    <div class="card">
+        <h2>بحث واستعراض فاتورة سابقة</h2>
+        
+        <div class="search-container">
+            <div class="search-field">
+                <label>رقم الطلب المراد استعراضه</label>
+                <input type="text" id="search_ord_id" placeholder="أدخل رقم الطلب هنا..." onkeydown="if(event.key==='Enter') fetchOrderDataFromFirebase()">
+            </div>
+            <div>
+                <button class="btn-search" onclick="fetchOrderDataFromFirebase()">بحث عن الفاتورة</button>
+            </div>
+        </div>
+        
+        <div id="loadingStatus" class="loading-text">جاري جلب بيانات الفاتورة من قاعدة البيانات...</div>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        
+        <div class="form-group" style="margin-top: 10px;">
+            <label>شروط الاستبدال والإرجاع / تذييل الفاتورة (معتمدة)</label>
+            <textarea id="v_footer_in" rows="4" oninput="updateFooterText()">1. يعتبر الطلب معتمدا بعد ساعة من وقت اصدار الطلب مالم يتم المراجعة خلال الساعة.
+2. الالوان والأكسسوارات غير قابلة للارجاع والاستبدال مالم يكن هناك خلل او عيب مصنعي.
+3. بمجرد استلام المنتج، يقر العميل بأنه تم فحص المنتج واستلامه بحالة سليمة ومطابقة للمواصفات.
+4. عند الارجاع والاستبدال تطبق سياسة الارجاع والاستبدال.
+* تطبق الاحكام والشروط</textarea> 
+        </div>
+        
+        <div style="margin-top: 15px;">
+            <button class="btn-export" style="background:#e67e22; width:100%; padding:12px;" onclick="location.reload()">بحث جديد</button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>معاينة المستند الرسمي للفاتورة السابقة</h2>
+        <div class="invoice-wrapper">
+            <div id="printArea" class="invoice-box">
+                <h2 style="text-align:center; color: var(--primary); border:none;">شركة جار الخليج للصناعة</h2>
+                <div class="header-meta">
+                    <div>العميل: <span id="v_name">-</span><br>رقم الطلب: <span id="v_ord">-</span></div>
+                    <div>الفرع: <span id="v_br">-</span><br>المنسق: <span id="v_co">-</span></div>
+                    <div>النوع: <span id="v_ty">-</span><br>الطريقة: <span id="v_me">-</span></div>
+                    <div id="v_maint_text" style="text-align: left; font-weight: bold; color: red; display: none;">صيانة</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الصنف</th>
+                            <th>المقاس</th>
+                            <th>كمية</th>
+                            <th>جوانب</th>
+                            <th>اللون</th>
+                            <th>هراب</th>
+                            <th>اتجاه</th>
+                            <th>خصم</th>
+                            <th>تسليم</th>
+                            <th>الاكسسوارات</th>
+                            <th>ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="11" style="text-align:center; padding:20px; color:#777;">الرجاء إدخال رقم الطلب والضغط على بحث لعرض البيانات</td></tr>
+                    </tbody>
+                </table>
+                
+                <div class="invoice-footer">
+                    <div id="v_footer_display" class="invoice-footer-notes">1. يعتبر الطلب معتمدا بعد ساعة من وقت اصدار الطلب مالم يتم المراجعة خلال الساعة.
+2. الالوان والأكسسوارات غير قابلة للارجاع والاستبدال مالم يكن هناك خلل او عيب مصنعي.
+3. بمجرد استلام المنتج، يقر العميل بأنه تم فحص المنتج واستلامه بحالة سليمة ومطابقة للمواصفات.
+4. عند الارجاع والاستبدال تطبق سياسة الارجاع والاستبدال.
+* تطبق الاحكام والشروط</div>
+                    <div id="v_timestamp_display" class="invoice-timestamp" style="margin-top:10px;">تاريخ الاصدار: -</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+            <button class="btn-export" id="btnPDF" style="background:var(--accent)" onclick="generatePDF()" disabled>تحميل PDF</button>
+            <button class="btn-export" id="btnPNG" style="background:var(--primary)" onclick="exportPNG()" disabled>تصدير PNG</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateFooterText() {
+        document.getElementById('v_footer_display').innerText = document.getElementById('v_footer_in').value;
+    }
+
+    function generatePDF() { 
+        updateFooterText();
+        const printArea = document.getElementById('printArea').innerHTML; 
+        const win = window.open('', '_blank', 'width=800,height=600'); 
+        win.document.write(`<html lang="ar" dir="rtl"><head><title>طباعة الفاتورة السابقة</title><style>body { font-family: Tahoma, sans-serif; padding: 20px; direction: rtl; } .invoice-box { border: 1px solid #ccc; padding: 20px; } h2 { text-align: center; color: #19352d; } .header-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f9f9f9; padding: 10px; margin-bottom: 20px; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 10px; } th { background: #19352d; color: #fff; padding: 8px; font-size: 12px; border: 1px solid #ccc; } td { padding: 8px; border: 1px solid #ccc; text-align: center; font-size: 12px; } .invoice-footer { margin-top: 25px; padding-top: 15px; border-top: 1px dashed #ccc; font-size: 11px; color: #555; white-space: pre-wrap; line-height: 1.6; } .invoice-timestamp { font-weight: bold; color: #19352d; font-size: 10px; text-align: left; }</style></head><body><div class="invoice-box">${printArea}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`); 
+        win.document.close(); 
+    }
+
+    function exportPNG() { 
+        updateFooterText();
+        html2canvas(document.getElementById('printArea')).then(c => { 
+            let l = document.createElement('a'); 
+            l.href = c.toDataURL(); 
+            l.download = 'Invoice_' + document.getElementById('v_ord').innerText + '.png'; 
+            l.click(); 
+        }); 
+    }
+</script>
+</body>
+</html>

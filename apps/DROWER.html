@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مصمم خزانات الفايبر جلاس الهندسية - FRP Tank Blueprint Designer (A3 Standard)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0284c7;
+        }
+
+        /* Canvas Print & Drawing Paper Containers */
+        .drawing-sheet {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        /* Print Media Styles - Strict Single Page A3 Landscape Optimization */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            body * {
+                visibility: hidden;
+            }
+            #printableArea, #printableArea * {
+                visibility: visible;
+            }
+            #printableArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                height: 100% !important;
+                max-height: 285mm !important;
+                margin: 0 !important;
+                padding: 4mm !important;
+                background: white !important;
+                color: black !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            @page {
+                size: A3 landscape;
+                margin: 0;
+            }
+        }
+
+        /* Input styling */
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 0.2rem;
+            display: block;
+        }
+        .input-control {
+            width: 100%;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.375rem;
+            padding: 0.4rem 0.75rem;
+            color: #f8fafc;
+            font-size: 0.85rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-control:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .lug-draggable {
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.1s ease;
+        }
+        .lug-draggable:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+    </style>
+
+<!-- Integrated Jar portal: lightweight device layout enhancements and local navigation only. -->
+<link rel="stylesheet" href="../assets/legacy-mobile.css">
+<script defer src="../assets/app-bridge.js" data-portal-app="frp-designer"></script>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+    <header class="no-print bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-gradient-to-tr from-sky-600 to-cyan-500 p-2.5 rounded-xl shadow-lg shadow-sky-500/20">
+                    <i class="fa-solid fa-drafting-compass text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none text-white font-tajawal">نظام المخططات الهندسية الذكي <span class="text-xs font-mono bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded border border-sky-500/30">v3.5 A3 CAD Pro</span></h1>
+                    <p class="text-xs text-slate-400 mt-1">توليد المخططات الفنية والتقارير لخزانات الفايبر جلاس (FRP)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="loadPreset('250k')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> خزان 250,000L أفقي
+                </button>
+                <button onclick="loadPreset('150k')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-cube text-sky-400"></i> خزان 150,000L عمودي
+                </button>
+                <button onclick="triggerPrint()" class="text-xs bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 py-1.5 rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> طباعة / تصدير PDF (A3)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1700px] w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <div class="no-print lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col h-[calc(100vh-6rem)] sticky top-20">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                <h2 class="font-bold text-slate-200 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-sky-400"></i> متغيرات وتفاصيل الخزان
+                </h2>
+                <span class="text-xs text-slate-500">تحديث فوري للمخطط</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto pr-1 space-y-5 text-slate-300">
+                
+                <div class="space-y-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-building"></i> بيانات الشركة والشعار
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>اسم الشركة المصنعة</label>
+                            <input type="text" id="companyName" value="جار الخليج للتصنيع" class="input-control" oninput="updateDrawing()">
+                        </div>
+                        <div class="input-group">
+                            <label>رفع صورة الشعار</label>
+                            <input type="file" id="companyLogoFile" accept="image/*" class="input-control text-xs" onchange="handleLogoUpload(event)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-compass"></i> نوع الخزان والقباب
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>اتجاه الخزان</label>
+                            <select id="tankOrientation" class="input-control" onchange="updateDrawing()">
+                                <option value="horizontal">أفقي (HORIZONTAL)</option>
+                                <option value="vertical">عمودي (VERTICAL)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>شكل القبة (Dome Type)</label>
+                            <select id="domeType" class="input-control" onchange="updateDrawing()">
+                                <option value="ellipsoidal">بيضاوي قياسي (Ellipsoidal)</option>
+                                <option value="high_dome">قبة كروية مرتفعة (High Dome)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>نوع السائل المخزن</label>
+                            <select id="fluidType" class="input-control" onchange="updateDrawing()">
+                                <option value="WATER">مياه (WATER)</option>
+                                <option value="CHEMICAL">كيميائيات (CHEMICAL)</option>
+                                <option value="BENZINE">بنزين/وقود (BENZINE)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>طبيعة التثبيت</label>
+                            <select id="installType" class="input-control" onchange="updateDrawing()">
+                                <option value="aboveground">فوق الأرض (مع قواعد)</option>
+                                <option value="underground">مدفون تحت الأرض (بدون قواعد)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-building-user"></i> معلومات المخطط والعميل
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>اسم العميل / الشركة</label>
+                            <input type="text" id="clientName" value="شركة المشاريع الحديثة" class="input-control" oninput="updateDrawing()">
+                        </div>
+                        <div class="input-group">
+                            <label>رقم المخطط (توليد تلقائي)</label>
+                            <input type="text" id="drawingNo" value="JK-250K-H-WATER" class="input-control font-mono bg-slate-900 text-sky-400 font-bold" readonly>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>تاريخ المخطط</label>
+                            <input type="date" id="docDate" value="2026-09-27" class="input-control" oninput="updateDrawing()">
+                        </div>
+                        <div class="input-group">
+                            <label>الكمية المطلوبة</label>
+                            <input type="number" id="quantity" value="1" min="1" class="input-control" oninput="updateDrawing()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-ruler-combined"></i> الأبعاد الهندسية الرئيسية
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>السعة الإجمالية (لتر)</label>
+                            <input type="number" id="capacity" value="250000" step="5000" class="input-control font-mono font-bold text-amber-400" oninput="updateDrawing()">
+                        </div>
+                        <div class="input-group">
+                            <label>القطر الخارجي Ø (مم)</label>
+                            <input type="number" id="diameter" value="4000" step="50" class="input-control font-mono" oninput="updateDrawing()">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>الطول / الارتفاع (مم)</label>
+                            <input type="number" id="overallLength" value="21000" step="100" class="input-control font-mono" oninput="updateDrawing()">
+                        </div>
+                        <div class="input-group">
+                            <label>سماكة الجدار (مم)</label>
+                            <input type="number" id="thickness" value="18" step="1" class="input-control font-mono" oninput="updateDrawing()">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>عدد القواعد (Saddles)</label>
+                            <input type="number" id="saddlesCount" value="3" min="0" max="6" class="input-control" oninput="updateDrawing()">
+                        </div>
+                        <div class="input-group">
+                            <label>عمق/عمق القبة (Dome Depth mm)</label>
+                            <input type="number" id="dishRadius" value="800" class="input-control" oninput="updateDrawing()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-faucet-drip"></i> التحكم بفتحات الدخول والتصريف والصيانة
+                    </h3>
+                    
+                    <div class="p-2 bg-slate-900/80 rounded border border-slate-800 space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block"><i class="fa-solid fa-arrow-down-to-bracket me-1"></i> فتحة الدخول (Inlet)</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="input-group">
+                                <label>مقاس/قطر الفتحة</label>
+                                <input type="text" id="inletSize" value="DN100 (4 in)" class="input-control" oninput="updateDrawing()">
+                            </div>
+                            <div class="input-group">
+                                <label>موقع الفتحة</label>
+                                <select id="inletPos" class="input-control" onchange="updateDrawing()">
+                                    <option value="left">جهة اليسار (Left)</option>
+                                    <option value="center">في الوسط (Center)</option>
+                                    <option value="right">جهة اليمين (Right)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-2 bg-slate-900/80 rounded border border-slate-800 space-y-2">
+                        <span class="text-[11px] font-bold text-rose-400 block"><i class="fa-solid fa-arrow-up-from-bracket me-1"></i> فتحة التصريف (Outlet/Drain)</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="input-group">
+                                <label>مقاس/قطر الفتحة</label>
+                                <input type="text" id="outletSize" value="DN150 (6 in)" class="input-control" oninput="updateDrawing()">
+                            </div>
+                            <div class="input-group">
+                                <label>موقع الفتحة</label>
+                                <select id="outletPos" class="input-control" onchange="updateDrawing()">
+                                    <option value="bottom_right">أسفل اليمين (Bottom Right)</option>
+                                    <option value="bottom_left">أسفل اليسار (Bottom Left)</option>
+                                    <option value="bottom_center">أسفل الوسط (Bottom Center)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>موقع فتحة الصيانة (Manhole)</label>
+                            <select id="manholePos" class="input-control" onchange="updateDrawing()">
+                                <option value="center">في الوسط (Center)</option>
+                                <option value="left">جهة اليسار (Left)</option>
+                                <option value="right">جهة اليمين (Right)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>مقاس فتحة الصيانة</label>
+                            <input type="text" id="manholeSize" value="Ø600 mm" class="input-control" oninput="updateDrawing()">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="input-group">
+                            <label>عدد فتحات التهوية (Vent)</label>
+                            <input type="number" id="ventCount" value="2" min="1" max="4" class="input-control" oninput="updateDrawing()">
+                        </div>
+                        <div class="input-group">
+                            <label>عدد فتحات التصريف الثانوية</label>
+                            <input type="number" id="drainCount" value="1" min="1" max="4" class="input-control" oninput="updateDrawing()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-flask"></i> خامات التصنيع والمواد
+                    </h3>
+                    <div class="input-group">
+                        <label>نوع الراتنج والجدار (Resin Grade)</label>
+                        <select id="resinType" class="input-control" onchange="updateDrawing()">
+                            <option value="FRP - Derakane 411 Vinyl Ester">FRP - Derakane 411 Vinyl Ester (مقاوم عالي)</option>
+                            <option value="FRP - Isophthalic Polyester Resin">FRP - Isophthalic Polyester Resin (قياسي)</option>
+                            <option value="FRP - Orthophthalic Resin">FRP - Orthophthalic Resin (مياه عادية)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-anchor"></i> اهواك التعليق (إسقاط وسحب تفاعلي)
+                    </h3>
+                    <p class="text-[11px] text-slate-400">اسحب الهوك للرسم، ويمكنك تحريكه بالماوس فوق الكانفاس مباشرة أو النقر المزدوج لحذفه:</p>
+                    
+                    <div class="grid grid-cols-3 gap-2">
+                        <div draggable="true" ondragstart="dragLug(event, 'standard')" class="lug-draggable bg-slate-800 border border-slate-700 p-2 rounded text-center hover:border-sky-500">
+                            <i class="fa-solid fa-circle-dot text-amber-400 block text-base mb-1"></i>
+                            <span class="text-[10px] block font-bold">قياسي Ring</span>
+                        </div>
+                        <div draggable="true" ondragstart="dragLug(event, 'heavy')" class="lug-draggable bg-slate-800 border border-slate-700 p-2 rounded text-center hover:border-sky-500">
+                            <i class="fa-solid fa-ring text-sky-400 block text-base mb-1"></i>
+                            <span class="text-[10px] block font-bold">مقوّى Pad-Eye</span>
+                        </div>
+                        <div draggable="true" ondragstart="dragLug(event, 'double')" class="lug-draggable bg-slate-800 border border-slate-700 p-2 rounded text-center hover:border-sky-500">
+                            <i class="fa-solid fa-shield text-emerald-400 block text-base mb-1"></i>
+                            <span class="text-[10px] block font-bold">مزدوج Heavy</span>
+                        </div>
+                    </div>
+                    <button onclick="clearLugs()" class="w-full text-xs text-rose-400 bg-slate-800/80 hover:bg-slate-800 py-1.5 rounded border border-slate-700 transition">
+                        <i class="fa-solid fa-trash-can me-1"></i> مسح جميع اهواك التعليق
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="border-t border-slate-800 pt-3 mt-3 flex gap-2">
+                <button onclick="updateDrawing()" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold py-2 rounded-lg text-sm border border-slate-700 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrows-rotate"></i> إعادة تحديث ورسم المخطط
+                </button>
+            </div>
+        </div>
+
+        <div class="lg:col-span-8 flex flex-col gap-4">
+            
+            <div class="no-print bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400 font-semibold me-1"><i class="fa-solid fa-palette"></i> نمط الرسم:</span>
+                    <button onclick="setCadStyle('jar')" id="themeBtn-jar" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-sky-600 text-white border-sky-500 shadow">
+                        ورق فني أبيض (Jar Standard)
+                    </button>
+                    <button onclick="setCadStyle('blueprint')" id="themeBtn-blueprint" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-slate-800 text-slate-300 border-slate-700 hover:border-sky-500">
+                        مخطط هندسي أزرق (Classic CAD)
+                    </button>
+                    <button onclick="setCadStyle('davinci')" id="themeBtn-davinci" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-slate-800 text-slate-300 border-slate-700 hover:border-amber-500">
+                        نمط دافنشي (Vintage Ink)
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="downloadCanvasImage()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-download text-emerald-400"></i> حفظ الصورة (PNG)
+                    </button>
+                </div>
+            </div>
+
+            <div id="printableArea" class="drawing-sheet bg-white text-slate-900 rounded-none md:rounded-lg p-3 sm:p-5 border-4 border-slate-900 min-h-[780px] flex flex-col justify-between overflow-hidden">
+                
+                <div class="border-b-4 border-slate-900 pb-2 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div id="companyLogoContainer" class="flex items-center justify-center max-w-[180px] max-h-[80px] p-1 bg-white border border-slate-300 rounded overflow-hidden">
+                            <i id="defaultCompanyIcon" class="fa-solid fa-industry text-3xl text-slate-900 p-2"></i>
+                            <img id="companyLogoImg" src="" alt="Company Logo" class="hidden max-w-full max-h-[70px] w-auto h-auto object-contain">
+                        </div>
+                        <div>
+                            <h2 id="sheetCompanyName" class="text-2xl font-extrabold tracking-tight text-slate-900 font-tajawal">جار الخليج للتصنيع</h2>
+                            <p class="text-[11px] font-bold text-slate-700 tracking-wider">المخطط الفني المعتمد (مقاس A3) - TECHNICAL BLUEPRINT A3 FORMAT</p>
+                        </div>
+                    </div>
+                    <div class="text-left border-r-0 md:border-r-2 border-slate-400 pr-0 md:pr-4">
+                        <div class="text-[11px] font-bold text-slate-500">سعة الخزان الفعلية / TANK CAPACITY</div>
+                        <div id="sheetCapacityHeader" class="text-2xl font-black text-sky-800 font-mono">250,000 L | 250 m³</div>
+                        <div id="sheetOrientation" class="text-[11px] font-bold bg-slate-200 text-slate-900 px-2 py-0.5 rounded mt-0.5 inline-block">HORIZONTAL | ABOVE GROUND</div>
+                    </div>
+                </div>
+
+                <div class="my-2 relative bg-slate-50 border-2 border-slate-800 rounded p-1 flex items-center justify-center flex-1 min-h-[420px] max-h-[500px]"
+                     ondragover="allowDrop(event)" ondrop="dropLug(event)">
+                    <canvas id="cadCanvas" width="1200" height="520" class="w-full h-auto max-h-full block rounded cursor-crosshair object-contain"></canvas>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-2 text-xs border-t-4 border-slate-900 pt-2">
+                    
+                    <div class="md:col-span-5 border border-slate-900 rounded overflow-hidden">
+                        <div class="bg-slate-900 text-white font-bold px-2 py-0.5 text-center text-[10px]">
+                            جدول المكونات والمواد | BILL OF MATERIALS (BOM)
+                        </div>
+                        <table class="w-full text-right border-collapse text-[9px]">
+                            <thead>
+                                <tr class="bg-slate-200 border-b border-slate-400 font-bold text-slate-800">
+                                    <th class="p-0.5 border-l border-slate-300 text-center">عنصر</th>
+                                    <th class="p-0.5 border-l border-slate-300">الوصف</th>
+                                    <th class="p-0.5">المادة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bomTableBody" class="divide-y divide-slate-300">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    <div class="md:col-span-7 border border-slate-900 rounded overflow-hidden">
+                        <div class="bg-slate-900 text-white font-bold px-2 py-0.5 text-center text-[10px]">
+                            المواصفات الفنية وجدول الفتحات | TECHNICAL SPECIFICATIONS & FITTINGS
+                        </div>
+                        <div class="grid grid-cols-2 text-[9px]">
+                            <div class="p-1 border-r border-b border-slate-300 bg-slate-50">
+                                <span class="font-bold block text-slate-700">المشروع / العميل:</span>
+                                <span id="specClient" class="font-semibold text-slate-900">-</span>
+                            </div>
+                            <div class="p-1 border-b border-slate-300 bg-slate-50">
+                                <span class="font-bold block text-slate-700">رقم المخطط:</span>
+                                <span id="specDrawingNo" class="font-semibold font-mono text-slate-900">-</span>
+                            </div>
+                            <div class="p-1 border-r border-b border-slate-300">
+                                <span class="font-bold block text-slate-700">القطر (Dia) × الطول (Length):</span>
+                                <span id="specDimensions" class="font-semibold font-mono text-slate-900">-</span>
+                            </div>
+                            <div class="p-1 border-b border-slate-300">
+                                <span class="font-bold block text-slate-700">فتحة الدخول / التصريف:</span>
+                                <span id="specInletOutlet" class="font-semibold text-slate-900">-</span>
+                            </div>
+                            <div class="p-1 border-r border-b border-slate-300 bg-slate-50">
+                                <span class="font-bold block text-slate-700">المانهول والتهوية:</span>
+                                <span id="specVentDrain" class="font-semibold text-slate-900">-</span>
+                            </div>
+                            <div class="p-1 border-b border-slate-300 bg-slate-50">
+                                <span class="font-bold block text-slate-700">اهواك التعليق والشكل:</span>
+                                <span id="specLugs" class="font-semibold text-slate-900">-</span>
+                            </div>
+                            <div class="p-1 border-r border-slate-300">
+                                <span class="font-bold block text-slate-700">مواصفة الراتنج والقبة:</span>
+                                <span id="specResin" class="font-semibold text-slate-900 truncate block">-</span>
+                            </div>
+                            <div class="p-1">
+                                <span class="font-bold block text-slate-700">طبيعة التثبيت والقواعد:</span>
+                                <span id="specSaddles" class="font-semibold text-slate-900">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-2 border-t-2 border-slate-400 pt-1 flex justify-between items-center text-[9px] text-slate-600">
+                    <div>جميع الأبعاد بالمليمتر (mm) | A3 Standard Print Layout</div>
+                    <div class="flex gap-4">
+                        <span>التصميم: <strong class="text-slate-800">قسم الهندسة</strong></span>
+                        <span>المراجعة: <strong class="text-slate-800">إدارة الجودة</strong></span>
+                        <span>التاريخ: <strong id="sheetDate" class="text-slate-800">2026-09-27</strong></span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global State & Settings
+        let currentTheme = 'jar';
+        let customLugs = [
+            { x: 320, y: 150, type: 'standard' },
+            { x: 700, y: 150, type: 'heavy' }
+        ];
+
+        let selectedLugIndex = -1;
+        let isDraggingLugOnCanvas = false;
+        let uploadedLogoBase64 = '';
+
+        const themeConfigs = {
+            jar: {
+                bg: '#ffffff',
+                grid: '#f1f5f9',
+                mainLine: '#0f172a',
+                centerLine: '#ef4444',
+                dimensionLine: '#0284c7',
+                hatch: '#e2e8f0',
+                accent: '#0d9488',
+                inletColor: '#10b981',
+                outletColor: '#f43f5e',
+                text: '#1e293b'
+            },
+            blueprint: {
+                bg: '#0b2545',
+                grid: '#13315c',
+                mainLine: '#ffffff',
+                centerLine: '#f59e0b',
+                dimensionLine: '#38bdf8',
+                hatch: '#1e3a8a',
+                accent: '#34d399',
+                inletColor: '#34d399',
+                outletColor: '#fb7185',
+                text: '#f8fafc'
+            },
+            davinci: {
+                bg: '#f4ebd0',
+                grid: '#e6dac0',
+                mainLine: '#3a2e2b',
+                centerLine: '#9a3412',
+                dimensionLine: '#78350f',
+                hatch: '#e5d5b5',
+                accent: '#b45309',
+                inletColor: '#15803d',
+                outletColor: '#b91c1c',
+                text: '#291e1a'
+            }
+        };
+
+        window.onload = function() {
+            initCanvasEvents();
+            updateDrawing();
+            window.addEventListener('resize', debounce(() => updateDrawing(), 250));
+        };
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedLogoBase64 = e.target.result;
+                    updateDrawing();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function initCanvasEvents() {
+            const canvas = document.getElementById('cadCanvas');
+
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+
+                selectedLugIndex = customLugs.findIndex(lug => {
+                    const dist = Math.hypot(lug.x - mouseX, lug.y - mouseY);
+                    return dist <= 20;
+                });
+
+                if (selectedLugIndex !== -1) {
+                    isDraggingLugOnCanvas = true;
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDraggingLugOnCanvas && selectedLugIndex !== -1) {
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    customLugs[selectedLugIndex].x = (e.clientX - rect.left) * scaleX;
+                    customLugs[selectedLugIndex].y = (e.clientY - rect.top) * scaleY;
+                    updateDrawing();
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                isDraggingLugOnCanvas = false;
+            });
+
+            canvas.addEventListener('dblclick', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+
+                const hitIdx = customLugs.findIndex(lug => Math.hypot(lug.x - mouseX, lug.y - mouseY) <= 20);
+                if (hitIdx !== -1) {
+                    customLugs.splice(hitIdx, 1);
+                    updateDrawing();
+                }
+            });
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function dragLug(ev, lugType) { ev.dataTransfer.setData("text/plain", lugType); }
+
+        function dropLug(ev) {
+            ev.preventDefault();
+            const canvas = document.getElementById('cadCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const x = (ev.clientX - rect.left) * scaleX;
+            const y = (ev.clientY - rect.top) * scaleY;
+            const lugType = ev.dataTransfer.getData("text/plain") || 'standard';
+
+            customLugs.push({ x, y, type: lugType });
+            updateDrawing();
+        }
+
+        function clearLugs() {
+            customLugs = [];
+            updateDrawing();
+        }
+
+        function loadPreset(type) {
+            if (type === '250k') {
+                document.getElementById('capacity').value = 250000;
+                document.getElementById('diameter').value = 4000;
+                document.getElementById('overallLength').value = 21000;
+                document.getElementById('thickness').value = 18;
+                document.getElementById('saddlesCount').value = 3;
+                document.getElementById('tankOrientation').value = 'horizontal';
+                document.getElementById('fluidType').value = 'WATER';
+                document.getElementById('installType').value = 'aboveground';
+                document.getElementById('domeType').value = 'ellipsoidal';
+            } else if (type === '150k') {
+                document.getElementById('capacity').value = 150000;
+                document.getElementById('diameter').value = 3500;
+                document.getElementById('overallLength').value = 16500;
+                document.getElementById('thickness').value = 14;
+                document.getElementById('saddlesCount').value = 0;
+                document.getElementById('tankOrientation').value = 'vertical';
+                document.getElementById('fluidType').value = 'CHEMICAL';
+                document.getElementById('installType').value = 'aboveground';
+                document.getElementById('domeType').value = 'high_dome';
+            }
+            updateDrawing();
+        }
+
+        function setCadStyle(themeKey) {
+            currentTheme = themeKey;
+            ['jar', 'blueprint', 'davinci'].forEach(t => {
+                const btn = document.getElementById(`themeBtn-${t}`);
+                if (t === themeKey) {
+                    btn.className = "text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-sky-600 text-white border-sky-500 shadow";
+                } else {
+                    btn.className = "text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-slate-800 text-slate-300 border-slate-700 hover:border-sky-500";
+                }
+            });
+            updateDrawing();
+        }
+
+        function updateDrawing() {
+            const companyName = document.getElementById('companyName').value || 'شركة جار الخليج';
+            const clientName = document.getElementById('clientName').value || 'عميل افتراضي';
+            const capacity = parseFloat(document.getElementById('capacity').value) || 250000;
+            const tankOrientation = document.getElementById('tankOrientation').value;
+            const domeType = document.getElementById('domeType').value;
+            const fluidType = document.getElementById('fluidType').value;
+
+            // Dynamic Drawing Number Generation
+            const capK = capacity >= 1000 ? (capacity / 1000) + 'K' : capacity;
+            const orientCode = tankOrientation === 'horizontal' ? 'H' : 'V';
+            const generatedDrawingNo = `JK-${capK}-${orientCode}-${fluidType}`;
+            document.getElementById('drawingNo').value = generatedDrawingNo;
+
+            const diameter = parseFloat(document.getElementById('diameter').value) || 4000;
+            const overallLength = parseFloat(document.getElementById('overallLength').value) || 21000;
+            const thickness = parseFloat(document.getElementById('thickness').value) || 16;
+            const saddlesCount = parseInt(document.getElementById('saddlesCount').value) || 0;
+            const dishRadius = parseFloat(document.getElementById('dishRadius').value) || 800;
+            const resinType = document.getElementById('resinType').value;
+            const installType = document.getElementById('installType').value;
+
+            const inletSize = document.getElementById('inletSize').value;
+            const inletPos = document.getElementById('inletPos').value;
+            const outletSize = document.getElementById('outletSize').value;
+            const outletPos = document.getElementById('outletPos').value;
+
+            const manholePos = document.getElementById('manholePos').value;
+            const manholeSize = document.getElementById('manholeSize').value;
+            const ventCount = parseInt(document.getElementById('ventCount').value) || 1;
+            const drainCount = parseInt(document.getElementById('drainCount').value) || 1;
+            const docDate = document.getElementById('docDate').value;
+
+            // Update Dynamic Header Logo
+            document.getElementById('sheetCompanyName').innerText = companyName;
+            const companyLogoImg = document.getElementById('companyLogoImg');
+            const defaultCompanyIcon = document.getElementById('defaultCompanyIcon');
+
+            if (uploadedLogoBase64 !== '') {
+                companyLogoImg.src = uploadedLogoBase64;
+                companyLogoImg.classList.remove('hidden');
+                defaultCompanyIcon.classList.add('hidden');
+            } else {
+                companyLogoImg.classList.add('hidden');
+                defaultCompanyIcon.classList.remove('hidden');
+            }
+
+            // Update Specs Sheet
+            document.getElementById('sheetCapacityHeader').innerText = `${capacity.toLocaleString()} L | ${(capacity/1000).toFixed(0)} m³`;
+            document.getElementById('sheetOrientation').innerText = `${tankOrientation.toUpperCase()} (${fluidType}) | ${installType === 'underground' ? 'UNDERGROUND (مدفون)' : 'ABOVE GROUND (فوق الأرض)'}`;
+            
+            document.getElementById('specClient').innerText = clientName;
+            document.getElementById('specDrawingNo').innerText = generatedDrawingNo;
+            document.getElementById('specDimensions').innerText = `Ø ${diameter.toLocaleString()} mm × ${overallLength.toLocaleString()} mm (t=${thickness}mm)`;
+            document.getElementById('specInletOutlet').innerText = `دخول: ${inletSize} | تصريف: ${outletSize}`;
+            document.getElementById('specVentDrain').innerText = `مانهول: ${manholeSize} | تهوية: ${ventCount}`;
+            document.getElementById('specLugs').innerText = `${customLugs.length} اهواك تعليق (${domeType === 'high_dome' ? 'قبة مرتفعة' : 'قبة بيضاوية'})`;
+            document.getElementById('specResin').innerText = resinType;
+            document.getElementById('specSaddles').innerText = installType === 'underground' ? 'مدفون (بدون قواعد)' : `${saddlesCount} قواعد تثبيت خرسانية`;
+            document.getElementById('sheetDate').innerText = docDate;
+
+            // Populate BOM Table
+            const bomBody = document.getElementById('bomTableBody');
+            bomBody.innerHTML = `
+                <tr class="hover:bg-slate-100">
+                    <td class="p-0.5 border-l border-slate-300 text-center font-bold">1</td>
+                    <td class="p-0.5 border-l border-slate-300">جسم الخزان (${tankOrientation === 'vertical' ? 'عمودي' : 'أفقي'}) - (${fluidType})</td>
+                    <td class="p-0.5 font-mono">${resinType.split('-')[0].trim()}</td>
+                </tr>
+                <tr class="hover:bg-slate-100">
+                    <td class="p-0.5 border-l border-slate-300 text-center font-bold">2</td>
+                    <td class="p-0.5 border-l border-slate-300">قباب وأغطية الخزان (${domeType === 'high_dome' ? 'قبب كروية مرتفعة' : 'قبب بيضاوية قياسية'})</td>
+                    <td class="p-0.5 font-mono">FRP Multi-Layer Dome</td>
+                </tr>
+                <tr class="hover:bg-slate-100">
+                    <td class="p-0.5 border-l border-slate-300 text-center font-bold">3</td>
+                    <td class="p-0.5 border-l border-slate-300">فتحة دخول الرئيسية (${inletSize}) + فتحة تصريف (${outletSize})</td>
+                    <td class="p-0.5 font-mono">FRP Flanged Fittings</td>
+                </tr>
+                <tr class="hover:bg-slate-100">
+                    <td class="p-0.5 border-l border-slate-300 text-center font-bold">4</td>
+                    <td class="p-0.5 border-l border-slate-300">فتحة صيانة مانهول (${manholeSize}) + تهوية (${ventCount}x Vent)</td>
+                    <td class="p-0.5 font-mono">PVC / Stainless Bolts</td>
+                </tr>
+                <tr class="hover:bg-slate-100">
+                    <td class="p-0.5 border-l border-slate-300 text-center font-bold">5</td>
+                    <td class="p-0.5 border-l border-slate-300">اهواك التعليق والرفع (${customLugs.length}x)</td>
+                    <td class="p-0.5 font-mono">Steel Heavy Duty</td>
+                </tr>
+            `;
+
+            // Render Canvas
+            renderCadCanvas({
+                capacity,
+                diameter,
+                overallLength,
+                thickness,
+                saddlesCount,
+                dishRadius,
+                tankOrientation,
+                domeType,
+                installType,
+                inletSize,
+                inletPos,
+                outletSize,
+                outletPos,
+                manholePos,
+                manholeSize,
+                ventCount,
+                drainCount
+            });
+        }
+
+        function renderCadCanvas(params) {
+            const canvas = document.getElementById('cadCanvas');
+            const ctx = canvas.getContext('2d');
+            const theme = themeConfigs[currentTheme];
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            // Clear Background
+            ctx.fillStyle = theme.bg;
+            ctx.fillRect(0, 0, W, H);
+
+            // Draw Grid Pattern
+            ctx.strokeStyle = theme.grid;
+            ctx.lineWidth = 0.5;
+            const gridSize = 25;
+            for (let x = 0; x < W; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+            }
+            for (let y = 0; y < H; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+            }
+
+            if (params.tankOrientation === 'horizontal') {
+                renderHorizontalTank(ctx, W, H, theme, params);
+            } else {
+                renderVerticalTank(ctx, W, H, theme, params);
+            }
+
+            // Render Lifting Lugs
+            customLugs.forEach((lug, idx) => {
+                ctx.save();
+                ctx.translate(lug.x, lug.y);
+                
+                ctx.strokeStyle = (selectedLugIndex === idx) ? '#f59e0b' : theme.accent;
+                ctx.fillStyle = (selectedLugIndex === idx) ? '#f59e0b' : theme.accent;
+                ctx.lineWidth = (selectedLugIndex === idx) ? 3 : 2;
+
+                if (lug.type === 'heavy') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 12, Math.PI, 0, false);
+                    ctx.lineTo(12, 10); ctx.lineTo(-12, 10);
+                    ctx.closePath();
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (lug.type === 'double') {
+                    ctx.beginPath();
+                    ctx.rect(-10, -12, 20, 24);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.font = 'bold 9px Cairo';
+                ctx.fillStyle = theme.text;
+                ctx.fillText(`LUG #${idx+1}`, 14, 3);
+                ctx.restore();
+            });
+        }
+
+        // Horizontal Tank Drawing Render Function
+        function renderHorizontalTank(ctx, W, H, theme, params) {
+            const sideViewWidth = W * 0.62;
+            const sideViewHeight = H * 0.48;
+            const sideViewX = 90;
+            const sideViewY = 175;
+
+            const endViewRadius = 75;
+            const endViewX = W - 140;
+            const endViewY = sideViewY + sideViewHeight / 2 - 10;
+
+            const scaleX = (sideViewWidth - 100) / params.overallLength;
+            const tankPxLength = params.overallLength * scaleX;
+            const tankPxDiameter = Math.min(sideViewHeight, params.diameter * scaleX * 1.15);
+            
+            // Dome Depth Factor based on domeType selection
+            const domeFactor = params.domeType === 'high_dome' ? 0.55 : 0.35;
+            const dishPxRadius = Math.max(30, tankPxDiameter * domeFactor);
+
+            // Centerline
+            ctx.setLineDash([8, 4, 2, 4]);
+            ctx.strokeStyle = theme.centerLine;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(sideViewX - 40, sideViewY + tankPxDiameter / 2);
+            ctx.lineTo(sideViewX + tankPxLength + 40, sideViewY + tankPxDiameter / 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(endViewX - endViewRadius - 25, endViewY);
+            ctx.lineTo(endViewX + endViewRadius + 25, endViewY);
+            ctx.moveTo(endViewX, endViewY - endViewRadius - 25);
+            ctx.lineTo(endViewX, endViewY + endViewRadius + 25);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            const bodyLeft = sideViewX + dishPxRadius;
+            const bodyRight = sideViewX + tankPxLength - dishPxRadius;
+            const tankTop = sideViewY;
+            const tankBottom = sideViewY + tankPxDiameter;
+
+            // Shell Body Shell
+            ctx.strokeStyle = theme.mainLine;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(bodyLeft, tankTop); ctx.lineTo(bodyRight, tankTop);
+            ctx.moveTo(bodyLeft, tankBottom); ctx.lineTo(bodyRight, tankBottom);
+            ctx.stroke();
+
+            // Render Left & Right Domes (قبب الخزان)
+            ctx.beginPath();
+            ctx.moveTo(bodyLeft, tankTop);
+            ctx.bezierCurveTo(sideViewX, tankTop, sideViewX, tankBottom, bodyLeft, tankBottom);
+            ctx.moveTo(bodyRight, tankTop);
+            ctx.bezierCurveTo(sideViewX + tankPxLength, tankTop, sideViewX + tankPxLength, tankBottom, bodyRight, tankBottom);
+            ctx.stroke();
+
+            // Underground or Aboveground Base Line
+            if (params.installType === 'underground') {
+                const groundY = tankTop - 45;
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = '#854d0e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sideViewX - 50, groundY);
+                ctx.lineTo(sideViewX + tankPxLength + 50, groundY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.font = 'bold 11px Cairo';
+                ctx.fillStyle = '#854d0e';
+                ctx.fillText('▼ مستوى سطح الأرض (Underground Level)', sideViewX + 10, groundY - 10);
+            } else {
+                const numSaddles = params.saddlesCount;
+                if (numSaddles > 0) {
+                    const saddleSpacing = (bodyRight - bodyLeft) / (numSaddles > 1 ? numSaddles - 1 : 1);
+                    const saddleWidth = 24;
+                    const saddleHeight = 38;
+
+                    ctx.fillStyle = theme.hatch;
+                    ctx.strokeStyle = theme.mainLine;
+                    ctx.lineWidth = 2;
+
+                    for (let i = 0; i < numSaddles; i++) {
+                        let sx = (numSaddles === 1) ? (bodyLeft + bodyRight) / 2 : bodyLeft + (i * saddleSpacing);
+                        sx = Math.max(bodyLeft + 15, Math.min(bodyRight - 15, sx));
+
+                        ctx.fillRect(sx - saddleWidth/2, tankBottom, saddleWidth, saddleHeight);
+                        ctx.strokeRect(sx - saddleWidth/2, tankBottom, saddleWidth, saddleHeight);
+
+                        ctx.beginPath();
+                        ctx.moveTo(sx - saddleWidth/2 - 6, tankBottom + saddleHeight);
+                        ctx.lineTo(sx + saddleWidth/2 + 6, tankBottom + saddleHeight);
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                        ctx.lineWidth = 2;
+                    }
+
+                    const groundY = tankBottom + 38;
+                    ctx.setLineDash([6, 4]);
+                    ctx.strokeStyle = '#854d0e';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(sideViewX - 40, groundY);
+                    ctx.lineTo(sideViewX + tankPxLength + 40, groundY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.font = 'bold 10px Cairo';
+                    ctx.fillStyle = '#854d0e';
+                    ctx.fillText('▼ مستوى الأساس الخرساني (Concrete Pad Level)', sideViewX + 10, groundY + 16);
+                }
+            }
+
+            // Inlet Nozzle (فتحة الدخول)
+            let inX = bodyLeft + 40;
+            if (params.inletPos === 'center') inX = bodyLeft + (bodyRight - bodyLeft) * 0.5;
+            if (params.inletPos === 'right') inX = bodyRight - 40;
+
+            ctx.fillStyle = theme.inletColor;
+            ctx.fillRect(inX - 12, tankTop - 20, 24, 20);
+            ctx.strokeRect(inX - 12, tankTop - 20, 24, 20);
+            ctx.font = 'bold 9px Cairo';
+            ctx.fillStyle = theme.inletColor;
+            ctx.fillText(`Inlet (${params.inletSize})`, inX - 25, tankTop - 25);
+
+            // Outlet Nozzle (فتحة التصريف)
+            let outX = bodyRight - 40;
+            if (params.outletPos === 'bottom_center') outX = bodyLeft + (bodyRight - bodyLeft) * 0.5;
+            if (params.outletPos === 'bottom_left') outX = bodyLeft + 40;
+
+            ctx.fillStyle = theme.outletColor;
+            ctx.fillRect(outX - 12, tankBottom, 24, 20);
+            ctx.strokeRect(outX - 12, tankBottom, 24, 20);
+            ctx.font = 'bold 9px Cairo';
+            ctx.fillStyle = theme.outletColor;
+            ctx.fillText(`Outlet (${params.outletSize})`, outX - 25, tankBottom + 32);
+
+            // Manhole
+            let manholeX = bodyLeft + (bodyRight - bodyLeft) * 0.5;
+            if (params.manholePos === 'left') manholeX = bodyLeft + 60;
+            if (params.manholePos === 'right') manholeX = bodyRight - 60;
+
+            ctx.fillStyle = theme.accent;
+            ctx.fillRect(manholeX - 16, tankTop - 18, 32, 18);
+            ctx.strokeRect(manholeX - 16, tankTop - 18, 32, 18);
+            ctx.font = 'bold 9px Cairo';
+            ctx.fillStyle = theme.text;
+            ctx.fillText('Manhole', manholeX - 16, tankTop - 23);
+
+            // End View
+            ctx.beginPath();
+            ctx.arc(endViewX, endViewY, endViewRadius, 0, Math.PI * 2);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = theme.mainLine;
+            ctx.stroke();
+
+            // Spaced Dimensions Lines
+            ctx.strokeStyle = theme.dimensionLine;
+            ctx.fillStyle = theme.text;
+            ctx.font = 'bold 11px Courier New, monospace';
+
+            // Bottom Length Dimension Line (Spaced Far Down)
+            const dimY = tankBottom + 68;
+            drawDimensionArrow(ctx, sideViewX, dimY, sideViewX + tankPxLength, dimY, theme.dimensionLine);
+            ctx.textAlign = 'center';
+            ctx.fillText(`${params.overallLength.toLocaleString()} mm OVERALL LENGTH`, sideViewX + tankPxLength/2, dimY - 8);
+
+            // Left Diameter Dimension Line (Spaced Far Left)
+            const dimX = sideViewX - 45;
+            drawDimensionArrow(ctx, dimX, tankTop, dimX, tankBottom, theme.dimensionLine);
+            ctx.save();
+            ctx.translate(dimX - 12, sideViewY + tankPxDiameter/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.textAlign = 'center';
+            ctx.fillText(`Ø ${params.diameter.toLocaleString()} mm (t=${params.thickness}mm)`, 0, 0);
+            ctx.restore();
+
+            // Well Spaced Titles
+            ctx.font = 'bold 12px Cairo, sans-serif';
+            ctx.fillText('المسقط الجانبي - SIDE ELEVATION', sideViewX + tankPxLength/2, sideViewY - 55);
+            ctx.fillText('المسقط الراسي - END VIEW', endViewX, sideViewY - 55);
+        }
+
+        // Vertical Tank Drawing Render Function
+        function renderVerticalTank(ctx, W, H, theme, params) {
+            const sideViewX = 220;
+            const sideViewY = 150;
+            const tankPxWidth = 220;
+            const tankPxHeight = 260;
+            const domeHeight = params.domeType === 'high_dome' ? 65 : 45;
+
+            const endViewRadius = 75;
+            const endViewX = W - 200;
+            const endViewY = sideViewY + tankPxHeight / 2;
+
+            // Centerline
+            ctx.setLineDash([8, 4, 2, 4]);
+            ctx.strokeStyle = theme.centerLine;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(sideViewX + tankPxWidth / 2, sideViewY - domeHeight - 25);
+            ctx.lineTo(sideViewX + tankPxWidth / 2, sideViewY + tankPxHeight + 50);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Main Vertical Shell
+            ctx.strokeStyle = theme.mainLine;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.rect(sideViewX, sideViewY, tankPxWidth, tankPxHeight);
+            ctx.stroke();
+
+            // Top Dome (القبة العلوية)
+            ctx.beginPath();
+            ctx.moveTo(sideViewX, sideViewY);
+            ctx.bezierCurveTo(sideViewX, sideViewY - domeHeight, sideViewX + tankPxWidth, sideViewY - domeHeight, sideViewX + tankPxWidth, sideViewY);
+            ctx.stroke();
+
+            // Bottom Head Dome (القبة السفلية)
+            ctx.beginPath();
+            ctx.moveTo(sideViewX, sideViewY + tankPxHeight);
+            ctx.bezierCurveTo(sideViewX, sideViewY + tankPxHeight + domeHeight/1.5, sideViewX + tankPxWidth, sideViewY + tankPxHeight + domeHeight/1.5, sideViewX + tankPxWidth, sideViewY + tankPxHeight);
+            ctx.stroke();
+
+            // Inlet / Outlet Nozzles for Vertical Tank
+            ctx.fillStyle = theme.inletColor;
+            ctx.fillRect(sideViewX - 20, sideViewY + 30, 20, 16);
+            ctx.strokeRect(sideViewX - 20, sideViewY + 30, 20, 16);
+            ctx.font = 'bold 9px Cairo';
+            ctx.fillText(`Inlet (${params.inletSize})`, sideViewX - 70, sideViewY + 42);
+
+            ctx.fillStyle = theme.outletColor;
+            ctx.fillRect(sideViewX + tankPxWidth, sideViewY + tankPxHeight - 40, 20, 16);
+            ctx.strokeRect(sideViewX + tankPxWidth, sideViewY + tankPxHeight - 40, 20, 16);
+            ctx.font = 'bold 9px Cairo';
+            ctx.fillText(`Outlet (${params.outletSize})`, sideViewX + tankPxWidth + 25, sideViewY + tankPxHeight - 28);
+
+            // Ground Level Line
+            if (params.installType === 'underground') {
+                const groundY = sideViewY - domeHeight - 12;
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = '#854d0e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sideViewX - 60, groundY);
+                ctx.lineTo(sideViewX + tankPxWidth + 60, groundY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.font = 'bold 11px Cairo';
+                ctx.fillStyle = '#854d0e';
+                ctx.fillText('▼ مستوى الأرض (Underground Vertical)', sideViewX - 55, groundY - 8);
+            } else {
+                const groundY = sideViewY + tankPxHeight + 35;
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = '#854d0e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sideViewX - 60, groundY);
+                ctx.lineTo(sideViewX + tankPxWidth + 60, groundY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.font = 'bold 11px Cairo';
+                ctx.fillStyle = '#854d0e';
+                ctx.fillText('▼ القاعدة الخرسانية / سطح الأرض (Base Concrete Pad)', sideViewX - 55, groundY + 16);
+            }
+
+            // Manhole
+            let mhX = sideViewX + tankPxWidth / 2;
+            if (params.manholePos === 'left') mhX = sideViewX + 40;
+            if (params.manholePos === 'right') mhX = sideViewX + tankPxWidth - 40;
+
+            ctx.fillStyle = theme.accent;
+            ctx.fillRect(mhX - 16, sideViewY - domeHeight + 5, 32, 14);
+            ctx.strokeRect(mhX - 16, sideViewY - domeHeight + 5, 32, 14);
+
+            // End View
+            ctx.beginPath();
+            ctx.arc(endViewX, endViewY, endViewRadius, 0, Math.PI * 2);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Dimensions (Spaced Text)
+            ctx.strokeStyle = theme.dimensionLine;
+            ctx.fillStyle = theme.text;
+            ctx.font = 'bold 11px Courier New, monospace';
+
+            drawDimensionArrow(ctx, sideViewX + tankPxWidth + 55, sideViewY - domeHeight/2, sideViewX + tankPxWidth + 55, sideViewY + tankPxHeight, theme.dimensionLine);
+            ctx.save();
+            ctx.translate(sideViewX + tankPxWidth + 72, sideViewY + tankPxHeight/2);
+            ctx.rotate(Math.PI/2);
+            ctx.textAlign = 'center';
+            ctx.fillText(`${params.overallLength.toLocaleString()} mm HEIGHT (t=${params.thickness}mm)`, 0, 0);
+            ctx.restore();
+
+            drawDimensionArrow(ctx, sideViewX, sideViewY + tankPxHeight + 50, sideViewX + tankPxWidth, sideViewY + tankPxHeight + 50, theme.dimensionLine);
+            ctx.textAlign = 'center';
+            ctx.fillText(`Ø ${params.diameter.toLocaleString()} mm`, sideViewX + tankPxWidth/2, sideViewY + tankPxHeight + 42);
+
+            ctx.font = 'bold 12px Cairo, sans-serif';
+            ctx.fillText('مسقط رأسي عمودي مع قبة - VERTICAL DOME ELEVATION', sideViewX + tankPxWidth/2, sideViewY - domeHeight - 30);
+            ctx.fillText('المسقط الأفقي العلوي - TOP VIEW', endViewX, sideViewY - domeHeight - 30);
+        }
+
+        function drawDimensionArrow(ctx, x1, y1, x2, y2, color) {
+            const arrowSize = 6;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            if (x1 === x2) {
+                ctx.moveTo(x1 - 6, y1); ctx.lineTo(x1 + 6, y1);
+                ctx.moveTo(x2 - 6, y2); ctx.lineTo(x2 + 6, y2);
+            } else {
+                ctx.moveTo(x1, y1 - 6); ctx.lineTo(x1, y1 + 6);
+                ctx.moveTo(x2, y2 - 6); ctx.lineTo(x2, y2 + 6);
+            }
+            ctx.stroke();
+
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + arrowSize * Math.cos(angle + Math.PI/6), y1 + arrowSize * Math.sin(angle + Math.PI/6));
+            ctx.lineTo(x1 + arrowSize * Math.cos(angle - Math.PI/6), y1 + arrowSize * Math.sin(angle - Math.PI/6));
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - arrowSize * Math.cos(angle + Math.PI/6), y2 - arrowSize * Math.sin(angle + Math.PI/6));
+            ctx.lineTo(x2 - arrowSize * Math.cos(angle - Math.PI/6), y2 - arrowSize * Math.sin(angle - Math.PI/6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function downloadCanvasImage() {
+            const canvas = document.getElementById('cadCanvas');
+            const link = document.createElement('a');
+            const drawingNo = document.getElementById('drawingNo').value || 'Tank-Blueprint';
+            link.download = `${drawingNo}-CAD-A3.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function triggerPrint() {
+            window.print();
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>
