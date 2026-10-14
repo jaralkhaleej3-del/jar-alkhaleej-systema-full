@@ -1,0 +1,255 @@
+{
+  "categories": [
+    {
+      "id": "orders",
+      "name": "الطلبات والإنتاج",
+      "subtitle": "إنشاء الطلبات وتجهيزها ومتابعتها وطباعة تفاصيلها",
+      "icon": "📋"
+    },
+    {
+      "id": "sales",
+      "name": "المبيعات والعملاء",
+      "subtitle": "المندوبون، عملاء الإعلانات، والتقارير المالية",
+      "icon": "📈"
+    },
+    {
+      "id": "finance",
+      "name": "المالية والصناديق",
+      "subtitle": "الصندوق والتدفقات النقدية والتصفيات",
+      "icon": "💳"
+    },
+    {
+      "id": "factory",
+      "name": "المصنع والمخزون",
+      "subtitle": "دفتر الخلطة، المخزون وتقارير الإنتاج",
+      "icon": "🏭"
+    },
+    {
+      "id": "engineering",
+      "name": "الهندسة والتصميم",
+      "subtitle": "رسم المخططات الهندسية لخزانات الفايبر جلاس",
+      "icon": "📐"
+    },
+    {
+      "id": "management",
+      "name": "الإدارة والخدمات",
+      "subtitle": "الصيانة، العهد والأجهزة والأسطول",
+      "icon": "🗂️"
+    }
+  ],
+  "apps": [
+    {
+      "id": "orders-dashboard",
+      "title": "لوحة تحكم الطلبات",
+      "description": "متابعة الطلبات والنوتة التفاعلية والتقارير حسب الفرع",
+      "file": "dashboard(3).html",
+      "category": "orders",
+      "icon": "📊",
+      "role": "main",
+      "project": "jaralkhaleej-production",
+      "children": [
+        "order-entry",
+        "production-board",
+        "order-print",
+        "order-print-old"
+      ]
+    },
+    {
+      "id": "order-entry",
+      "title": "إنشاء طلب جديد",
+      "description": "إدخال بيانات العملاء والأصناف وإصدار الطلب",
+      "file": "index.html",
+      "category": "orders",
+      "icon": "➕",
+      "role": "child",
+      "parent": "orders-dashboard",
+      "project": "jaralkhaleej-production"
+    },
+    {
+      "id": "production-board",
+      "title": "لوحة مسؤول الإنتاج",
+      "description": "متابعة حالة تصنيع وتجهيز الطلبات",
+      "file": "production.html",
+      "category": "orders",
+      "icon": "⚙️",
+      "role": "child",
+      "parent": "orders-dashboard",
+      "project": "jaralkhaleej-production"
+    },
+    {
+      "id": "order-print",
+      "title": "البحث والطباعة",
+      "description": "استعراض وطباعة الطلبات السابقة",
+      "file": "print.html",
+      "category": "orders",
+      "icon": "🖨️",
+      "role": "child",
+      "parent": "orders-dashboard",
+      "project": "jaralkhaleej-production"
+    },
+    {
+      "id": "order-print-old",
+      "title": "الطباعة السابقة (نسخة قديمة)",
+      "description": "نسخة سابقة محفوظة للرجوع فقط؛ قد لا تكون مرتبطة بقاعدة حديثة",
+      "file": "print1.html",
+      "category": "orders",
+      "icon": "📄",
+      "role": "legacy",
+      "parent": "orders-dashboard",
+      "project": ""
+    },
+    {
+      "id": "sales-field",
+      "title": "واجهة المندوب الميداني",
+      "description": "سلة طلبات العملاء ومتابعة الطلبات على السحابة",
+      "file": "whatsapp_order)sup.html",
+      "category": "sales",
+      "icon": "📱",
+      "role": "main",
+      "project": "whatsapp-leads-db",
+      "children": [
+        "sales-leads"
+      ]
+    },
+    {
+      "id": "sales-leads",
+      "title": "متابعة عملاء الإعلانات",
+      "description": "تسجيل ومتابعة عملاء مواقع التواصل",
+      "file": "whatsapp_orders.html",
+      "category": "sales",
+      "icon": "💬",
+      "role": "child",
+      "parent": "sales-field",
+      "project": "whatsapp-leads-db"
+    },
+    {
+      "id": "sales-totals",
+      "title": "إجماليات المناديب",
+      "description": "تقارير المبيعات ومقارنة أداء مندوبي المبيعات",
+      "file": "sales_man.html",
+      "category": "sales",
+      "icon": "📈",
+      "role": "main",
+      "project": "jar-alkhaleej-system-4ae94"
+    },
+    {
+      "id": "sales-calc",
+      "title": "استوديو تقارير العمولات",
+      "description": "حساب وتقارير عمولات ومبيعات المناديب",
+      "file": "smart_calc.html",
+      "category": "sales",
+      "icon": "🧮",
+      "role": "child",
+      "parent": "sales-totals",
+      "project": ""
+    },
+    {
+      "id": "cash-manager",
+      "title": "إدارة الصناديق والتدفقات",
+      "description": "السندات والتسويات والصناديق وحركة النقد",
+      "file": "cash_mony.html",
+      "category": "finance",
+      "icon": "💰",
+      "role": "main",
+      "project": "money-tracker-8c6bf",
+      "children": [
+        "cash-monitor"
+      ]
+    },
+    {
+      "id": "cash-monitor",
+      "title": "لوحة المتابعة المالية",
+      "description": "لوحة عرض التدفقات والتصفيات",
+      "file": "cash_mony _dashboard.html",
+      "category": "finance",
+      "icon": "📉",
+      "role": "child",
+      "parent": "cash-manager",
+      "project": "money-tracker-8c6bf"
+    },
+    {
+      "id": "mixing-ledger",
+      "title": "دفتر الخلطة والتكاليف",
+      "description": "التقليب والإنتاج والخامات وحساب التكاليف",
+      "file": "prodict_hall.html",
+      "category": "factory",
+      "icon": "🧪",
+      "role": "main",
+      "project": "jar-alkhaleej-factory",
+      "children": [
+        "production-report"
+      ]
+    },
+    {
+      "id": "stock-manager",
+      "title": "إدارة الاستوك والمخزون",
+      "description": "تسجيل وإدارة وبيع المنتجات المتوفرة بالمخزون",
+      "file": "stocks_store.html",
+      "category": "factory",
+      "icon": "📦",
+      "role": "main",
+      "project": "stock-management-system-3719d"
+    },
+    {
+      "id": "production-report",
+      "title": "تقرير الإنتاج (مستقل)",
+      "description": "نموذج تقرير بيانات الإنتاج للطباعة",
+      "file": "prodict.html",
+      "category": "factory",
+      "icon": "📑",
+      "role": "child",
+      "parent": "mixing-ledger",
+      "project": ""
+    },
+    {
+      "id": "frp-designer",
+      "title": "مصمم مخططات الخزانات",
+      "description": "تصميم المخطط الهندسي FRP وطباعة A3",
+      "file": "DROWER.html",
+      "category": "engineering",
+      "icon": "📐",
+      "role": "main",
+      "project": ""
+    },
+    {
+      "id": "sadad-guide",
+      "title": "دليل مفوتري سداد",
+      "description": "ابحث برقم المفوتر أو اسم الجهة، وانسخ رموز سداد وتحقق منها قبل الدفع",
+      "file": "sadad-directory.html",
+      "category": "management",
+      "icon": "🧾",
+      "role": "main",
+      "project": ""
+    },
+    {
+      "id": "maintenance",
+      "title": "السندات والصيانة والاستبدال",
+      "description": "نظام الصيانة والفواتير والمتابعة مع تسجيل الدخول الخاص به",
+      "file": "siana_invo(4).html",
+      "category": "management",
+      "icon": "🛠️",
+      "role": "main",
+      "project": "jksianainvo"
+    },
+    {
+      "id": "devices-records",
+      "title": "بيانات الهواتف والإقامات",
+      "description": "إدارة سجلات البيانات والأجهزة والاستيراد والتصدير",
+      "file": "phone_and_eqama.html",
+      "category": "management",
+      "icon": "📇",
+      "role": "main",
+      "project": "phonesandeqama"
+    },
+    {
+      "id": "fleet",
+      "title": "إدارة الأسطول والسيارات",
+      "description": "الصيانة والمصاريف والوثائق والتتبع",
+      "file": "اخر تحديث للسيارات.html",
+      "category": "management",
+      "icon": "🚘",
+      "role": "main",
+      "project": "jaralkhaleejfleet"
+    }
+  ]
+}

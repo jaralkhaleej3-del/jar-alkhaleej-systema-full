@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101c1d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="جار الخليج للصناعة — مساحة عمل موحدة للطلبات والإنتاج والإدارة والمالية">
+  <link rel="manifest" href="manifest.webmanifest?v=3">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="icon" href="assets/favicon.svg?v=3" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/portal.css?v=3">
+  <title>جار الخليج | مساحة العمل</title>
+  <script src="assets/catalog.js?v=2" defer></script>
+  <script src="assets/portal.js?v=2" defer></script>
+</head>
+<body data-theme="light">
+  <div class="gate" id="gate" aria-live="polite">
+    <div class="gate-ambient"></div>
+    <section class="gate-card" aria-label="بوابة الدخول">
+      <div class="gate-illustration">
+        <div class="gate-brand"><span class="brand-icon" aria-hidden="true"><img class="official-logo" src="assets/jar-al-khaleej-logo.png" alt=""></span><div><strong>شركة جار الخليج للصناعة</strong><span>JAR AL KHALEEJ</span></div></div>
+        <div class="gate-art"><div class="lock-orbit"><svg class="icon"><use href="assets/icons.svg#shield"></use></svg></div></div>
+        <div class="gate-quote"><span class="eyebrow light">نظام أعمال متكامل</span><h2>كل ما تحتاجه لإدارة العمل، في مساحة واحدة.</h2><p>الطلبات والإنتاج · المالية · الهندسة · إدارة الشركة</p></div>
+        <div class="gate-info">واجهة أنيقة للكمبيوتر واللوحي والجوال</div>
+      </div>
+      <div class="gate-auth">
+        <div class="gate-mobile-brand"><span class="brand-icon" aria-hidden="true"><img class="official-logo" src="assets/jar-al-khaleej-logo.png" alt=""></span><b>جار الخليج للصناعة</b></div>
+        <div class="gate-label"><svg class="icon"><use href="assets/icons.svg#lock"></use></svg> مساحة العمل الخاصة بالشركة</div>
+        <h1 id="gateTitle">إعداد وسيلة الدخول</h1>
+        <p class="gate-description" id="gateDescription">اختر الطريقة التي تريد بها قفل بوابة التطبيقات على هذا الجهاز.</p>
+        <div id="gateMethodPicker" class="gate-methods" aria-label="طريقة الدخول">
+          <button type="button" class="method-btn active" data-method="pin"><svg class="icon"><use href="assets/icons.svg#grid"></use></svg><b>رمز PIN</b></button>
+          <button type="button" class="method-btn" data-method="pattern"><svg class="icon"><use href="assets/icons.svg#layers"></use></svg><b>نقش نمط</b></button>
+          <button type="button" class="method-btn" data-method="password"><svg class="icon"><use href="assets/icons.svg#lock"></use></svg><b>كلمة مرور</b></button>
+        </div>
+        <form id="gateForm" novalidate>
+          <div id="gateTextInputs" class="gate-form-fields">
+            <label class="form-label" for="gateSecret" id="gateSecretLabel">أدخل رمز PIN</label>
+            <input id="gateSecret" class="gate-input" type="password" inputmode="numeric" autocomplete="off" placeholder="6 أرقام أو أكثر" required>
+            <div id="gateConfirmWrap"><label class="form-label" for="gateConfirm">تأكيد وسيلة الدخول</label><input id="gateConfirm" class="gate-input" type="password" inputmode="numeric" autocomplete="off" placeholder="أعد الإدخال"></div>
+          </div>
+          <div id="patternArea" hidden>
+            <p id="patternHint" class="pattern-hint">صل 4 نقاط على الأقل دون رفع إصبعك.</p>
+            <div class="pattern-board" id="patternBoard" aria-label="لوحة النمط ذات تسع نقاط" role="group">
+              <svg id="patternSvg" viewBox="0 0 300 300" aria-hidden="true"><path id="patternLine" d="" fill="none" stroke="#16a580" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </div>
+            <button type="button" id="clearPattern" class="text-btn">مسح الرسم وإعادته</button>
+          </div>
+          <div class="gate-error" id="gateError" role="alert" hidden></div>
+          <button type="submit" id="gateSubmit" class="btn btn-primary btn-block">حفظ وسيلة الدخول</button>
+          <button type="button" id="gateCancel" class="text-btn" hidden>إلغاء والعودة للنظام</button>
+        </form>
+        <div class="gate-foot"><svg class="icon"><use href="assets/icons.svg#shield"></use></svg> قفل محلي للواجهة فقط. يجب حماية Firebase بمصادقة وصلاحيات فعلية.</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="shell" id="appShell" hidden>
+    <div id="sideScrim" class="side-scrim" hidden></div>
+    <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية">
+      <div class="sidebar-head"><span class="brand-icon" aria-hidden="true"><img class="official-logo" src="assets/jar-al-khaleej-logo.png" alt=""></span><div><b>جار الخليج للصناعة</b><small>JAR WORKSPACE</small></div></div>
+      <div class="sidebar-organization"><span class="org-dot"></span> المساحة الرئيسية <svg class="icon"><use href="assets/icons.svg#chevron-down"></use></svg></div>
+      <p class="side-caption">مساحة العمل</p>
+      <button class="side-home side-link active" type="button" data-action="home"><span class="side-emoji"><svg class="icon"><use href="assets/icons.svg#grid"></use></svg></span><span>لوحة التطبيقات</span><span class="side-key">⌂</span></button>
+      <p class="side-caption side-caption-groups">الأقسام</p>
+      <nav id="sidebarGroups" aria-label="مجموعات التطبيقات"></nav>
+      <div class="sidebar-bottom">
+        <button class="side-link" data-action="settings"><span class="side-emoji"><svg class="icon"><use href="assets/icons.svg#settings"></use></svg></span><span>الإعدادات</span></button>
+        <button class="side-link" data-action="lock"><span class="side-emoji"><svg class="icon"><use href="assets/icons.svg#lock"></use></svg></span><span>قفل الشاشة</span></button>
+        <div class="side-version"><span class="online-dot"></span> بوابة الأعمال · إصدار 2.1</div>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-start">
+          <button class="icon-button hamburger" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false"><svg class="icon"><use href="assets/icons.svg#menu"></use></svg></button>
+          <div class="top-heading"><div class="breadcrumbs">مساحة العمل <svg class="icon"><use href="assets/icons.svg#chevron"></use></svg> <b id="topLocation">الرئيسية</b></div><small id="topSubheading">إدارة التطبيقات والعمليات بسهولة</small></div>
+        </div>
+        <div class="topbar-actions">
+          <button class="top-search" id="globalSearch" title="البحث السريع (Ctrl + K)"><svg class="icon"><use href="assets/icons.svg#search"></use></svg><span>بحث سريع في التطبيقات...</span><kbd>⌘ K</kbd></button>
+          <span class="secure-tag" title="تم فتح القفل المحلي للبوابة، وليس توثيق مستخدم Firebase"><span class="status-pulse"></span> مساحة العمل مفتوحة</span>
+          <button class="icon-button" id="settingsShortcut" title="الإعدادات" aria-label="الإعدادات"><svg class="icon"><use href="assets/icons.svg#settings"></use></svg></button>
+          <button class="top-lock" id="lockShortcut"><svg class="icon"><use href="assets/icons.svg#lock"></use></svg><span>قفل</span></button>
+          <div class="mobile-brand" role="img" aria-label="شعار شركة جار الخليج للصناعة"><img src="assets/jar-al-khaleej-logo.png" alt=""></div>
+        </div>
+      </header>
+
+      <main id="homeView" class="home-main" tabindex="-1">
+        <div class="page-intro"><div><div class="eyebrow">مرحبًا بك في مساحة العمل</div><h1>لوحة التطبيقات <span class="heading-dot">.</span></h1><p>اختر وجهتك، وكل تطبيق سيبقى مرتبطًا بمصدر بياناته الحالي.</p></div><div class="today-pill"><svg class="icon"><use href="assets/icons.svg#calendar"></use></svg><span id="todayDate">—</span></div></div>
+
+        <div class="hero-layout">
+          <section class="welcome-panel">
+            <div class="welcome-text">
+              <div class="hero-eyebrow"><span class="hero-blip"></span> نظام جار الخليج · الإصدار الجديد</div>
+              <h2>إدارة أسهل،<br><em>يوم عمل أذكى.</em></h2>
+              <p>كل عمليات الطلبات والإنتاج والمالية والتصميم، منظمة في مساحة واحدة تساعدك على إنجاز العمل.</p>
+              <div class="hero-buttons"><button class="hero-button" data-action="open" data-app="orders-dashboard">لوحة الطلبات <svg class="icon"><use href="assets/icons.svg#arrow-up-right"></use></svg></button><button class="hero-secondary" data-action="open" data-app="sadad-guide">دليل مفوتري سداد <svg class="icon"><use href="assets/icons.svg#book"></use></svg></button></div>
+            </div>
+            <div class="welcome-visual" aria-hidden="true">
+              <div class="visual-grid"></div><div class="circle c1"></div><div class="circle c2"></div><div class="circle c3"></div>
+              <div class="visual-core"><img class="official-logo hero-logo" src="assets/jar-al-khaleej-logo.png" alt=""></div>
+              <div class="visual-chip chip-one"><svg class="icon"><use href="assets/icons.svg#factory"></use></svg><span>إنتاج</span><b>●</b></div>
+              <div class="visual-chip chip-two"><svg class="icon"><use href="assets/icons.svg#chart"></use></svg><span>أداء</span><b>↗</b></div>
+              <div class="visual-chip chip-three"><svg class="icon"><use href="assets/icons.svg#clipboard"></use></svg><span>طلبات</span><b>✓</b></div>
+            </div>
+          </section>
+          <aside class="quick-panel">
+            <div class="quick-header"><div><div class="small-label">اختصارات مميزة</div><h3>ابدأ من هنا</h3></div><svg class="icon"><use href="assets/icons.svg#sparkles"></use></svg></div>
+            <button class="quick-link" data-action="open" data-app="order-entry"><span class="quick-icon blue"><svg class="icon"><use href="assets/icons.svg#plus"></use></svg></span><span><b>إصدار طلب جديد</b><small>إضافة أصناف وعميل</small></span><svg class="icon q-arrow"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+            <button class="quick-link" data-action="open" data-app="production-board"><span class="quick-icon green"><svg class="icon"><use href="assets/icons.svg#factory"></use></svg></span><span><b>متابعة الإنتاج</b><small>حالة وتجهيز الطلبات</small></span><svg class="icon q-arrow"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+            <button class="quick-link" data-action="open" data-app="cash-manager"><span class="quick-icon gold"><svg class="icon"><use href="assets/icons.svg#wallet"></use></svg></span><span><b>الصناديق والمالية</b><small>السندات والحركة النقدية</small></span><svg class="icon q-arrow"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+            <div class="quick-footer">استخدم <kbd>Ctrl + K</kbd> للعثور على أي تطبيق.</div>
+          </aside>
+        </div>
+
+        <div class="summary-line">
+          <div><span class="summary-ic purple"><svg class="icon"><use href="assets/icons.svg#grid"></use></svg></span><div><strong id="totalAppsCount">19</strong><span>تطبيقًا وأداة متاحة</span></div></div>
+          <div><span class="summary-ic mint"><svg class="icon"><use href="assets/icons.svg#layers"></use></svg></span><div><strong id="totalGroupsCount">6</strong><span>أقسام منظمة</span></div></div>
+          <div><span class="summary-ic amber"><svg class="icon"><use href="assets/icons.svg#phone"></use></svg></span><div><strong>مرن</strong><span>كمبيوتر · آيباد · جوال</span></div></div>
+        </div>
+
+        <section class="finder" aria-label="البحث عن التطبيقات">
+          <div class="finder-label"><div><span class="small-label">دليل التطبيقات</span><label for="appSearch">ما الذي تريد إنجازه اليوم؟</label></div><span id="filterCount">كل التطبيقات</span></div>
+          <div class="finder-input"><svg class="icon"><use href="assets/icons.svg#search"></use></svg><input id="appSearch" type="search" placeholder="ابحث باسم التطبيق أو الوظيفة أو القسم..." autocomplete="off"><kbd>Ctrl + K</kbd></div>
+          <div class="category-tabs" id="categoryTabs" aria-label="تصفية التطبيقات"></div>
+        </section>
+        <section class="apps-section" id="favoritesSection" hidden><div class="section-heading"><div><span class="small-label">المفضلة</span><h3>تطبيقاتك المفضلة</h3></div><svg class="icon"><use href="assets/icons.svg#star"></use></svg></div><div id="favoritesGrid" class="app-grid"></div></section>
+        <section class="apps-section" id="recentsSection" hidden><div class="section-heading"><div><span class="small-label">العودة للعمل</span><h3>آخر ما استخدمته</h3></div></div><div id="recentsGrid" class="app-grid"></div></section>
+        <section class="apps-section"><div class="section-heading"><div><span class="small-label" id="sectionLabel">تطبيقات جاهزة لبدء العمل</span><h3 id="appSectionTitle">جميع التطبيقات</h3></div><span class="section-count" id="sectionCount">19 تطبيقًا</span></div><div id="appsGrid" class="app-grid"></div><div id="emptyResults" class="empty-results" hidden>لا توجد نتائج مطابقة. جرّب كلمة بحث أخرى.</div></section>
+        <div class="home-footnote"><svg class="icon"><use href="assets/icons.svg#shield"></use></svg><p>هذه البوابة تنظّم الوصول ولا تستبدل أنظمة تسجيل الدخول داخل التطبيقات. يجب تطبيق قواعد الأمان في Firebase لحماية بيانات الشركة.</p></div>
+      </main>
+
+      <main class="viewer-main" id="viewerView" hidden>
+        <div class="viewer-toolbar"><div class="viewer-trail"><button class="crumb-home" data-action="home"><svg class="icon"><use href="assets/icons.svg#grid"></use></svg> التطبيقات</button><svg class="icon chevron-mini"><use href="assets/icons.svg#chevron"></use></svg><span id="viewerGroup">القسم</span><svg class="icon chevron-mini"><use href="assets/icons.svg#chevron"></use></svg><b id="viewerTitle">التطبيق</b><p id="viewerDesc">وصف التطبيق</p></div><div class="viewer-actions"><button class="small-action" data-action="home"><svg class="icon"><use href="assets/icons.svg#grid"></use></svg><span>القائمة</span></button><button class="small-action" id="reloadApp"><svg class="icon"><use href="assets/icons.svg#refresh"></use></svg><span>تحديث</span></button><button class="small-action" id="expandApp"><svg class="icon"><use href="assets/icons.svg#expand"></use></svg><span>ملء الشاشة</span></button></div></div>
+        <div class="viewer-box" id="viewerBox"><div class="frame-loading" id="frameLoading"><span class="spinner"></span> جاري فتح التطبيق...</div><iframe id="appFrame" title="التطبيق الحالي" referrerpolicy="strict-origin-when-cross-origin" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe></div>
+        <div class="viewer-hint">تُدار عمليات الحفظ من التطبيق نفسه وفق صلاحيات Firebase الخاصة به.</div>
+      </main>
+    </div>
+  </div>
+
+  <div class="dialog-backdrop" id="settingsDialog" hidden>
+    <section class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="dialog-head"><div><div class="small-label">التحكم والتخصيص</div><h2 id="settingsTitle">إعدادات مساحة العمل</h2></div><button class="icon-button" id="closeSettings" aria-label="إغلاق الإعدادات"><svg class="icon"><use href="assets/icons.svg#close"></use></svg></button></div>
+      <div class="dialog-scroll">
+        <div class="setting-group"><h3>تفضيلات العرض</h3><label class="form-label" for="themeSetting">المظهر</label><select class="setting-control" id="themeSetting"><option value="light">فاتح — احترافي</option><option value="dark">داكن — مريح</option></select><label class="form-label" for="lockSetting">القفل التلقائي بعد عدم الاستخدام</label><select class="setting-control" id="lockSetting"><option value="5">5 دقائق</option><option value="15">15 دقيقة</option><option value="30">30 دقيقة</option><option value="60">60 دقيقة</option></select></div>
+        <div class="setting-group"><h3>طريقة فتح مساحة العمل</h3><p>يمكنك تغيير رمز PIN أو نقش النمط أو كلمة المرور بعد التحقق من الوسيلة الحالية.</p><div class="current-method"><svg class="icon"><use href="assets/icons.svg#shield"></use></svg><div><b id="currentMethodName">رمز PIN</b><small>مخصص لهذا المتصفح فقط</small></div></div><button class="btn btn-outline" type="button" id="changeLockMethod">تغيير طريقة القفل</button></div>
+        <div class="setting-group setting-warning"><h3>تنبيه حول حماية البيانات</h3><p>طريقة القفل هنا تخص الواجهة المحلية فقط؛ ولا تمنع الوصول المباشر إلى روابط HTML. يلزم Firebase Authentication وFirestore Security Rules قبل الاعتماد على النظام لتخزين بيانات حساسة.</p></div>
+        <button type="button" class="btn btn-secondary btn-block" id="lockFromSettings"><svg class="icon"><use href="assets/icons.svg#lock"></use></svg> قفل الآن</button>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
